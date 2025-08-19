@@ -86,9 +86,3 @@ Traditional garment factories often rely on manual systems to manage production 
 - **Tools**: GitHub (version control), IntelliJ IDEA (IDE), Postman (API testing)  
 - **Timeline**: Proposal → Progress Evaluation → Final Evaluation  
 
----
-
-## 📌 Installation & Setup
-1. Clone this repository:
-   ```bash
-   git clone https://github.com/<your-repo>/Cloth_Sphere.git
