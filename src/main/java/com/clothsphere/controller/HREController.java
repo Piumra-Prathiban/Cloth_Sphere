@@ -456,4 +456,14 @@ public class HREController {
         }
         return "redirect:/systemUserLogin";
     }
+    // Manager management page
+    @GetMapping("/manageManagers")
+    public String showManageManagersPage(HttpSession session, Model model) {
+        SystemUser currentUser = (SystemUser) session.getAttribute("currentUser");
+        if (currentUser != null && "hr-manager".equals(currentUser.getRole())) {
+            model.addAttribute("user", currentUser);
+            return "managers"; // This should match the template name without .html
+        }
+        return "redirect:/systemUserLogin";
+    }
 }
