@@ -1,12 +1,12 @@
-package com.clothsphere.controller;
+package com.clothsphere.controller.HR;
 
-import com.clothsphere.model.Department;
-import com.clothsphere.model.Employee;
+import com.clothsphere.model.HR.Department;
+import com.clothsphere.model.HR.Employee;
 import com.clothsphere.model.SystemUser;
-import com.clothsphere.repository.EmployeeRepository;
+import com.clothsphere.repository.HR.EmployeeRepository;
 import com.clothsphere.repository.SystemUserRepository;
-import com.clothsphere.service.DepartmentService;
-import com.clothsphere.service.SystemUserService;
+import com.clothsphere.service.HR.DepartmentService;
+import com.clothsphere.service.HR.SystemUserService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

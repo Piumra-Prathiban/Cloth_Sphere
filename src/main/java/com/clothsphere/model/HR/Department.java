@@ -1,4 +1,4 @@
-package com.clothsphere.model;
+package com.clothsphere.model.HR;
 
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
