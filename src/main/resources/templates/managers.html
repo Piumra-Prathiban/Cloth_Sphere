@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Managers - ClothSphere</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * {margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;}
+    body {background:#f4f6f9; min-height:100vh; padding:20px;}
+    .container {max-width: 1200px; margin: 0 auto;}
+    .header {display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; padding-bottom:15px; border-bottom:2px solid #ddd;}
+    .header h1 {color:#333;}
+    .back-btn {background:#6c757d; color:white; border:none; padding:10px 15px; border-radius:5px; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:8px;}
+    .back-btn:hover {background:#5a6268;}
+    .card {background:#fff; padding:25px; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,0.1); margin-bottom:25px;}
+    .card h3 {margin-bottom:20px; color:#333; border-bottom:2px solid #f4f4f4; padding-bottom:10px;}
+    .tabs {display:flex; margin-bottom:20px; border-bottom:1px solid #ddd;}
+    .tab {padding:12px 24px; cursor:pointer; border:1px solid transparent; border-bottom:none; border-radius:5px 5px 0 0; margin-right:5px; background:#f8f9fa;}
+    .tab.active {background:#fff; border-color:#ddd; border-bottom-color:#fff; margin-bottom:-1px; font-weight:600;}
+    .tab-content {display:none;}
+    .tab-content.active {display:block;}
+    .table-container {overflow-x:auto; margin-top:15px;}
+    table {width:100%; border-collapse:collapse;}
+    th, td {padding:12px 15px; text-align:left; border-bottom:1px solid #ddd;}
+    th {background-color:#f8f9fa; font-weight:600; color:#333;}
+    tr:hover {background-color:#f5f5f5;}
+    .form-group {margin-bottom:15px;}
+    .form-group label {display:block; margin-bottom:5px; font-weight:600; color:#333;}
+    .form-group input, .form-group select {width:100%; padding:10px; border:1px solid #ddd; border-radius:5px; font-size:14px;}
+    .form-group input:focus, .form-group select:focus {outline:none; border-color:#007bff;}
+    .btn {border:none; padding:10px 15px; border-radius:5px; cursor:pointer; font-weight:500; margin:5px; display:inline-flex; align-items:center; gap:5px; text-decoration:none; transition:background 0.3s; font-size:14px;}
+    .btn-primary {background:#007bff; color:white;} .btn-primary:hover {background:#0056b3;}
+    .btn-success {background:#28a745; color:white;} .btn-success:hover {background:#218838;}
+    .btn-warning {background:#ffc107; color:#212529;} .btn-warning:hover {background:#e0a800;}
+    .btn-secondary {background:#6c757d; color:white;} .btn-secondary:hover {background:#5a6268;}
+    .btn-sm {padding:6px 10px; font-size:12px;}
+    .alert {padding:12px; border-radius:5px; margin-bottom:20px;}
+    .alert-success {background-color:#d4edda; color:#155724; border:1px solid #c3e6cb;}
+    .alert-error {background-color:#f8d7da; color:#721c24; border:1px solid #f5c6cb;}
+    .badge {padding:4px 8px; border-radius:12px; font-size:12px; font-weight:600;}
+    .badge-success {background:#d4edda; color:#155724;}
+    .badge-warning {background:#fff3cd; color:#856404;}
+    .spinner {border:3px solid #f3f3f3; border-top:3px solid #007bff; border-radius:50%; width:30px; height:30px; animation:spin 1s linear infinite; margin:20px auto;}
+    @keyframes spin {0%{transform:rotate(0deg);} 100%{transform:rotate(360deg);}}
+  </style>
+</head>
+<body>
+<div class="container">
+  <!-- Header -->
+  <div class="header">
+    <h1><i class="fas fa-user-tie"></i> Manage Managers</h1>
+    <a href="/hrDashboard" class="back-btn"><i class="fas fa-arrow-left"></i> Back to HR Dashboard</a>
+  </div>
+
+  <!-- Alert Messages -->
+  <div id="alertContainer"></div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('departmentManagers')"><i class="fas fa-building"></i> Department Managers</div>
+    <div class="tab" onclick="showTab('systemUsers')"><i class="fas fa-users-cog"></i> System Users</div>
+  </div>
+
+  <!-- Department Managers Tab -->
+  <div id="departmentManagers" class="tab-content active">
+    <div class="card">
+      <h3><i class="fas fa-building"></i> Department Managers</h3>
+      <p>Assign and manage department managers. Each department can have one manager.</p>
+
+      <!-- Assign Manager Form -->
+      <div style="background:#f8f9fa; padding:20px; border-radius:8px; margin-bottom:20px;">
+        <h4><i class="fas fa-user-plus"></i> Assign Manager to Department</h4>
+        <form id="assignManagerForm">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+            <div class="form-group">
+              <label for="assignDepartment">Department:</label>
+              <select id="assignDepartment" name="departmentId" required>
+                <option value="">Select Department</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="assignEmployee">Employee (Manager):</label>
+              <select id="assignEmployee" name="employeeId" required>
+                <option value="">Select Employee</option>
+              </select>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Assign Manager</button>
+        </form>
+      </div>
+
+      <!-- Department Managers Table -->
+      <div class="table-container">
+        <table id="departmentManagersTable">
+          <thead>
+          <tr>
+            <th>Department ID</th>
+            <th>Department Name</th>
+            <th>Current Manager</th>
+            <th>Manager Employee ID</th>
+            <th>Manager Email</th>
+            <th>Employee Count</th>
+            <th>Actions</th>
+          </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div id="loadingDeptManagers" class="spinner" style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- System Users Tab -->
+  <div id="systemUsers" class="tab-content">
+    <div class="card">
+      <h3><i class="fas fa-users-cog"></i> System Users</h3>
+      <p>View all system users with their roles and access privileges.</p>
+      <div style="margin-bottom:20px;">
+        <label for="roleFilter" style="font-weight:600; margin-right:10px;">Filter by Role:</label>
+        <select id="roleFilter" onchange="filterSystemUsers()">
+          <option value="">All Roles</option>
+          <option value="hr-manager">HR Manager</option>
+          <option value="factory-manager">Factory Manager</option>
+          <option value="inventory-manager">Inventory Manager</option>
+          <option value="customer-officer">Customer Officer</option>
+          <option value="sales-executive">Sales Executive</option>
+          <option value="employee">Employee</option>
+        </select>
+      </div>
+      <div class="table-container">
+        <table id="systemUsersTable">
+          <thead>
+          <tr>
+            <th>Username</th>
+            <th>Role</th>
+            <th>Email</th>
+            <th>Phone Number</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div id="loadingSystemUsers" class="spinner" style="display:none;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Manager Modal -->
+<div id="editManagerModal" class="modal" style="display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.5);">
+  <div class="modal-content" style="background:#fff; margin:5% auto; padding:20px; border-radius:10px; width:80%; max-width:500px;">
+    <span class="close" onclick="closeEditManagerModal()" style="color:#aaa; float:right; font-size:28px; font-weight:bold; cursor:pointer;">&times;</span>
+    <h3><i class="fas fa-edit"></i> Change Department Manager</h3>
+    <form id="editManagerForm">
+      <input type="hidden" id="editDepartmentId" name="departmentId">
+      <div class="form-group">
+        <label for="editDepartmentName">Department:</label>
+        <input type="text" id="editDepartmentName" readonly style="background:#f0f0f0;">
+      </div>
+      <div class="form-group">
+        <label for="editManagerEmployee">New Manager:</label>
+        <select id="editManagerEmployee" name="employeeId" required><option value="">Select Employee</option></select>
+      </div>
+      <div style="text-align:right; margin-top:20px;">
+        <button type="button" class="btn btn-secondary" onclick="closeEditManagerModal()"><i class="fas fa-times"></i> Cancel</button>
+        <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Update Manager</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  let departments = [], employees = [], systemUsers = [], departmentManagers = [];
+
+  function showTab(tabName) {
+    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+    document.getElementById(tabName).classList.add('active');
+    event.target.classList.add('active');
+    if (tabName === 'departmentManagers') loadDepartmentManagers();
+    else if (tabName === 'systemUsers') loadSystemUsers();
+  }
+
+  async function fetchWithAuth(url, options = {}) {
+    console.log('Making API request to:', url, 'with options:', options);
+    const response = await fetch(url, {...options, credentials:'include'});
+    console.log('API response status:', response.status);
+
+    if (response.status === 401) {
+      alert('Session expired. Please login again.');
+      window.location.href = '/systemUserLogin';
+      throw new Error('Unauthorized');
+    }
+    return response;
+  }
+
+  function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type}`;
+    alertDiv.innerHTML = `<span>${message}</span>
+        <button onclick="this.parentElement.remove()" style="float:right; background:none; border:none; cursor:pointer;">×</button>`;
+    document.getElementById('alertContainer').appendChild(alertDiv);
+    setTimeout(() => alertDiv.remove(), 5000);
+  }
+
+  async function loadDepartments() {
+    const res = await fetchWithAuth('/api/departments');
+    if (!res.ok) throw new Error('Failed to load departments');
+    departments = await res.json();
+  }
+
+  async function loadEmployees() {
+    const res = await fetchWithAuth('/api/employees');
+    if (!res.ok) throw new Error('Failed to load employees');
+    employees = await res.json();
+  }
+
+  async function loadDepartmentManagers() {
+    const loadingEl = document.getElementById('loadingDeptManagers');
+    const tbody = document.querySelector('#departmentManagersTable tbody');
+    loadingEl.style.display = 'block'; tbody.innerHTML = '';
+    try {
+      await Promise.all([loadDepartments(), loadEmployees()]);
+      departmentManagers = departments.map(dept => {
+        const managerEmployee = employees.find(emp => emp.id === dept.managerId);
+        return {
+          departmentId: dept.id,
+          departmentName: dept.departmentName,
+          managerId: dept.managerId,
+          managerName: managerEmployee ? managerEmployee.fullName : 'Not Assigned',
+          managerEmail: managerEmployee ? managerEmployee.email : 'N/A',
+          employeeCount: dept.employeeCount || 0
+        };
+      });
+      refreshDepartmentManagersTable();
+      populateAssignFormDropdowns();
+    } catch (err) {
+      console.error('Error loading department managers:', err);
+      showAlert('Error loading department managers: ' + err.message, 'error');
+    } finally { loadingEl.style.display = 'none'; }
+  }
+
+  function refreshDepartmentManagersTable() {
+    const tbody = document.querySelector('#departmentManagersTable tbody');
+    tbody.innerHTML = '';
+    if (departmentManagers.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No department managers found</td></tr>';
+      return;
+    }
+    departmentManagers.forEach(mgr => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+          <td>${mgr.departmentId}</td>
+          <td>${mgr.departmentName}</td>
+          <td>${mgr.managerName}</td>
+          <td>${mgr.managerId || 'N/A'}</td>
+          <td>${mgr.managerEmail}</td>
+          <td>${mgr.employeeCount}</td>
+          <td>
+            <button class="btn btn-warning btn-sm" onclick="editDepartmentManager('${mgr.departmentId}')"><i class="fas fa-edit"></i> Change</button>
+            ${mgr.managerId ? `<button class="btn btn-secondary btn-sm" onclick="removeManager('${mgr.departmentId}')"><i class="fas fa-times"></i> Remove</button>` : ''}
+          </td>`;
+      tbody.appendChild(row);
+    });
+  }
+
+  function populateAssignFormDropdowns() {
+    const deptSelect = document.getElementById('assignDepartment');
+    const empSelect = document.getElementById('assignEmployee');
+    deptSelect.innerHTML = '<option value="">Select Department</option>';
+    empSelect.innerHTML = '<option value="">Select Employee</option>';
+    departments.filter(d => !d.managerId).forEach(dept => {
+      const opt = document.createElement('option');
+      opt.value = dept.id; opt.textContent = `${dept.departmentName} (${dept.id})`;
+      deptSelect.appendChild(opt);
+    });
+    employees.forEach(emp => {
+      const opt = document.createElement('option');
+      opt.value = emp.id; opt.textContent = `${emp.fullName} (${emp.id}) - ${emp.department ? emp.department.departmentName : 'No Department'}`;
+      empSelect.appendChild(opt);
+    });
+  }
+
+  async function editDepartmentManager(deptId) {
+    const dept = departments.find(d => d.id === deptId); if (!dept) return;
+    document.getElementById('editDepartmentId').value = dept.id;
+    document.getElementById('editDepartmentName').value = `${dept.departmentName} (${dept.id})`;
+    const empSelect = document.getElementById('editManagerEmployee');
+    empSelect.innerHTML = '<option value="">Select Employee</option>';
+    employees.forEach(emp => {
+      const opt = document.createElement('option');
+      opt.value = emp.id; opt.textContent = `${emp.fullName} (${emp.id})`;
+      if (emp.id === dept.managerId) opt.selected = true;
+      empSelect.appendChild(opt);
+    });
+    document.getElementById('editManagerModal').style.display = 'block';
+  }
+
+  function closeEditManagerModal(){document.getElementById('editManagerModal').style.display='none';}
+
+  async function removeManager(deptId){
+    if(!confirm('Are you sure you want to remove the manager?')) return;
+    try{
+      const res=await fetchWithAuth(`/api/managers/department/${deptId}/manager`,{method:'DELETE'});
+      const result=await res.json();
+      if(res.ok){showAlert('Manager removed successfully!','success'); await loadDepartmentManagers();}
+      else showAlert(result.message||'Failed to remove manager','error');
+    }catch(err){console.error(err); showAlert('Error removing manager: '+err.message,'error');}
+  }
+
+  async function loadSystemUsers(){
+    const loadingEl=document.getElementById('loadingSystemUsers');
+    const tbody=document.querySelector('#systemUsersTable tbody');
+    loadingEl.style.display='block'; tbody.innerHTML='';
+    try{
+      const res=await fetchWithAuth('/api/managers/system-users');
+      if(res.ok) {
+        systemUsers=await res.json();
+        console.log('Loaded system users:', systemUsers);
+      } else {
+        console.error('Failed to load system users, status:', res.status);
+        systemUsers=[];
+      }
+      refreshSystemUsersTable();
+    }catch(err){
+      console.error('Error loading system users:',err);
+      systemUsers=[];
+      refreshSystemUsersTable();
+      showAlert('Error loading system users: ' + err.message, 'error');
+    }
+    finally{loadingEl.style.display='none';}
+  }
+
+  function refreshSystemUsersTable(){
+    const tbody=document.querySelector('#systemUsersTable tbody');
+    const roleFilter=document.getElementById('roleFilter').value;
+    tbody.innerHTML='';
+    let filtered=systemUsers;
+    if(roleFilter) filtered=systemUsers.filter(u=>u.role===roleFilter);
+    if(filtered.length===0){
+      tbody.innerHTML='<tr><td colspan="6" style="text-align:center;">No system users found</td></tr>';
+      return;
+    }
+    filtered.forEach(u=>{
+      // Format role display
+      const roleDisplay = u.role.replace('-', ' ').toUpperCase();
+      const roleBadgeClass = u.role === 'hr-manager' ? 'badge-success' : 'badge-warning';
+
+      const row=document.createElement('tr');
+      row.innerHTML=`
+          <td>${u.userName}</td>
+          <td><span class="badge ${roleBadgeClass}">${roleDisplay}</span></td>
+          <td>${u.email||'Not provided'}</td>
+          <td>${u.phoneNumber||'Not provided'}</td>
+          <td><span class="badge badge-success">Active</span></td>
+          <td>
+            <button class="btn btn-secondary btn-sm" onclick="viewUserDetails('${u.userName}','${u.role}')">
+              <i class="fas fa-eye"></i> View Details
+            </button>
+          </td>`;
+      tbody.appendChild(row);
+    });
+  }
+
+  function filterSystemUsers(){refreshSystemUsersTable();}
+
+  function viewUserDetails(username,role){
+    const user=systemUsers.find(u=>u.userName===username&&u.role===role);
+    if(user) {
+      // Create a more detailed modal for user details
+      const modal = document.createElement('div');
+      modal.style.cssText = 'position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.5);';
+
+      const modalContent = document.createElement('div');
+      modalContent.style.cssText = 'background:#fff; margin:5% auto; padding:20px; border-radius:10px; width:80%; max-width:500px;';
+
+      modalContent.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+          <h3><i class="fas fa-user"></i> System User Details</h3>
+          <span onclick="document.body.removeChild(this.closest('.user-details-modal'))"
+                style="color:#aaa; font-size:28px; font-weight:bold; cursor:pointer;">&times;</span>
+        </div>
+        <div style="line-height:1.6;">
+          <p><strong>Username:</strong> ${user.userName}</p>
+          <p><strong>Role:</strong> <span class="badge ${user.role==='hr-manager'?'badge-success':'badge-warning'}">${user.role}</span></p>
+          <p><strong>Email:</strong> ${user.email || 'Not provided'}</p>
+          <p><strong>Phone Number:</strong> ${user.phoneNumber || 'Not provided'}</p>
+          <p><strong>Status:</strong> <span class="badge badge-success">Active</span></p>
+          <p><strong>Account Type:</strong> System User</p>
+        </div>
+        <div style="text-align:right; margin-top:20px;">
+          <button onclick="document.body.removeChild(this.closest('.user-details-modal'))"
+                  class="btn btn-secondary"><i class="fas fa-times"></i> Close</button>
+        </div>
+      `;
+
+      modal.className = 'user-details-modal';
+      modal.appendChild(modalContent);
+      document.body.appendChild(modal);
+
+      // Close modal when clicking outside
+      modal.onclick = function(e) {
+        if (e.target === modal) {
+          document.body.removeChild(modal);
+        }
+      };
+    } else {
+      showAlert('User details not found', 'error');
+    }
+  }
+
+  // SINGLE EVENT LISTENER FOR ASSIGN MANAGER FORM
+  document.addEventListener('DOMContentLoaded', function() {
+    console.log('Manage Managers initialized');
+    loadDepartmentManagers();
+
+    // Assign manager form handler
+    document.getElementById('assignManagerForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      console.log('Assign manager form submitted');
+
+      const formData = new FormData(e.target);
+      const departmentId = formData.get('departmentId');
+      const employeeId = formData.get('employeeId');
+
+      console.log('Assigning manager - Department:', departmentId, 'Employee:', employeeId);
+
+      if (!departmentId || !employeeId) {
+        showAlert('Please select both department and employee', 'error');
+        return;
+      }
+
+      try {
+        const response = await fetchWithAuth(`/api/managers/department/${departmentId}/manager`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ managerId: employeeId })
+        });
+
+        const result = await response.json();
+        console.log('API response:', result);
+
+        if (response.ok) {
+          showAlert('Manager assigned successfully!', 'success');
+          e.target.reset();
+          await loadDepartmentManagers();
+        } else {
+          showAlert(result.message || 'Failed to assign manager', 'error');
+        }
+      } catch (error) {
+        console.error('Error assigning manager:', error);
+        showAlert('Error assigning manager: ' + error.message, 'error');
+      }
+    });
+
+    // Edit manager form handler
+    document.getElementById('editManagerForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      console.log('Edit manager form submitted');
+
+      const departmentId = document.getElementById('editDepartmentId').value;
+      const employeeId = document.getElementById('editManagerEmployee').value;
+
+      try {
+        const response = await fetchWithAuth(`/api/managers/department/${departmentId}/manager`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ managerId: employeeId })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          showAlert('Manager updated successfully!', 'success');
+          closeEditManagerModal();
+          await loadDepartmentManagers();
+        } else {
+          showAlert(result.message || 'Failed to update manager', 'error');
+        }
+      } catch (error) {
+        console.error('Error updating manager:', error);
+        showAlert('Error updating manager: ' + error.message, 'error');
+      }
+    });
+  });
+
+  window.onclick=function(e){const modal=document.getElementById('editManagerModal'); if(e.target===modal) closeEditManagerModal();}
+</script>
+</body>
+</html>

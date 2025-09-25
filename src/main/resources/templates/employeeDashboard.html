@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Employee Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {font-family: Arial, sans-serif; margin: 0; background: #f4f6f9;}
+    header {
+      background: #007bff; color: #fff; padding: 15px 20px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    header h2 {margin: 0;}
+    .logout-btn {
+      background: #dc3545; color: #fff; border: none; padding: 8px 12px;
+      border-radius: 5px; cursor: pointer; font-weight: bold;
+    }
+    .logout-btn:hover {background: #c82333;}
+    main {padding: 20px;}
+    .card {
+      background: #fff; border-radius: 8px; padding: 20px;
+      margin-bottom: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .card h3 {margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 10px;}
+  </style>
+</head>
+<body>
+<header>
+  <h2>Welcome, <span th:text="${user.userName}">Employee</span></h2>
+  <button class="logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+</header>
+
+<main>
+  <!-- Profile -->
+  <div class="card">
+    <h3>My Profile</h3>
+    <p><b>Full Name:</b> <span th:text="${employee.fullName}">John Doe</span></p>
+    <p><b>Email:</b> <span th:text="${employee.email}">john.doe@example.com</span></p>
+    <p><b>Phone:</b> <span th:text="${employee.phoneNumber}">+94 771234567</span></p>
+    <p><b>Department:</b> <span th:text="${employee.department}">IT</span></p>
+  </div>
+
+  <!-- Attendance -->
+  <div class="card">
+    <h3>My Attendance</h3>
+    <canvas id="attendanceChart"></canvas>
+  </div>
+
+  <!-- Workload -->
+  <div class="card">
+    <h3>My Workload</h3>
+    <p>Completed Tasks: 8</p>
+    <p>Pending Tasks: 2</p>
+  </div>
+
+  <!-- Notifications -->
+  <div class="card">
+    <h3>Notifications</h3>
+    <ul>
+      <li><i class="fas fa-check-circle text-success"></i> Your leave request has been approved.</li>
+      <li><i class="fas fa-tasks text-warning"></i> You have 2 pending tasks to finish today.</li>
+    </ul>
+  </div>
+</main>
+
+<script>
+  // Attendance Chart
+  const ctx = document.getElementById('attendanceChart');
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Present', 'Absent'],
+      datasets: [{ data: [22, 2], backgroundColor: ['#28a745', '#dc3545'] }]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+  });
+
+  function logout() {
+    if (confirm('Are you sure you want to logout?')) {
+      window.location.href = '/systemUserLogin';
+    }
+  }
+</script>
+</body>
+</html>
