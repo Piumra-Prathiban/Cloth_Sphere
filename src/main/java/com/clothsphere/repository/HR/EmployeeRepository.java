@@ -1,7 +1,7 @@
-package com.clothsphere.repository;
+package com.clothsphere.repository.HR;
 
-import com.clothsphere.model.Department;
-import com.clothsphere.model.Employee;
+import com.clothsphere.model.HR.Department;
+import com.clothsphere.model.HR.Employee;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

@@ -1,10 +1,9 @@
-package com.clothsphere.service;
+package com.clothsphere.service.HR;
 
-import com.clothsphere.model.Department;
-import com.clothsphere.model.Employee;
+import com.clothsphere.model.HR.Employee;
 import com.clothsphere.model.SystemUser;
-import com.clothsphere.repository.DepartmentRepository;
-import com.clothsphere.repository.EmployeeRepository;
+import com.clothsphere.repository.HR.DepartmentRepository;
+import com.clothsphere.repository.HR.EmployeeRepository;
 import com.clothsphere.repository.SystemUserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

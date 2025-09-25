@@ -1,12 +1,12 @@
-package com.clothsphere.controller;
+package com.clothsphere.controller.HR;
 
-import com.clothsphere.model.Department;
-import com.clothsphere.model.Employee;
+import com.clothsphere.model.HR.Department;
+import com.clothsphere.model.HR.Employee;
 import com.clothsphere.model.SystemUser;
-import com.clothsphere.repository.EmployeeRepository;
-import com.clothsphere.service.DepartmentService;
-import com.clothsphere.service.EmployeeService;
-import com.clothsphere.service.SystemUserService;
+import com.clothsphere.repository.HR.EmployeeRepository;
+import com.clothsphere.service.HR.DepartmentService;
+import com.clothsphere.service.HR.EmployeeService;
+import com.clothsphere.service.HR.SystemUserService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -453,6 +453,16 @@ public class HREController {
         if (currentUser != null) {
             model.addAttribute("user", currentUser);
             return viewName;
+        }
+        return "redirect:/systemUserLogin";
+    }
+    // Manager management page
+    @GetMapping("/manageManagers")
+    public String showManageManagersPage(HttpSession session, Model model) {
+        SystemUser currentUser = (SystemUser) session.getAttribute("currentUser");
+        if (currentUser != null && "hr-manager".equals(currentUser.getRole())) {
+            model.addAttribute("user", currentUser);
+            return "managers"; // This should match the template name without .html
         }
         return "redirect:/systemUserLogin";
     }
