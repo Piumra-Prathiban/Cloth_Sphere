@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Customer Support & Product Management - Dashboard</title>
+    <!-- Tailwind CDN (production: compile your own Tailwind for best performance) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-white text-gray-800 font-sans">
+<header class="max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
+    <div class="flex items-center gap-4">
+        <!-- Logo -->
+        <div class="w-10 h-10 bg-gray-200 rounded flex items-center justify-center overflow-hidden">
+            <img src="/images/logo.jpeg" alt="" class="w-full h-full object-cover">
+        </div>
+        <div>
+            <h1 class="text-2xl font-extrabold">CLOTHSPHERE</h1>
+            <p class="text-sm text-gray-500">Customer Support & Product Management</p>
+        </div>
+    </div>
+
+
+</header>
+
+<!-- Tabs -->
+<nav class="max-w-7xl mx-auto px-6 mb-6">
+    <div class="bg-gray-100 rounded-lg p-1 flex gap-1">
+        <button data-tab="dashboard" class="tab-btn px-6 py-3 bg-white rounded-lg shadow text-sm font-medium">Dashboard</button>
+        <button data-tab="products" class="tab-btn px-6 py-3 text-sm font-medium text-gray-600">Products</button>
+        <button data-tab="banners" class="tab-btn px-6 py-3 text-sm font-medium text-gray-600">Banners</button>
+        <button data-tab="support" class="tab-btn px-6 py-3 text-sm font-medium text-gray-600">Support</button>
+    </div>
+</nav>
+
+<!-- Tab Views -->
+<div class="max-w-7xl mx-auto px-6">
+
+    <!-- Dashboard -->
+    <div id="dashboard" class="tab-view bg-gray-50 p-6 rounded-lg shadow">
+        <h2 class="text-xl font-bold mb-2">📊 Dashboard</h2>
+        <p class="text-gray-600 mb-6">Welcome to the garment & textile management dashboard. Here you can view summaries and analytics.</p>
+
+        <!-- Cards row -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+
+            <!-- Total Products -->
+            <div class="bg-gradient-to-r from-blue-50 to-blue-100 rounded-2xl border p-6 shadow-sm" role="region" aria-label="Total Products">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-sm text-blue-600">Total Products</p>
+                        <h3 class="text-4xl font-extrabold mt-4 text-blue-900" th:text="${totalProducts}">0</h3>
+                    </div>
+                    <div class="text-blue-400 text-3xl" aria-hidden="true">📦</div>
+                </div>
+            </div>
+
+            <!-- Active Banners -->
+            <div class="bg-gradient-to-r from-green-50 to-green-100 rounded-2xl border p-6 shadow-sm" role="region" aria-label="Active Banners">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-sm text-green-600">Active Banners</p>
+                        <h3 class="text-4xl font-extrabold mt-4 text-green-900" th:text="${activeBanners}">0</h3>
+                    </div>
+                    <div class="text-green-400 text-3xl" aria-hidden="true">📢</div>
+                </div>
+            </div>
+
+            <!-- Pending Inquiries -->
+            <div class="bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-2xl border p-6 shadow-sm" role="region" aria-label="Pending Inquiries">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-sm text-yellow-600">Pending Inquiries</p>
+                        <h3 class="text-4xl font-extrabold mt-4 text-yellow-900" th:text="${pendingInquiries}">0</h3>
+                    </div>
+                    <div class="text-yellow-400 text-3xl" aria-hidden="true">💬</div>
+                </div>
+            </div>
+
+            <!-- Pending Complaints -->
+            <div class="bg-gradient-to-r from-red-50 to-red-100 rounded-2xl border p-6 shadow-sm" role="region" aria-label="Pending Complaints">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-sm text-red-600">Pending Complaints</p>
+                        <h3 class="text-4xl font-extrabold mt-4 text-red-900" th:text="${pendingComplaints}">0</h3>
+                    </div>
+                    <div class="text-red-400 text-3xl" aria-hidden="true">⚠️</div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- Products -->
+    <!-- PRODUCTS TAB (improved design) -->
+    <div id="products" class="tab-view hidden bg-gray-50 p-6 rounded-lg shadow">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h2 class="text-xl font-bold">👕 Products</h2>
+
+            </div>
+
+            <!-- New Product Button -->
+            <div class="flex items-center gap-3">
+                <input id="productSearch" type="search" placeholder="Search products..."
+                       class="hidden sm:block border rounded-lg px-3 py-2 text-sm w-64 focus:ring-2 focus:ring-blue-300 outline-none" />
+                <button id="openModalBtn"
+                        class="flex items-center gap-2 border rounded-lg px-4 py-2 text-sm hover:shadow bg-white">
+                    <span class="text-lg">＋</span> <span>New Product</span>
+                </button>
+            </div>
+        </div>
+
+        <section class="mt-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold">Recent Products</h3>
+                <div class="text-sm text-gray-500">Showing <span class="font-medium">10</span> of <span class="font-medium">567</span></div>
+            </div>
+
+            <div class="bg-white rounded-xl border p-4">
+                <!-- responsive table wrapper -->
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y">
+                        <thead class="bg-gray-50">
+                        <tr class="text-left text-sm text-gray-500">
+                            <th class="px-4 py-3">Product</th>
+                            <th class="px-4 py-3">Category</th>
+                            <th class="px-4 py-3">Stock</th>
+                            <th class="px-4 py-3">Price</th>
+                            <th class="px-4 py-3">Actions</th>
+                        </tr>
+                        </thead>
+
+                        <tbody class="bg-white divide-y text-sm text-gray-700">
+                        <!-- example row -->
+                        <tr>
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-gray-100 rounded-md flex items-center justify-center text-gray-500">🧵</div>
+                                    <div>
+                                        <div class="font-medium">Men's Formal Shirt</div>
+                                        <div class="text-xs text-gray-400">Code: PRD001</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3">Shirts</td>
+                            <td class="px-4 py-3">124</td>
+                            <td class="px-4 py-3">$24.99</td>
+
+                            <td class="px-4 py-3">
+                                <div class="flex gap-2">
+                                    <button class="px-3 py-1 border rounded text-sm">Edit</button>
+                                    <button class="px-3 py-1 border rounded text-sm text-red-600">Delete</button>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- add rows dynamically here (th:each or JS rendering) -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- pagination / footer -->
+                <div class="mt-4 flex items-center justify-between text-sm text-gray-600">
+                    <div>Showing 1–10 of 567</div>
+                    <div class="flex items-center gap-2">
+                        <button class="px-3 py-1 border rounded">Prev</button>
+                        <button class="px-3 py-1 border rounded">Next</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+
+
+
+    <!-- Banners -->
+    <!-- BANNERS TAB (existing) -->
+    <div id="banners" class="tab-view hidden bg-gray-50 p-6 rounded-lg shadow">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h2 class="text-xl font-bold">📢 Banners</h2>
+
+            </div>
+
+            <!-- New Banner Button -->
+            <button id="openBannerModalBtn"
+                    class="flex items-center gap-2 border rounded-lg px-4 py-2 text-sm hover:shadow bg-white">
+                <span class="text-lg">＋</span> <span>New Banner</span>
+            </button>
+        </div>
+        <h3 class="text-lg font-semibold mb-3">Recent Banners</h3>
+        <!-- Small preview area (optional) -->
+        <div class="bg-white rounded-xl border p-4">
+            <p class="text-sm text-gray-500">No active banners yet.</p>
+        </div>
+    </div>
+
+    
+    <!-- Support -->
+    <div id="support" class="tab-view hidden bg-white p-6 rounded-lg shadow">
+        <h2 class="text-xl font-bold mb-2">💬 Support</h2>
+        <p>Han<>dle customer inquiries, complaints, and feedback here.</p>
+    </div>
+
+</div>
+
+
+
+<!-- Modal (hidden by default) -->
+<div id="modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-lg w-full max-w-lg p-6 relative">
+        <button id="closeModalBtn" class="absolute top-3 right-3 text-gray-500 hover:text-gray-800 text-xl">✖</button>
+        <h3 class="text-lg font-bold mb-4">Add New Product</h3>
+
+        <!-- form (design only) -->
+        <form class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium mb-1">Product Name</label>
+                <input type="text" placeholder="Enter product name" class="w-full border p-2 rounded" />
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Product Code</label>
+                    <input type="text" placeholder="e.g. PRD001" class="w-full border p-2 rounded" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Category</label>
+                    <select class="w-full border p-2 rounded">
+                        <option>Shirt</option>
+                        <option>Trouser</option>
+                        <option>Dress</option>
+                        <option>Saree</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium mb-1">Description</label>
+                <textarea rows="3" placeholder="Enter product description" class="w-full border p-2 rounded"></textarea>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Price</label>
+                    <input type="number" step="0.01" placeholder="0.00" class="w-full border p-2 rounded" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Stock</label>
+                    <input type="number" placeholder="0" class="w-full border p-2 rounded" />
+                </div>
+            </div>
+
+            <div class="pt-2">
+                <button type="button" class="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">Save Product</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- BANNER MODAL -->
+<div id="bannerModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-lg w-full max-w-md p-6 relative">
+        <button id="closeBannerModalBtn" class="absolute top-3 right-3 text-gray-500 hover:text-gray-800 text-xl" aria-label="Close">✖</button>
+        <h3 class="text-lg font-bold mb-4">Create New Banner</h3>
+
+        <!-- Form (design only) -->
+        <form id="bannerForm" class="space-y-4" method="post" enctype="multipart/form-data" action="/banners">
+            <div>
+                <label for="bannerName" class="block text-sm font-medium mb-1">Banner Name</label>
+                <input id="bannerName" name="name" type="text" placeholder="Enter banner name"
+                       class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-300 outline-none" required />
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium mb-1">Banner Image</label>
+                <div class="flex gap-3 items-center">
+                    <label for="bannerImage" class="cursor-pointer inline-flex items-center gap-2 px-3 py-2 border rounded bg-white hover:shadow text-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7M7 7V5a2 2 0 012-2h6a2 2 0 012 2v2" /></svg>
+                        <span>Select image</span>
+                        <input id="bannerImage" name="image" type="file" accept="image/*" class="hidden" required>
+                    </label>
+
+                    <!-- Preview placeholder -->
+                    <div id="bannerPreview" class="w-28 h-16 bg-gray-100 rounded overflow-hidden flex items-center justify-center text-xs text-gray-400">
+                        No image
+                    </div>
+                </div>
+                <p class="text-xs text-gray-400 mt-2">Recommended size: 1200×400 px. Allowed: JPG, PNG, GIF.</p>
+            </div>
+
+
+
+            <div class="pt-2">
+                <button type="submit" class="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">Save Banner</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+
+
+
+
+
+
+<!-- BANNER MODAL JS -->
+<script>
+    // Elements
+    const openBannerModalBtn = document.getElementById('openBannerModalBtn');
+    const closeBannerModalBtn = document.getElementById('closeBannerModalBtn');
+    const bannerModal = document.getElementById('bannerModal');
+    const bannerImageInput = document.getElementById('bannerImage');
+    const bannerPreview = document.getElementById('bannerPreview');
+
+    // Open modal
+    openBannerModalBtn?.addEventListener('click', () => {
+        bannerModal.classList.remove('hidden');
+        bannerModal.classList.add('flex');
+        // reset form & preview
+        document.getElementById('bannerForm').reset();
+        bannerPreview.innerHTML = 'No image';
+        bannerPreview.style.backgroundImage = '';
+    });
+
+    // Close modal buttons / outside click
+    closeBannerModalBtn?.addEventListener('click', closeBannerModal);
+    bannerModal?.addEventListener('click', (e) => {
+        if (e.target === bannerModal) closeBannerModal();
+    });
+
+    function closeBannerModal() {
+        bannerModal.classList.add('hidden');
+        bannerModal.classList.remove('flex');
+    }
+
+    // Image preview
+    bannerImageInput?.addEventListener('change', function (e) {
+        const file = e.target.files && e.target.files[0];
+        if (!file) {
+            bannerPreview.innerHTML = 'No image';
+            bannerPreview.style.backgroundImage = '';
+            return;
+        }
+
+        // Validate file type (basic)
+        if (!file.type.startsWith('image/')) {
+            alert('Please select an image file.');
+            bannerImageInput.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function (ev) {
+            bannerPreview.innerHTML = '';
+            bannerPreview.style.backgroundSize = 'cover';
+            bannerPreview.style.backgroundPosition = 'center';
+            bannerPreview.style.backgroundImage = `url('${ev.target.result}')`;
+        };
+        reader.readAsDataURL(file);
+    });
+
+    // Optional: intercept form submit to do AJAX (example)
+    // document.getElementById('bannerForm').addEventListener('submit', function(e){
+    //   e.preventDefault();
+    //   // build FormData and send via fetch to /banners endpoint
+    // });
+</script>
+
+<!-- Modal JS (simple) -->
+<script>
+    const openModalBtn = document.getElementById('openModalBtn');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const modal = document.getElementById('modal');
+
+    openModalBtn?.addEventListener('click', () => {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    });
+
+    closeModalBtn?.addEventListener('click', () => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    });
+
+    modal?.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    });
+</script>
+<!-- Script -->
+<script>
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabViews = document.querySelectorAll('.tab-view');
+
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // Reset all buttons
+            tabBtns.forEach(b => b.classList.remove('bg-white', 'shadow', 'text-black'));
+            tabBtns.forEach(b => b.classList.add('text-gray-600'));
+
+            // Activate clicked button
+            btn.classList.add('bg-white', 'shadow', 'text-black');
+            btn.classList.remove('text-gray-600');
+
+            // Hide all views
+            tabViews.forEach(view => view.classList.add('hidden'));
+
+            // Show target view
+            const target = btn.getAttribute('data-tab');
+            document.getElementById(target).classList.remove('hidden');
+        });
+    });
+</script>
+
+</body>
+</html>
