@@ -6,12 +6,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class EmployeeService {
 
     @Autowired
     private EmployeeRepository employeeRepository;
+
 
     /**
      * Generate the next employee ID in format emp01, emp02, etc.
@@ -52,5 +54,40 @@ public class EmployeeService {
         String newId = generateNextEmployeeId();
         employee.setId(newId);
         return employee;
+    }
+
+    /**
+     * Get employee by ID
+     */
+    public Employee getEmployeeById(String employeeId) {
+        Optional<Employee> employee = employeeRepository.findById(employeeId);
+        return employee.orElse(null);
+    }
+
+    /**
+     * Get all employees
+     */
+    public List<Employee> getAllEmployees() {
+        return employeeRepository.findAll();
+    }
+
+    /**
+     * Get employees by department
+     */
+    public List<Employee> getEmployeesByDepartmentId(String departmentId) {
+        // This would need a custom repository method
+        // For now, filter from all employees
+        List<Employee> allEmployees = employeeRepository.findAll();
+        return allEmployees.stream()
+                .filter(emp -> emp.getDepartment() != null &&
+                        emp.getDepartment().getId().equals(departmentId))
+                .toList();
+    }
+
+    /**
+     * Check if employee exists
+     */
+    public boolean employeeExists(String employeeId) {
+        return employeeRepository.existsById(employeeId);
     }
 }

@@ -29,9 +29,16 @@ public class Department {
     @JsonIgnore // Prevent infinite recursion during JSON serialization
     private List<Employee> employees = new ArrayList<>();
 
-    // Transient field for employee count (not persisted in database)
+    @OneToMany(mappedBy = "department", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore // Prevent infinite recursion during JSON serialization
+    private List<ProductionTask> productionTasks = new ArrayList<>();
+
+    // Transient fields for counts (not persisted in database)
     @Transient
     private Integer employeeCount;
+
+    @Transient
+    private Integer taskCount;
 
     // Default constructor
     public Department() {}
@@ -63,6 +70,9 @@ public class Department {
     public List<Employee> getEmployees() { return employees; }
     public void setEmployees(List<Employee> employees) { this.employees = employees; }
 
+    public List<ProductionTask> getProductionTasks() { return productionTasks; }
+    public void setProductionTasks(List<ProductionTask> productionTasks) { this.productionTasks = productionTasks; }
+
     // Get employee count - calculate dynamically
     public Integer getEmployeeCount() {
         if (employeeCount != null) {
@@ -76,6 +86,19 @@ public class Department {
         this.employeeCount = employeeCount;
     }
 
+    // Get task count - calculate dynamically
+    public Integer getTaskCount() {
+        if (taskCount != null) {
+            return taskCount;
+        }
+        return productionTasks != null ? productionTasks.size() : 0;
+    }
+
+    // Set task count (for JSON serialization)
+    public void setTaskCount(Integer taskCount) {
+        this.taskCount = taskCount;
+    }
+
     @Override
     public String toString() {
         return "Department{" +
@@ -85,6 +108,7 @@ public class Department {
                 ", salaryBudget=" + salaryBudget +
                 ", managerId='" + managerId + '\'' +
                 ", employeeCount=" + getEmployeeCount() +
+                ", taskCount=" + getTaskCount() +
                 '}';
     }
 }

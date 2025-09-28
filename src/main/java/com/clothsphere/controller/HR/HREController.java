@@ -37,16 +37,6 @@ public class HREController {
     @Autowired
     private SystemUserService systemUserService;
 
-    // Landing page
-    @GetMapping("/")
-    public String index() {
-        return "index";
-    }
-
-    @GetMapping("/getstart")
-    public String getStart() {
-        return "getstart";
-    }
 
     // ========================= EMPLOYEE MANAGEMENT API =========================
 
@@ -350,7 +340,7 @@ public class HREController {
         SystemUser currentUser = (SystemUser) session.getAttribute("currentUser");
         if (currentUser != null) {
             model.addAttribute("user", currentUser);
-            return "dashboard";
+            return "hrDashboard";
         }
         return "redirect:/systemUserLogin";
     }
@@ -396,27 +386,6 @@ public class HREController {
         }
     }
 
-    // Other role-based dashboards
-    @GetMapping("/factoryDashboard")
-    public String showFactoryDashboard(HttpSession session, Model model) {
-        return loadDashboard("factoryDashboard", session, model);
-    }
-
-    @GetMapping("/inventoryDashboard")
-    public String showInventoryDashboard(HttpSession session, Model model) {
-        return loadDashboard("inventoryDashboard", session, model);
-    }
-
-    @GetMapping("/customerDashboard")
-    public String showCustomerDashboard(HttpSession session, Model model) {
-        return loadDashboard("customerDashboard", session, model);
-    }
-
-    @GetMapping("/salesDashboard")
-    public String showSalesDashboard(HttpSession session, Model model) {
-        return loadDashboard("salesDashboard", session, model);
-    }
-
     @GetMapping("/employeeDashboard")
     public String showEmployeeDashboard(HttpSession session, Model model) {
         System.out.println("Accessing Employee Dashboard page");
@@ -447,15 +416,7 @@ public class HREController {
     }
 
     // Helper method for session check
-    private String loadDashboard(String viewName, HttpSession session, Model model) {
-        System.out.println("Accessing " + viewName + " page");
-        SystemUser currentUser = (SystemUser) session.getAttribute("currentUser");
-        if (currentUser != null) {
-            model.addAttribute("user", currentUser);
-            return viewName;
-        }
-        return "redirect:/systemUserLogin";
-    }
+
     // Manager management page
     @GetMapping("/manageManagers")
     public String showManageManagersPage(HttpSession session, Model model) {
@@ -466,4 +427,35 @@ public class HREController {
         }
         return "redirect:/systemUserLogin";
     }
+
+    @GetMapping("/workload")
+    public String workloadPage(HttpSession session, Model model) {
+        SystemUser currentUser = (SystemUser) session.getAttribute("currentUser"); // Fix: should be "currentUser" not "workload"
+
+        if (currentUser != null && "hr-manager".equals(currentUser.getRole())) {
+            model.addAttribute("user", currentUser);
+            return "WorkloadAssignment"; // This should match the template name without .html
+        }
+        return "redirect:/systemUserLogin";
+    }
+    // Add this method to your existing HREController.java class
+
+    /**
+     * Load workload assignment data when switching to workload section
+     */
+    private void loadWorkloadData(Model model) {
+        try {
+            // This method will be called when the workload section is accessed
+            // The actual data loading will be handled by the JavaScript on the frontend
+            // via AJAX calls to the WorkloadController endpoints
+
+            // We can add any initial server-side data preparation here if needed
+            System.out.println("Workload section accessed - data will be loaded via AJAX");
+
+        } catch (Exception e) {
+            System.out.println("Error preparing workload data: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
 }

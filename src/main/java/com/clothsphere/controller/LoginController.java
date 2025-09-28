@@ -14,6 +14,17 @@ public class LoginController {
     @Autowired
     private SystemUserService systemUserService;
 
+    // Landing page
+    @GetMapping("/")
+    public String index() {
+        return "index";
+    }
+
+    @GetMapping("/getstart")
+    public String getStart() {
+        return "getstart";
+    }
+
     // ========================= LOGIN =========================
 
     // Login page
@@ -111,5 +122,35 @@ public class LoginController {
         }
 
         return "redirect:/hrDashboard";
+    }
+    private String loadDashboard(String viewName, HttpSession session, Model model) {
+        System.out.println("Accessing " + viewName + " page");
+        SystemUser currentUser = (SystemUser) session.getAttribute("currentUser");
+        if (currentUser != null) {
+            model.addAttribute("user", currentUser);
+            return viewName;
+        }
+        return "redirect:/systemUserLogin";
+    }
+
+    // Other role-based dashboards
+    @GetMapping("/factoryDashboard")
+    public String showFactoryDashboard(HttpSession session, Model model) {
+        return loadDashboard("factoryDashboard", session, model);
+    }
+
+    @GetMapping("/inventoryDashboard")
+    public String showInventoryDashboard(HttpSession session, Model model) {
+        return loadDashboard("inventoryDashboard", session, model);
+    }
+
+    @GetMapping("/customerDashboard")
+    public String showCustomerDashboard(HttpSession session, Model model) {
+        return loadDashboard("customerDashboard", session, model);
+    }
+
+    @GetMapping("/salesDashboard")
+    public String showSalesDashboard(HttpSession session, Model model) {
+        return loadDashboard("salesDashboard", session, model);
     }
 }

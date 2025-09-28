@@ -1,12 +1,18 @@
 package com.clothsphere.service.HR;
 
 import com.clothsphere.model.HR.Department;
+import com.clothsphere.model.HR.TaskAssignment;
+import com.clothsphere.model.SystemUser;
 import com.clothsphere.repository.HR.DepartmentRepository;
 import com.clothsphere.repository.HR.EmployeeRepository;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,6 +24,7 @@ public class DepartmentService {
 
     @Autowired
     private EmployeeRepository employeeRepository;
+
 
     /**
      * Generate the next department ID in format dept01, dept02, etc.
@@ -181,4 +188,5 @@ public class DepartmentService {
             dept.setEmployeeCount(count != null ? count.intValue() : 0);
         }
     }
+
 }

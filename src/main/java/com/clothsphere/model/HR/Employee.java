@@ -1,8 +1,11 @@
 package com.clothsphere.model.HR;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "employee")
@@ -46,6 +49,10 @@ public class Employee {
     @JoinColumn(name = "department_id", referencedColumnName = "id")
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "employees"}) // Prevent serialization issues
     private Department department;
+
+    @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
+    private List<TaskAssignment> taskAssignments = new ArrayList<>();
 
     // Default constructor
     public Employee() {}
@@ -104,6 +111,9 @@ public class Employee {
 
     public Department getDepartment() { return department; }
     public void setDepartment(Department department) { this.department = department; }
+
+    public List<TaskAssignment> getTaskAssignments() { return taskAssignments; }
+    public void setTaskAssignments(List<TaskAssignment> taskAssignments) { this.taskAssignments = taskAssignments; }
 
     @Override
     public String toString() {
