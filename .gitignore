@@ -31,3 +31,5 @@ build/
 
 ### VS Code ###
 .vscode/
+src/main/resources/static/res/videos/background2.mp4
+src/main/resources/static/res/videos/background.mp4
