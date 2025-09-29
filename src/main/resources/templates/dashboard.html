@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Dashboard</title>
+</head>
+<body>
+<h2>Welcome to Your Dashboard</h2>
+<p>Welcome, <span th:text="${buyerName}">Buyer</span>!</p>
+
+<!-- Later you can add links to products, orders, etc. -->
+<ul>
+    <li><a th:href="@{/catalog}">View Products</a></li>
+    <li><a th:href="@{/orders}">My Orders</a></li>
+    <li><a th:href="@{/messages}">Messages</a></li>
+    <li><a th:href="@{/profile}">Edit Profile</a></li>
+</ul>
+</body>
+</html>
+
