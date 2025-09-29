@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClothSphere - System User Login</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            display: flex;
+            max-width: 1000px;
+            width: 100%;
+            background: #ffffff;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e0e0e0;
+        }
+
+        .left-panel {
+            flex: 1;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f8f8 100%);
+            color: #333;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            border-right: 1px solid #e0e0e0;
+        }
+
+        .left-panel img {
+            width: 100%;
+            border-radius: 10px;
+            margin-top: 30px;
+        }
+
+        .right-panel {
+            flex: 1;
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .form-title {
+            font-size: 2rem;
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .input-group input,
+        .input-group select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus,
+        .input-group select:focus {
+            border-color: #999;
+            outline: none;
+        }
+
+        .input-with-icon {
+            position: relative;
+        }
+
+        .input-with-icon i {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #777;
+        }
+
+        .login-button {
+            background: #333;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-top: 10px;
+            margin-bottom: 15px;
+        }
+
+        .login-button:hover {
+            background: #555;
+        }
+
+        .home-button {
+            background: #f0f0f0;
+            color: #333;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.3s;
+            text-align: center;
+            text-decoration: none;
+        }
+
+        .home-button:hover {
+            background: #e0e0e0;
+        }
+
+        .error-message {
+            color: #d9534f;
+            text-align: center;
+            margin-top: 15px;
+            display: none;
+            padding: 10px;
+            background-color: #f9f2f2;
+            border: 1px solid #f5c6cb;
+            border-radius: 5px;
+        }
+
+        .info-message {
+            color: #0c5460;
+            text-align: center;
+            margin-top: 15px;
+            display: none;
+            padding: 10px;
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .password-optional {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .left-panel {
+                display: none;
+            }
+
+            .right-panel {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="left-panel">
+        <div class="logo">CLOTHSPHERE</div>
+        <div class="welcome-text">
+            <h2>System Login</h2>
+            <p>Access the administrative dashboard to manage ClothSphere operations with your authorized credentials.</p>
+            <p>Select your role from the dropdown menu to access the appropriate system functions.</p>
+        </div>
+
+        <!-- Just a plain decorative image -->
+        <img src="/res/images/LoginPage.jpg" alt="Decorative Image">
+    </div>
+
+    <div class="right-panel">
+        <form class="login-form" action="/systemUserLogin" method="post">
+            <h2 class="form-title">Log In</h2>
+
+            <div class="input-group">
+                <label for="username">Your Name</label>
+                <div class="input-with-icon">
+                    <input type="text" id="username" name="username" placeholder="Enter your username" required>
+                    <i class="fas fa-user"></i>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label for="role">Your Role</label>
+                <select id="role" name="role" required onchange="handleRoleChange()">
+                    <option value="" disabled selected>Select your role</option>
+                    <option value="factory-manager">Factory Manager</option>
+                    <option value="hr-manager">HR Manager</option>
+                    <option value="inventory-manager">Inventory Manager</option>
+                    <option value="customer-officer">Product and Customer Officer</option>
+                    <option value="sales-executive">Sales Executive</option>
+                    <option value="employee">Employee</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label for="password">Password</label>
+                <div class="input-with-icon">
+                    <input type="password" id="password" name="password" placeholder="Enter your password">
+                    <i class="fas fa-lock"></i>
+                </div>
+            </div>
+
+            <!-- Info message for first-time employee login -->
+            <div id="employee-info" class="info-message password-optional">
+                <i class="fas fa-info-circle"></i>
+                <strong>First-time Employee Login:</strong> If this is your first login as an employee, you can leave the password field empty. You'll be prompted to set a new password after logging in.
+            </div>
+
+            <button type="submit" class="login-button">Log In</button>
+
+            <!-- Error message display -->
+            <div id="error-message" class="error-message"></div>
+
+            <!-- Home Button -->
+            <a href="/getstart" class="home-button">
+                <i class="fas fa-home"></i> Back to Home
+            </a>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Handle role change to show/hide employee info
+    function handleRoleChange() {
+        const role = document.getElementById('role').value;
+        const employeeInfo = document.getElementById('employee-info');
+        const passwordField = document.getElementById('password');
+
+        if (role === 'employee') {
+            employeeInfo.style.display = 'block';
+            passwordField.required = false;
+            passwordField.placeholder = 'Enter password (leave empty for first login)';
+        } else {
+            employeeInfo.style.display = 'none';
+            passwordField.required = true;
+            passwordField.placeholder = 'Enter your password';
+        }
+    }
+
+    // Show error message when there's an error parameter
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const error = urlParams.get('error');
+
+        if (error && error === 'true') {
+            const errorMessage = document.getElementById('error-message');
+            if (errorMessage) {
+                errorMessage.textContent = 'Invalid username, password, or role. Please try again.';
+                errorMessage.style.display = 'block';
+            }
+        }
+    });
+
+    // Form submission handling
+    document.querySelector('.login-form').addEventListener('submit', function(e) {
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const role = document.getElementById('role').value;
+        const errorMessage = document.getElementById('error-message');
+
+        // Clear any existing error messages
+        errorMessage.style.display = 'none';
+        errorMessage.textContent = '';
+
+        // Basic validation
+        if (!username.trim() || !role) {
+            e.preventDefault();
+            errorMessage.textContent = 'Please enter username and select a role';
+            errorMessage.style.display = 'block';
+            return false;
+        }
+
+        // For non-employee roles, password is required
+        if (role !== 'employee' && (!password || password.trim() === '')) {
+            e.preventDefault();
+            errorMessage.textContent = 'Password is required for this role';
+            errorMessage.style.display = 'block';
+            return false;
+        }
+
+        // For employee role, allow empty password (first-time login)
+        if (role === 'employee' && (!password || password.trim() === '')) {
+            console.log('First-time employee login attempt');
+        }
+
+        return true;
+    });
+</script>
+</body>
+</html>

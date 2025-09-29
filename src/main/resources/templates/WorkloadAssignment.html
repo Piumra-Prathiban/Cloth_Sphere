@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workload Assignment - ClothSphere</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/workload-assignment.css">
+</head>
+
+<body>
+<div class="sidebar">   <h2>HR Dashboard</h2></div>
+<div class="container">
+    <!-- Header -->
+    <div class="header">
+        <h1><i class="fas fa-tasks"></i> Workload Assignment</h1>
+        <a href="/dashboard" class="back-btn"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+    </div>
+
+    <!-- Alert Messages -->
+    <div id="alertContainer"></div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <div class="tab active" onclick="showTab('taskOverview')"><i class="fas fa-list"></i> Task Overview</div>
+        <div class="tab" onclick="showTab('createTask')"><i class="fas fa-plus"></i> Create New Task</div>
+        <div class="tab" onclick="showTab('assignWork')"><i class="fas fa-user-check"></i> Assign Work</div>
+        <div class="tab" onclick="showTab('assignmentOverview')"><i class="fas fa-tasks"></i> Assignment Overview</div>
+    </div>
+
+    <!-- Task Overview Tab -->
+    <div id="taskOverview" class="tab-content active">
+        <div class="card">
+            <h3><i class="fas fa-chart-bar"></i> Task Statistics</h3>
+
+            <!-- Statistics Cards -->
+            <div class="stats-grid">
+                <div class="stat-card" style="background: #e3f2fd;">
+                    <div class="value" id="totalTasksCount">0</div>
+                    <div class="label">Total Tasks</div>
+                </div>
+                <div class="stat-card" style="background: #fff3e0;">
+                    <div class="value" id="pendingTasksCount">0</div>
+                    <div class="label">Pending Tasks</div>
+                </div>
+                <div class="stat-card" style="background: #e8f5e8;">
+                    <div class="value" id="completedTasksCount">0</div>
+                    <div class="label">Completed Tasks</div>
+                </div>
+                <div class="stat-card" style="background: #ffebee;">
+                    <div class="value" id="overdueTasksCount">0</div>
+                    <div class="label">Overdue Tasks</div>
+                </div>
+            </div>
+
+            <!-- Filter and Search -->
+            <div class="filters">
+                <div class="filter-group">
+                    <label for="statusFilter">Status:</label>
+                    <select id="statusFilter" onchange="filterTasks()">
+                        <option value="">All Status</option>
+                        <option value="PENDING">Pending</option>
+                        <option value="IN_PROGRESS">In Progress</option>
+                        <option value="COMPLETED">Completed</option>
+                        <option value="CANCELLED">Cancelled</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="priorityFilter">Priority:</label>
+                    <select id="priorityFilter" onchange="filterTasks()">
+                        <option value="">All Priorities</option>
+                        <option value="P0">P0 - Critical</option>
+                        <option value="P1">P1 - High</option>
+                        <option value="P2">P2 - Medium</option>
+                        <option value="P3">P3 - Low</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="departmentFilter">Department:</label>
+                    <select id="departmentFilter" onchange="filterTasks()">
+                        <option value="">All Departments</option>
+                    </select>
+                </div>
+                <div class="filter-group" style="flex:1;">
+                    <label for="searchTasks">Search:</label>
+                    <input type="text" id="searchTasks" placeholder="Search tasks..." onkeyup="searchTasks()">
+                </div>
+            </div>
+
+            <!-- Tasks Table -->
+            <div class="table-container">
+                <table id="tasksTable">
+                    <thead>
+                    <tr>
+                        <th>Task ID</th>
+                        <th>Task Name</th>
+                        <th>Department</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                        <th>Deadline</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <!-- Task data will be loaded dynamically -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="loadingTasks" class="spinner" style="display:none;"></div>
+        </div>
+    </div>
+
+    <!-- Create Task Tab -->
+    <div id="createTask" class="tab-content">
+        <div class="card">
+            <h3><i class="fas fa-plus-circle"></i> Create New Task</h3>
+            <p>Create a new production task and assign it to a department.</p>
+
+            <!-- Task Creation Form -->
+            <form id="taskForm">
+                <input type="hidden" id="taskId" name="taskId">
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+                    <div class="form-group">
+                        <label for="taskName">Task Name:</label>
+                        <input type="text" id="taskName" name="taskName" required maxlength="200" placeholder="Enter descriptive task name">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="taskPriority">Priority:</label>
+                        <select id="taskPriority" name="priority" required>
+                            <option value="">Select Priority</option>
+                            <option value="P0">P0 - Critical issues</option>
+                            <option value="P1">P1 - High-priority tasks</option>
+                            <option value="P2">P2 - Medium-priority</option>
+                            <option value="P3">P3 - Low-priority</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="taskDescription">Description:</label>
+                    <textarea id="taskDescription" name="description" rows="3" maxlength="1000" placeholder="Optional: Additional details about the task" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:5px;"></textarea>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+                    <div class="form-group">
+                        <label for="taskDepartment">Assign to Department:</label>
+                        <select id="taskDepartment" name="departmentId" required>
+                            <option value="">Select Department</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="taskDeadline">Deadline:</label>
+                        <input type="date" id="taskDeadline" name="deadline" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="taskStatus">Status:</label>
+                    <select id="taskStatus" name="status">
+                        <option value="PENDING">Pending</option>
+                        <option value="IN_PROGRESS">In Progress</option>
+                        <option value="COMPLETED">Completed</option>
+                        <option value="CANCELLED">Cancelled</option>
+                    </select>
+                </div>
+
+                <div style="text-align:right; margin-top:20px;">
+                    <button type="reset" class="btn btn-secondary"><i class="fas fa-times"></i> Reset</button>
+                    <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Save Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Assign Work Tab -->
+    <div id="assignWork" class="tab-content">
+        <div class="card">
+            <h3><i class="fas fa-user-check"></i> Assign Work to Employees</h3>
+
+            <!-- Assignment Form -->
+            <form id="assignmentForm">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+                    <div class="form-group">
+                        <label for="assignTask">Select Task:</label>
+                        <select id="assignTask" name="taskId" required onchange="loadTaskDetails()">
+                            <option value="">Select Task</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="assignDepartment">Filter by Department:</label>
+                        <select id="assignDepartment" onchange="filterEmployeesByDepartment()">
+                            <option value="">All Departments</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Select Employees:</label>
+                    <div id="employeeSelection" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 5px;">
+                        <!-- Employee checkboxes will be loaded here -->
+                    </div>
+                    <small>Select one or more employees to assign this task</small>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+                    <div class="form-group">
+                        <label for="estimatedHours">Estimated Hours:</label>
+                        <input type="number" id="estimatedHours" name="estimatedHours" min="1" max="1000" placeholder="Enter estimated hours">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="assignmentNotes">Notes:</label>
+                        <input type="text" id="assignmentNotes" name="notes" placeholder="Optional assignment notes">
+                    </div>
+                </div>
+
+                <!-- Task Details Preview -->
+                <div id="taskDetails" class="card" style="display:none;">
+                    <h4>Task Details</h4>
+                    <div id="taskDetailsContent"></div>
+                </div>
+
+                <div style="text-align:right; margin-top:20px;">
+                    <button type="reset" class="btn btn-secondary"><i class="fas fa-times"></i> Reset</button>
+                    <button type="submit" class="btn btn-success"><i class="fas fa-user-check"></i> Assign Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Assignment Overview Tab -->
+    <div id="assignmentOverview" class="tab-content">
+        <div class="card">
+            <h3><i class="fas fa-tasks"></i> Assignment Overview</h3>
+
+            <!-- Statistics Cards -->
+            <div class="stats-grid">
+                <div class="stat-card" style="background: #e3f2fd;">
+                    <div class="value" id="totalAssignmentsCount">0</div>
+                    <div class="label">Total Assignments</div>
+                </div>
+                <div class="stat-card" style="background: #fff3e0;">
+                    <div class="value" id="assignedTasksCount">0</div>
+                    <div class="label">Assigned Tasks</div>
+                </div>
+                <div class="stat-card" style="background: #e8f5e8;">
+                    <div class="value" id="completedAssignmentsCount">0</div>
+                    <div class="label">Completed</div>
+                </div>
+                <div class="stat-card" style="background: #ffebee;">
+                    <div class="value" id="inProgressAssignmentsCount">0</div>
+                    <div class="label">In Progress</div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="filters">
+                <div class="filter-group">
+                    <label for="assignmentStatusFilter">Status:</label>
+                    <select id="assignmentStatusFilter" onchange="filterAssignments()">
+                        <option value="">All Status</option>
+                        <option value="ASSIGNED">Assigned</option>
+                        <option value="IN_PROGRESS">In Progress</option>
+                        <option value="COMPLETED">Completed</option>
+                        <option value="CANCELLED">Cancelled</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="assignmentEmployeeFilter">Employee:</label>
+                    <select id="assignmentEmployeeFilter" onchange="filterAssignments()">
+                        <option value="">All Employees</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="assignmentTaskFilter">Task:</label>
+                    <select id="assignmentTaskFilter" onchange="filterAssignments()">
+                        <option value="">All Tasks</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <button class="btn btn-primary" onclick="loadAssignments()"><i class="fas fa-sync-alt"></i> Refresh</button>
+                </div>
+            </div>
+
+            <!-- Assignments Table -->
+            <div class="table-container">
+                <table id="assignmentsTable">
+                    <thead>
+                    <tr>
+                        <th>Assignment ID</th>
+                        <th>Employee</th>
+                        <th>Task</th>
+                        <th>Department</th>
+                        <th>Assigned Date</th>
+                        <th>Deadline</th>
+                        <th>Status</th>
+                        <th>Estimated Hours</th>
+                        <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody id="assignmentsTableBody">
+                    <!-- Assignments will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Task Modal -->
+<div id="editTaskModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-edit"></i> Edit Task</h3>
+            <span class="close" onclick="closeEditTaskModal()">&times;</span>
+        </div>
+        <form id="editTaskForm">
+            <input type="hidden" id="editTaskId" name="taskId">
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+                <div class="form-group">
+                    <label for="editTaskName">Task Name:</label>
+                    <input type="text" id="editTaskName" name="taskName" required maxlength="200">
+                </div>
+
+                <div class="form-group">
+                    <label for="editTaskPriority">Priority:</label>
+                    <select id="editTaskPriority" name="priority" required>
+                        <option value="">Select Priority</option>
+                        <option value="P0">P0 - Critical issues</option>
+                        <option value="P1">P1 - High-priority tasks</option>
+                        <option value="P2">P2 - Medium-priority</option>
+                        <option value="P3">P3 - Low-priority</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="editTaskDescription">Description:</label>
+                <textarea id="editTaskDescription" name="description" rows="3" maxlength="1000" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:5px;"></textarea>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+                <div class="form-group">
+                    <label for="editTaskDepartment">Assign to Department:</label>
+                    <select id="editTaskDepartment" name="departmentId" required>
+                        <option value="">Select Department</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="editTaskDeadline">Deadline:</label>
+                    <input type="date" id="editTaskDeadline" name="deadline" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="editTaskStatus">Status:</label>
+                <select id="editTaskStatus" name="status">
+                    <option value="PENDING">Pending</option>
+                    <option value="IN_PROGRESS">In Progress</option>
+                    <option value="COMPLETED">Completed</option>
+                    <option value="CANCELLED">Cancelled</option>
+                </select>
+            </div>
+
+            <div style="text-align:right; margin-top:20px;">
+                <button type="button" class="btn btn-secondary" onclick="closeEditTaskModal()"><i class="fas fa-times"></i> Cancel</button>
+                <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Update Task</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Assignment Details Modal -->
+<div id="assignmentDetailsModal" class="assignment-details-modal">
+    <div class="assignment-details-content">
+        <div class="assignment-details-header">
+            <h3><i class="fas fa-info-circle"></i> Assignment Details</h3>
+            <span class="assignment-details-close" onclick="closeAssignmentDetailsModal()">&times;</span>
+        </div>
+        <div id="assignmentDetailsContent">
+            <!-- Assignment details will be loaded here -->
+        </div>
+        <div class="assignment-actions">
+            <button class="btn btn-secondary" onclick="closeAssignmentDetailsModal()"><i class="fas fa-times"></i> Close</button>
+            <button class="btn btn-warning" id="editAssignmentBtn" onclick="openEditAssignmentModal()"><i class="fas fa-edit"></i> Edit Assignment</button>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Assignment Modal -->
+<div id="editAssignmentModal" class="edit-assignment-modal">
+    <div class="edit-assignment-content">
+        <div class="edit-assignment-header">
+            <h3><i class="fas fa-edit"></i> Edit Assignment</h3>
+            <span class="edit-assignment-close" onclick="closeEditAssignmentModal()">&times;</span>
+        </div>
+        <form id="editAssignmentForm">
+            <input type="hidden" id="editAssignmentId" name="assignmentId">
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="editAssignmentStatus">Status:</label>
+                    <select id="editAssignmentStatus" name="status" required>
+                        <option value="ASSIGNED">Assigned</option>
+                        <option value="IN_PROGRESS">In Progress</option>
+                        <option value="COMPLETED">Completed</option>
+                        <option value="CANCELLED">Cancelled</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="editAssignmentEstimatedHours">Estimated Hours:</label>
+                    <input type="number" id="editAssignmentEstimatedHours" name="estimatedHours" min="1" max="1000" placeholder="Enter estimated hours">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="editAssignmentActualHours">Actual Hours:</label>
+                    <input type="number" id="editAssignmentActualHours" name="actualHours" min="0" max="1000" placeholder="Enter actual hours">
+                </div>
+
+                <div class="form-group">
+                    <label for="editAssignmentCompletionDate">Completion Date:</label>
+                    <input type="date" id="editAssignmentCompletionDate" name="completionDate">
+                </div>
+            </div>
+
+            <div class="form-group full-width">
+                <label for="editAssignmentNotes">Notes:</label>
+                <textarea id="editAssignmentNotes" name="notes" rows="3" placeholder="Optional assignment notes" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:5px;"></textarea>
+            </div>
+
+            <div class="assignment-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeEditAssignmentModal()"><i class="fas fa-times"></i> Cancel</button>
+                <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Update Assignment</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="/js/workload-assignment.js"></script>
+</body>
+</html>

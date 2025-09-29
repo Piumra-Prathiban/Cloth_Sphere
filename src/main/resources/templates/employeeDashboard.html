@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClothSphere - Employee Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/employeeDashboard.css">
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <h2>Employee Dashboard</h2>
+  <ul>
+    <li><a href="#" onclick="showSection('profile')" class="nav-link active">
+      <i class="fas fa-user"></i> Profile Info</a></li>
+    <li><a href="#" onclick="showSection('attendance')" class="nav-link">
+      <i class="fas fa-calendar-check"></i> Mark Attendance</a></li>
+    <li><a href="#" onclick="showSection('leave')" class="nav-link">
+      <i class="fas fa-file-alt"></i> Request Leave</a></li>
+    <li><a href="#" onclick="showSection('tasks')" class="nav-link">
+      <i class="fas fa-tasks"></i> View Tasks</a></li>
+    <li><a href="#" onclick="showSection('paysheet')" class="nav-link">
+      <i class="fas fa-file-invoice-dollar"></i> View Paysheet</a></li>
+  </ul>
+</div>
+
+<!-- Main content -->
+<div class="main">
+  <div class="dashboard-header">
+    <h1>Welcome, <span id="username" th:text="${employeeData != null ? employeeData.fullName : 'Employee'}">Employee</span></h1>
+    <button class="logout-btn" onclick="logout()">
+      <i class="fas fa-sign-out-alt"></i> Logout
+    </button>
+  </div>
+
+  <!-- First-time login modal -->
+  <div id="firstLoginModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Welcome to ClothSphere!</h3>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-warning">
+          <i class="fas fa-exclamation-triangle"></i>
+          <strong>First Time Login Detected</strong>
+        </div>
+        <p>This is your first time logging into the system. For security reasons, you must change your default password before you can access all features.</p>
+        <p>Please go to the <strong>Profile Info</strong> section and update your password immediately.</p>
+        <p><strong>Default Password:</strong> <code>changeme123</code></p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="closeFirstLoginModal()">
+          <i class="fas fa-user-cog"></i> Go to Profile Section
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Password changed success message -->
+  <div id="passwordChangedAlert" class="alert alert-success" style="display: none;">
+    <i class="fas fa-check-circle"></i>
+    <strong>Success!</strong> Your password has been updated successfully. You can now use your new password for future logins.
+  </div>
+
+  <!-- Profile Section -->
+  <div id="profile" class="content-section active">
+    <div class="card">
+      <h3>Employee Profile</h3>
+      <div class="profile-info">
+        <div class="info-group">
+          <label>Username</label>
+          <div class="value" id="username-value" th:text="${employeeData != null ? employeeData.username : 'N/A'}">N/A</div>
+        </div>
+        <div class="info-group">
+          <label>Role</label>
+          <div class="value" id="role-value">Employee</div>
+        </div>
+        <div class="info-group">
+          <label>Email</label>
+          <div class="value" id="email-value" th:text="${employeeData != null ? employeeData.email : 'N/A'}">N/A</div>
+        </div>
+        <div class="info-group">
+          <label>Phone Number</label>
+          <div class="value" id="phone-value" th:text="${employeeData != null ? employeeData.phoneNumber : 'N/A'}">N/A</div>
+        </div>
+        <div class="info-group">
+          <label>Employee ID</label>
+          <div class="value" id="employee-id" th:text="${employeeData != null ? employeeData.employeeId : 'N/A'}">N/A</div>
+        </div>
+        <div class="info-group">
+          <label>Department Name</label>
+          <div class="value" id="department-name" th:text="${employeeData != null ? employeeData.departmentName : 'Not Assigned'}">Not Assigned</div>
+        </div>
+        <div class="info-group">
+          <label>Department Description</label>
+          <div class="value" id="department-description" th:text="${employeeData != null ? employeeData.departmentDescription : 'No description available'}">No description available</div>
+        </div>
+
+        <!-- Password Section -->
+        <div class="password-form">
+          <h4>Change Password</h4>
+
+          <!-- First-time login message -->
+          <div id="first-login-alert" class="alert alert-warning" th:style="${firstLogin ? 'display: block;' : 'display: none;'}">
+            <i class="fas fa-exclamation-triangle"></i>
+            <strong>First Time Login:</strong> You must change your default password to continue using the system.
+          </div>
+
+          <!-- Normal password change message -->
+          <div id="normal-password-alert" class="alert alert-info" th:style="${!firstLogin ? 'display: block;' : 'display: none;'}">
+            <i class="fas fa-info-circle"></i>
+            You can change your password here at any time.
+          </div>
+
+          <!-- Password updated message -->
+          <div id="password-update-success" class="alert alert-success" style="display: none;">
+            <i class="fas fa-check-circle"></i>
+            Password updated successfully!
+          </div>
+
+          <div class="form-group">
+            <label for="current-password">Current Password</label>
+            <input type="password" id="current-password" th:placeholder="${firstLogin ? 'Enter default password (changeme123)' : 'Enter current password'}">
+            <small id="current-password-help" class="form-text" th:style="${firstLogin ? 'display: block;' : 'display: none;'}">
+              For first-time login, use the default password: <strong>changeme123</strong>
+            </small>
+          </div>
+          <div class="form-group">
+            <label for="new-password">New Password</label>
+            <input type="password" id="new-password" placeholder="Enter new password">
+            <div class="password-requirements">
+              Password must be at least 6 characters long
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="confirm-password">Confirm Password</label>
+            <input type="password" id="confirm-password" placeholder="Confirm new password">
+          </div>
+          <div class="button-group">
+            <button class="btn btn-success" onclick="updatePassword()">
+              <i class="fas fa-save"></i> Update Password
+            </button>
+            <button class="btn btn-secondary" onclick="cancelPasswordChange()">
+              <i class="fas fa-times"></i> Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dashboard Cards -->
+    <div class="cards">
+      <div class="card">
+        <h3>Task Progress</h3>
+        <p>Completed Tasks</p>
+        <div class="progress-bar"><div class="progress finish" style="width: 65%;">65%</div></div>
+        <p style="margin-top:15px;">Pending Tasks</p>
+        <div class="progress-bar"><div class="progress pending" style="width: 35%;">35%</div></div>
+      </div>
+      <div class="card">
+        <h3>Attendance</h3>
+        <p>Present Days</p>
+        <div class="progress-bar"><div class="progress finish" style="width: 90%;">90%</div></div>
+        <p style="margin-top:15px;">Absent Days</p>
+        <div class="progress-bar"><div class="progress pending" style="width: 10%;">10%</div></div>
+      </div>
+      <div class="card notifications">
+        <h3>Notification Center</h3>
+        <ul>
+          <li class="new"><i class="fas fa-tasks text-primary"></i> New task assigned: <b>Update Documentation</b> <small>1 hr ago</small></li>
+          <li><i class="fas fa-check-circle text-success"></i> Task completed: <b>Bug Fix</b> <small>3 hrs ago</small></li>
+          <li><i class="fas fa-calendar-alt text-warning"></i> Upcoming deadline: <b>Project Review</b> <small>Tomorrow</small></li>
+          <li><i class="fas fa-users text-info"></i> Team meeting scheduled <small>2 days ago</small></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Attendance Section -->
+  <div id="attendance" class="content-section">
+    <div class="card">
+      <h3>Mark Attendance</h3>
+      <div id="attendance-restricted" th:style="${firstLogin ? 'display: block;' : 'display: none;'}" style="text-align: center; padding: 40px;">
+        <i class="fas fa-lock" style="font-size: 48px; color: #dc3545; margin-bottom: 20px;"></i>
+        <h4>Access Restricted</h4>
+        <p>Please change your default password in the Profile section to access all features.</p>
+        <button class="btn btn-primary" onclick="showSection('profile')">
+          <i class="fas fa-user-cog"></i> Go to Profile
+        </button>
+      </div>
+      <div id="attendance-content" th:style="${!firstLogin ? 'display: block;' : 'display: none;'}">
+        <p>Attendance marking functionality would go here.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leave Section -->
+  <div id="leave" class="content-section">
+    <div class="card">
+      <h3>Request Leave</h3>
+      <div id="leave-restricted" th:style="${firstLogin ? 'display: block;' : 'display: none;'}" style="text-align: center; padding: 40px;">
+        <i class="fas fa-lock" style="font-size: 48px; color: #dc3545; margin-bottom: 20px;"></i>
+        <h4>Access Restricted</h4>
+        <p>Please change your default password in the Profile section to access all features.</p>
+        <button class="btn btn-primary" onclick="showSection('profile')">
+          <i class="fas fa-user-cog"></i> Go to Profile
+        </button>
+      </div>
+      <div id="leave-content" th:style="${!firstLogin ? 'display: block;' : 'display: none;'}">
+        <p>Leave request functionality would go here.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tasks Section -->
+  <div id="tasks" class="content-section">
+    <div class="card">
+      <h3>My Assigned Tasks</h3>
+      <div id="tasks-restricted" th:style="${firstLogin ? 'display: block;' : 'display: none;'}" style="text-align: center; padding: 40px;">
+        <i class="fas fa-lock" style="font-size: 48px; color: #dc3545; margin-bottom: 20px;"></i>
+        <h4>Access Restricted</h4>
+        <p>Please change your default password in the Profile section to access all features.</p>
+        <button class="btn btn-primary" onclick="showSection('profile')">
+          <i class="fas fa-user-cog"></i> Go to Profile
+        </button>
+      </div>
+      <div id="tasks-content" th:style="${!firstLogin ? 'display: block;' : 'display: none;'}">
+        <!-- Task Filter and Search -->
+        <div class="filter-controls">
+          <div class="filter-group">
+            <select id="status-filter" class="form-control" onchange="filterTasks()">
+              <option value="all">All Status</option>
+              <option value="ASSIGNED">Assigned</option>
+              <option value="IN_PROGRESS">In Progress</option>
+              <option value="COMPLETED">Completed</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <input type="text" id="task-search" class="form-control" placeholder="Search tasks..." onkeyup="searchTasks()">
+          </div>
+        </div>
+
+        <!-- Task Statistics -->
+        <div class="task-stats-grid">
+          <div class="task-stat-card" style="background: #e3f2fd;">
+            <div class="task-stat-number" id="total-tasks">0</div>
+            <div class="task-stat-label">Total Tasks</div>
+          </div>
+          <div class="task-stat-card" style="background: #fff3e0;">
+            <div class="task-stat-number" id="assigned-tasks">0</div>
+            <div class="task-stat-label">Assigned</div>
+          </div>
+          <div class="task-stat-card" style="background: #e3f2fd;">
+            <div class="task-stat-number" id="inprogress-tasks">0</div>
+            <div class="task-stat-label">In Progress</div>
+          </div>
+          <div class="task-stat-card" style="background: #e8f5e8;">
+            <div class="task-stat-number" id="completed-tasks">0</div>
+            <div class="task-stat-label">Completed</div>
+          </div>
+        </div>
+
+        <!-- Tasks Table -->
+        <div class="table-responsive">
+          <table class="table" id="tasks-table">
+            <thead>
+            <tr>
+              <th>Assignment ID</th>
+              <th>Task Name</th>
+              <th>Department</th>
+              <th>Assigned Date</th>
+              <th>Deadline</th>
+              <th>Estimated Hours</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody id="tasks-table-body">
+            <!-- Tasks will be loaded here dynamically -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- No Tasks Message -->
+        <div id="no-tasks-message" style="display: none; text-align: center; padding: 40px;">
+          <i class="fas fa-tasks" style="font-size: 48px; color: #6c757d; margin-bottom: 20px;"></i>
+          <h4>No Tasks Assigned</h4>
+          <p>You don't have any tasks assigned to you at the moment.</p>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div id="tasks-loading" style="text-align: center; padding: 20px;">
+          <i class="fas fa-spinner fa-spin"></i> Loading tasks...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Paysheet Section -->
+  <div id="paysheet" class="content-section">
+    <div class="card">
+      <h3>View Paysheet</h3>
+      <div id="paysheet-restricted" th:style="${firstLogin ? 'display: block;' : 'display: none;'}" style="text-align: center; padding: 40px;">
+        <i class="fas fa-lock" style="font-size: 48px; color: #dc3545; margin-bottom: 20px;"></i>
+        <h4>Access Restricted</h4>
+        <p>Please change your default password in the Profile section to access all features.</p>
+        <button class="btn btn-primary" onclick="showSection('profile')">
+          <i class="fas fa-user-cog"></i> Go to Profile
+        </button>
+      </div>
+      <div id="paysheet-content" th:style="${!firstLogin ? 'display: block;' : 'display: none;'}">
+        <p>Paysheet viewing functionality would go here.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/js/employeeDashboard.js"></script>
+</body>
+</html>
