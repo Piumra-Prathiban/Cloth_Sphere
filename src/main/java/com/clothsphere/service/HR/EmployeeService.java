@@ -3,6 +3,7 @@ package com.clothsphere.service.HR;
 import com.clothsphere.model.HR.Employee;
 import com.clothsphere.repository.HR.EmployeeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -52,5 +53,13 @@ public class EmployeeService {
         String newId = generateNextEmployeeId();
         employee.setId(newId);
         return employee;
+    }
+
+    public List<Employee> getAllEmployeesSortedByName() {
+        return employeeRepository.findAll(Sort.by(Sort.Direction.ASC, "fullName"));
+    }
+
+    public Employee getEmployeeById(String id) {
+        return employeeRepository.findById(id).orElse(null);
     }
 }

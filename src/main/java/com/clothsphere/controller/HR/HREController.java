@@ -399,7 +399,11 @@ public class HREController {
     // Other role-based dashboards
     @GetMapping("/factoryDashboard")
     public String showFactoryDashboard(HttpSession session, Model model) {
-        return loadDashboard("factoryDashboard", session, model);
+        SystemUser currentUser = (SystemUser) session.getAttribute("currentUser");
+        if (currentUser != null && "factory-manager".equals(currentUser.getRole())) {
+            return "redirect:/production/dashboard";
+        }
+        return "redirect:/systemUserLogin";
     }
 
     @GetMapping("/inventoryDashboard")
