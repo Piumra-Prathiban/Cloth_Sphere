@@ -1,4 +1,4 @@
-package com.clothsphere.service.HR;
+package com.clothsphere.service;
 
 import com.clothsphere.model.HR.Department;
 import com.clothsphere.model.HR.TaskAssignment;

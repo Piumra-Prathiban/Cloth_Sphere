@@ -227,7 +227,10 @@
 <div class="content">
     <h1 class="logo">CLOTHSPHERE</h1>
     <p class="tagline">Discover the latest fashion trends and style inspiration. Your ultimate destination for clothing and accessories.</p>
-    <a href="/getstart" class="cta-button">Get Started</a>
+
+    <!-- Login & Register buttons -->
+    <a class="cta-button" th:href="@{/login}">Login</a>
+    <a class="cta-button" th:href="@{/register}">Register</a>
 
     <div class="scroll-down" onclick="document.getElementById('about').scrollIntoView({ behavior: 'smooth' })">
         ↓
