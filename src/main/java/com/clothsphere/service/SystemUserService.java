@@ -1,10 +1,11 @@
-package com.clothsphere.service.HR;
+package com.clothsphere.service;
 
 import com.clothsphere.model.HR.Employee;
 import com.clothsphere.model.SystemUser;
 import com.clothsphere.repository.HR.DepartmentRepository;
 import com.clothsphere.repository.HR.EmployeeRepository;
 import com.clothsphere.repository.SystemUserRepository;
+import com.clothsphere.service.HR.EmployeeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

@@ -6,7 +6,7 @@ import com.clothsphere.model.SystemUser;
 import com.clothsphere.repository.HR.EmployeeRepository;
 import com.clothsphere.service.HR.DepartmentService;
 import com.clothsphere.service.HR.EmployeeService;
-import com.clothsphere.service.HR.SystemUserService;
+import com.clothsphere.service.SystemUserService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
