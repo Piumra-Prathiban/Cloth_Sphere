@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Production Control Center</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f4f6f8;
+        }
+        .page-title {
+            font-weight: 600;
+        }
+        .card {
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+        }
+        .card h5 {
+            font-weight: 600;
+        }
+        .summary-card {
+            min-height: 150px;
+        }
+        .urgent {
+            border-left: 6px solid #dc3545;
+        }
+        .schedule-table thead {
+            background-color: #0d6efd;
+            color: #fff;
+        }
+        .badge-status {
+            font-size: 0.75rem;
+        }
+        .progress {
+            height: 10px;
+        }
+        .form-label {
+            font-weight: 500;
+        }
+        .message-board {
+            max-height: 320px;
+            overflow-y: auto;
+        }
+        .report-score {
+            font-weight: 600;
+        }
+        .timeline {
+            border-left: 3px solid #e5e7eb;
+            margin-left: 1.5rem;
+            padding-left: 1rem;
+        }
+        .timeline-item {
+            position: relative;
+            padding-left: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .timeline-item::before {
+            content: "";
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #0d6efd;
+            left: -1.6rem;
+            top: 0.3rem;
+        }
+        .sticky-action {
+            position: sticky;
+            top: 1rem;
+        }
+        .table thead th {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05rem;
+        }
+    </style>
+</head>
+<body>
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="page-title">Production Command Center</h1>
+            <p class="text-muted mb-0">Monitor schedules, workforce assignments and productivity in real-time.</p>
+        </div>
+        <div class="text-end">
+            <p class="mb-0" th:text="${user.userName}"></p>
+            <small class="text-muted">Factory Manager</small>
+        </div>
+    </div>
+
+    <div th:if="${dashboardMessage}" class="alert alert-success shadow-sm" th:text="${dashboardMessage}"></div>
+    <div th:if="${dashboardError}" class="alert alert-danger shadow-sm" th:text="${dashboardError}"></div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-lg-3 col-md-6">
+            <div class="card summary-card p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5>Active Schedules</h5>
+                    <span class="badge bg-primary" th:text="${schedules.size()}"></span>
+                </div>
+                <p class="text-muted mb-2">Currently monitored production plans.</p>
+                <div>
+                    <small class="text-uppercase text-muted">Most recent</small>
+                    <div th:text="${schedules.isEmpty() ? 'No schedules available' : schedules.get(0).scheduleName}"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="card summary-card p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5>Urgent Issues</h5>
+                    <span class="badge bg-danger" th:text="${urgentTasks.size()}"></span>
+                </div>
+                <p class="text-muted mb-0">Tasks flagged as critical and requiring escalation.</p>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="card summary-card p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5>Upcoming Deadlines</h5>
+                    <span class="badge bg-warning text-dark" th:text="${upcomingTasks.size()}"></span>
+                </div>
+                <p class="text-muted mb-0">Next 10 tasks ordered by deadline.</p>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="card summary-card p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5>Reports</h5>
+                    <span class="badge bg-success" th:text="${recentReports.size()}"></span>
+                </div>
+                <p class="text-muted mb-0">Recently generated productivity insights.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">Production Schedules</h5>
+                        <form class="d-flex" method="get" th:action="@{/production/dashboard}">
+                            <select class="form-select form-select-sm me-2" name="scheduleId" th:value="${selectedScheduleId}">
+                                <option th:each="schedule : ${schedules}"
+                                        th:value="${schedule.id}"
+                                        th:text="${schedule.scheduleName}"
+                                        th:selected="${schedule.id} == ${selectedScheduleId}"></option>
+                            </select>
+                            <button class="btn btn-primary btn-sm" type="submit">View Tasks</button>
+                        </form>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table align-middle schedule-table">
+                            <thead>
+                            <tr>
+                                <th>Schedule</th>
+                                <th>Duration</th>
+                                <th>Status</th>
+                                <th>Progress</th>
+                                <th>Open Tasks</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="schedule : ${schedules}"
+                                th:classappend="${scheduleOpenTasks[schedule.id] > 0 ? ' table-warning' : ''}">
+                                <td>
+                                    <div class="fw-semibold" th:text="${schedule.scheduleName}"></div>
+                                    <small class="text-muted" th:text="${schedule.productionLine}"></small>
+                                </td>
+                                <td>
+                                    <span th:text="${schedule.startDate != null ? schedule.startDate : 'TBD'}"></span>
+                                    <span class="text-muted">→</span>
+                                    <span th:text="${schedule.endDate != null ? schedule.endDate : 'TBD'}"></span>
+                                </td>
+                                <td>
+                                    <span class="badge badge-status"
+                                          th:classappend="${schedule.status == 'IN_PROGRESS' ? ' bg-info' : (schedule.status == 'COMPLETED' ? ' bg-success' : ' bg-secondary')}"
+                                          th:text="${schedule.status}"></span>
+                                </td>
+                                <td>
+                                    <div class="progress">
+                                        <div class="progress-bar" role="progressbar"
+                                             th:style="|width:${scheduleProgress[schedule.id]}%|"
+                                             th:classappend="${scheduleProgress[schedule.id] >= 80 ? ' bg-success' : (scheduleProgress[schedule.id] >= 50 ? ' bg-warning text-dark' : ' bg-danger')}"
+                                             th:text="|${scheduleProgress[schedule.id]}%|">
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="fw-semibold" th:text="${scheduleOpenTasks[schedule.id]}"></span>
+                                </td>
+                            </tr>
+                            <tr th:if="${schedules.isEmpty()}">
+                                <td colspan="5" class="text-center text-muted">No schedules have been created yet.</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="mb-3">Critical &amp; Upcoming Work</h5>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <h6 class="text-danger">Urgent Issues</h6>
+                            <div class="message-board">
+                                <div th:each="task : ${urgentTasks}" class="border-bottom pb-2 mb-2">
+                                    <div class="d-flex justify-content-between">
+                                        <span class="fw-semibold" th:text="${task.taskName}"></span>
+                                        <span class="badge bg-danger">Urgent</span>
+                                    </div>
+                                    <small class="text-muted" th:text="${task.schedule != null ? task.schedule.scheduleName : 'General'}"></small>
+                                    <div class="small mt-1">
+                                        <span th:if="${task.dueDate != null}">Due <span th:text="${task.dueDate}"></span></span>
+                                        <span th:if="${task.dueDate == null}">No due date</span>
+                                    </div>
+                                    <div class="small" th:if="${task.issueNotes != null}" th:text="${task.issueNotes}"></div>
+                                </div>
+                                <div th:if="${urgentTasks.isEmpty()}" class="text-muted">No urgent issues detected.</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-primary">Next Deadlines</h6>
+                            <div class="timeline">
+                                <div class="timeline-item" th:each="task : ${upcomingTasks}">
+                                    <div class="fw-semibold" th:text="${task.taskName}"></div>
+                                    <small class="text-muted" th:text="${task.schedule != null ? task.schedule.scheduleName : 'General'}"></small>
+                                    <div class="small">Due <span th:text="${task.dueDate != null ? task.dueDate : 'No due date'}"></span></div>
+                                </div>
+                                <div th:if="${upcomingTasks.isEmpty()}" class="text-muted">No upcoming deadlines.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4" th:if="${selectedScheduleTasks} != null">
+                <div class="card-body">
+                    <h5 class="mb-3">Work Orders &amp; Progress</h5>
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead>
+                            <tr>
+                                <th>Task</th>
+                                <th>Assigned To</th>
+                                <th>Deadline</th>
+                                <th>Status</th>
+                                <th>Progress</th>
+                                <th>Update</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="task : ${selectedScheduleTasks}"
+                                th:classappend="${task.urgent ? ' urgent' : ''}">
+                                <td>
+                                    <div class="fw-semibold" th:text="${task.taskName}"></div>
+                                    <small class="text-muted" th:text="${task.taskDescription}"></small>
+                                </td>
+                                <td>
+                                    <span th:text="${task.assignedEmployee != null ? task.assignedEmployee.fullName : 'Unassigned'}"></span>
+                                </td>
+                                <td>
+                                    <span th:text="${task.dueDate != null ? task.dueDate : 'No deadline'}"></span>
+                                    <div th:if="${task.overdue}" class="text-danger small">Overdue</div>
+                                </td>
+                                <td>
+                                    <span class="badge"
+                                          th:classappend="${task.status == 'COMPLETED' ? ' bg-success' : (task.status == 'IN_PROGRESS' ? ' bg-info' : ' bg-secondary')}"
+                                          th:text="${task.status}"></span>
+                                </td>
+                                <td>
+                                    <div class="progress">
+                                        <div class="progress-bar" role="progressbar"
+                                             th:style="|width:${task.progressPercent}%|"
+                                             th:text="|${task.progressPercent}%|">
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <form class="row g-2" th:action="@{'/production/tasks/' + ${task.id} + '/progress'}" method="post">
+                                        <input type="hidden" name="scheduleId" th:value="${selectedScheduleId}">
+                                        <div class="col-4">
+                                            <input class="form-control form-control-sm" type="number" name="progressPercent" min="0" max="100" th:value="${task.progressPercent}">
+                                        </div>
+                                        <div class="col-4">
+                                            <select class="form-select form-select-sm" name="status">
+                                                <option value="PLANNED" th:selected="${task.status} == 'PLANNED'">Planned</option>
+                                                <option value="IN_PROGRESS" th:selected="${task.status} == 'IN_PROGRESS'">In Progress</option>
+                                                <option value="COMPLETED" th:selected="${task.status} == 'COMPLETED'">Completed</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="form-check">
+                                                <input type="hidden" name="urgent" value="false">
+                                                <input class="form-check-input" type="checkbox" name="urgent" value="true" th:checked="${task.urgent}">
+                                                <label class="form-check-label">Urgent</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <input class="form-control form-control-sm" type="text" name="issueNotes" placeholder="Update notes" th:value="${task.issueNotes}">
+                                        </div>
+                                        <div class="col-12 text-end">
+                                            <button class="btn btn-outline-primary btn-sm" type="submit">Save</button>
+                                        </div>
+                                    </form>
+                                </td>
+                            </tr>
+                            <tr th:if="${selectedScheduleTasks.isEmpty()}">
+                                <td colspan="6" class="text-center text-muted">No tasks assigned to this schedule yet.</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="mb-3">Team Communications</h5>
+                    <div class="message-board">
+                        <div th:each="message : ${recentMessages}" class="border-bottom pb-3 mb-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <span class="badge me-2"
+                                          th:classappend="${message.severity == 'CRITICAL' ? ' bg-danger' : (message.severity == 'WARNING' ? ' bg-warning text-dark' : ' bg-info')}"
+                                          th:text="${message.severity}"></span>
+                                    <span class="fw-semibold" th:text="${message.subject}"></span>
+                                </div>
+                                <small class="text-muted" th:text="${message.createdAt}" th:if="${message.createdAt != null}"></small>
+                            </div>
+                            <div class="small text-muted" th:text="${message.createdBy}"></div>
+                            <p class="mb-0" th:text="${message.messageBody}"></p>
+                            <small class="text-muted" th:if="${message.schedule != null}">Schedule: <span th:text="${message.schedule.scheduleName}"></span></small>
+                        </div>
+                        <div th:if="${recentMessages.isEmpty()}" class="text-muted">No messages yet. Use the form to broadcast updates.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="mb-3">Recent Productivity Reports</h5>
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead>
+                            <tr>
+                                <th>Schedule</th>
+                                <th>Period</th>
+                                <th>Completed</th>
+                                <th>Pending</th>
+                                <th>Overdue</th>
+                                <th>Score</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="report : ${recentReports}">
+                                <td th:text="${report.schedule != null ? report.schedule.scheduleName : 'General'}"></td>
+                                <td>
+                                    <span th:text="${report.periodStart}"></span>
+                                    <span class="text-muted">→</span>
+                                    <span th:text="${report.periodEnd}"></span>
+                                </td>
+                                <td th:text="${report.tasksCompleted}"></td>
+                                <td th:text="${report.tasksPending}"></td>
+                                <td th:text="${report.tasksOverdue}"></td>
+                                <td class="report-score" th:text="${report.productivityScore + '%'}"></td>
+                            </tr>
+                            <tr th:if="${recentReports.isEmpty()}">
+                                <td colspan="6" class="text-center text-muted">No reports generated yet.</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card sticky-action mb-4">
+                <div class="card-body">
+                    <h5 class="mb-3">Create New Schedule</h5>
+                    <form th:action="@{/production/schedules}" method="post" class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">Schedule Name</label>
+                            <input class="form-control" type="text" name="scheduleName" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Production Line</label>
+                            <input class="form-control" type="text" name="productionLine" placeholder="e.g. Line A">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Target Qty</label>
+                            <input class="form-control" type="number" name="targetQuantity" min="0">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" name="status">
+                                <option value="PLANNED">Planned</option>
+                                <option value="IN_PROGRESS">In Progress</option>
+                                <option value="COMPLETED">Completed</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Start Date</label>
+                            <input class="form-control" type="date" name="startDate">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">End Date</label>
+                            <input class="form-control" type="date" name="endDate">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Notes</label>
+                            <textarea class="form-control" rows="2" name="notes" placeholder="Key milestones, buyer commitments"></textarea>
+                        </div>
+                        <div class="col-12 text-end">
+                            <button class="btn btn-primary" type="submit">Add Schedule</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="mb-3">Assign Work Order</h5>
+                    <form th:action="@{/production/tasks}" method="post" class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">Schedule</label>
+                            <select class="form-select" name="scheduleId" required>
+                                <option value="" disabled selected>Select schedule</option>
+                                <option th:each="schedule : ${schedules}" th:value="${schedule.id}" th:text="${schedule.scheduleName}"></option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Task Name</label>
+                            <input class="form-control" type="text" name="taskName" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Assign To</label>
+                            <select class="form-select" name="employeeId">
+                                <option value="">Unassigned</option>
+                                <option th:each="emp : ${employees}" th:value="${emp.id}" th:text="${emp.fullName}"></option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Task Description</label>
+                            <textarea class="form-control" rows="2" name="taskDescription"></textarea>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" name="status">
+                                <option value="PLANNED">Planned</option>
+                                <option value="IN_PROGRESS">In Progress</option>
+                                <option value="COMPLETED">Completed</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Priority</label>
+                            <select class="form-select" name="priority">
+                                <option value="NORMAL">Normal</option>
+                                <option value="HIGH">High</option>
+                                <option value="CRITICAL">Critical</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Due Date</label>
+                            <input class="form-control" type="date" name="dueDate">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Progress %</label>
+                            <input class="form-control" type="number" name="progressPercent" min="0" max="100" value="0">
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="urgent" value="true">
+                                <label class="form-check-label">Flag as urgent</label>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Issue Notes</label>
+                            <input class="form-control" type="text" name="issueNotes" placeholder="Immediate risks or blockers">
+                        </div>
+                        <div class="col-12 text-end">
+                            <button class="btn btn-outline-primary" type="submit">Assign Task</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="mb-3">Escalations &amp; Messages</h5>
+                    <form th:action="@{/production/messages}" method="post" class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">Linked Schedule</label>
+                            <select class="form-select" name="scheduleId">
+                                <option value="">General</option>
+                                <option th:each="schedule : ${schedules}" th:value="${schedule.id}" th:text="${schedule.scheduleName}"></option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Subject</label>
+                            <input class="form-control" type="text" name="subject" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Severity</label>
+                            <select class="form-select" name="severity">
+                                <option value="INFO">Info</option>
+                                <option value="WARNING">Warning</option>
+                                <option value="CRITICAL">Critical</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Message</label>
+                            <textarea class="form-control" rows="3" name="messageBody" required></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Send As</label>
+                            <input class="form-control" type="text" name="createdBy" placeholder="Factory Manager" th:value="${user.userName}">
+                        </div>
+                        <div class="col-12 text-end">
+                            <button class="btn btn-outline-danger" type="submit">Send Alert</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="mb-3">Generate Productivity Report</h5>
+                    <form th:action="@{/production/reports/generate}" method="post" class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">Schedule</label>
+                            <select class="form-select" name="scheduleId" required>
+                                <option value="" disabled selected>Select schedule</option>
+                                <option th:each="schedule : ${schedules}" th:value="${schedule.id}" th:text="${schedule.scheduleName}"></option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Period Start</label>
+                            <input class="form-control" type="date" name="periodStart">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Period End</label>
+                            <input class="form-control" type="date" name="periodEnd">
+                        </div>
+                        <div class="col-12 text-end">
+                            <button class="btn btn-success" type="submit">Generate</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
