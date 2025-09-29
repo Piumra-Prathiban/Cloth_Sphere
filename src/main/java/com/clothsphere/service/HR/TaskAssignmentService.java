@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class TaskAssignmentService {
@@ -347,6 +348,15 @@ public class TaskAssignmentService {
 
         return assignments;
     }
-
-
+    /**
+     * Get assignments by employee username
+     */
+    @Transactional(readOnly = true)
+    public List<TaskAssignment> getAssignmentsByEmployeeUsername(String username) {
+        return taskAssignmentRepository.findAllWithDepartmentDetails().stream()
+                .filter(assignment ->
+                        assignment.getEmployee() != null &&
+                                assignment.getEmployee().getUsername().equals(username))
+                .collect(Collectors.toList());
+    }
 }

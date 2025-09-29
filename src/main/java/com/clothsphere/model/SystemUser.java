@@ -12,7 +12,7 @@ public class SystemUser {
     private String userName;
 
     @Id
-    @Column(name = "role", length = 15, nullable = false)
+    @Column(name = "role", length = 40, nullable = false)
     private String role;
 
     @Column(name = "password", length = 100, nullable = false)
@@ -24,6 +24,9 @@ public class SystemUser {
     @Column(name = "phone_number", length = 20)
     private String phoneNumber;
 
+    @Column(name = "log_count", nullable = false)
+    private Integer logCount = 0;
+
     // Default constructor
     public SystemUser() {}
 
@@ -34,6 +37,7 @@ public class SystemUser {
         this.password = password;
         this.email = email;
         this.phoneNumber = phoneNumber;
+        this.logCount = 0;
     }
 
     // Getters and setters
@@ -51,6 +55,9 @@ public class SystemUser {
 
     public String getPhoneNumber() { return phoneNumber; }
     public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+
+    public Integer getLogCount() { return logCount; }
+    public void setLogCount(Integer logCount) { this.logCount = logCount; }
 
     @Override
     public String toString() {

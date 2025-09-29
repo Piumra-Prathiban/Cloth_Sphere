@@ -80,14 +80,60 @@ public class SystemUserService {
     }
 
     /**
+     * Update log count for a user.
+     */
+    @Transactional
+    public boolean updateLogCount(String username, String role, Integer logCount) {
+        try {
+            SystemUser user = systemUserRepository.findByUserNameAndRole(username, role);
+            if (user != null) {
+                user.setLogCount(logCount);
+                systemUserRepository.save(user);
+                System.out.println("Log count updated to " + logCount + " for user: " + username);
+                return true;
+            }
+            return false;
+        } catch (Exception e) {
+            System.out.println("Error updating log count: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Update user password and log count for first-time employees.
+     */
+    @Transactional
+    public boolean updatePasswordAndLogCount(String username, String role, String newPassword) {
+        try {
+            SystemUser user = systemUserRepository.findByUserNameAndRole(username, role);
+            if (user != null) {
+                // Update password
+                user.setPassword(newPassword);
+
+                // If this is an employee with logCount = 0, update it to 1
+                if ("employee".equals(role) && user.getLogCount() == 0) {
+                    user.setLogCount(1);
+                    System.out.println("Updated log count to 1 for first-time employee: " + username);
+                }
+
+                systemUserRepository.save(user);
+                System.out.println("Password and log count updated successfully for user: " + username);
+                return true;
+            }
+            return false;
+        } catch (Exception e) {
+            System.out.println("Error updating password and log count: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Create a new employee and corresponding system user.
      */
     @Transactional
     public boolean createEmployee(Employee employee) {
         try {
             System.out.println("=== CREATING EMPLOYEE ===");
-            System.out.println("Employee department: " + (employee.getDepartment() != null ?
-                    employee.getDepartment().getDepartmentName() : "NULL"));
 
             // Generate employee ID
             employee = employeeService.createEmployeeWithId(employee);
@@ -110,21 +156,21 @@ public class SystemUserService {
             employeeRepository.save(employee);
             System.out.println("Employee saved with ID: " + employee.getId());
 
-            // Create system user credentials
+            // Create system user credentials with default password and logCount = 0
             SystemUser systemUser = new SystemUser(
                     employee.getUsername(),
                     "employee", // default role for employees
-                    employee.getPassword(),
+                    "changeme123", // Default password for first login
                     employee.getEmail(),
                     employee.getPhoneNumber()
             );
+            systemUser.setLogCount(0); // First time login
 
             systemUserRepository.save(systemUser);
 
             System.out.println("Employee created successfully: " + employee.getUsername() +
                     " with ID: " + employee.getId() +
-                    " in department: " + (employee.getDepartment() != null ?
-                    employee.getDepartment().getDepartmentName() : "None"));
+                    " with default password. First login will require password change.");
             return true;
 
         } catch (Exception e) {

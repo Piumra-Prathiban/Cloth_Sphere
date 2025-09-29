@@ -3,8 +3,8 @@ body {background:#f4f6f9; min-height:100vh; display:flex;}
 
 /* Sidebar */
 .sidebar {
-    width:250px; background:#333; color:#fff; min-height:100vh; padding:20px;
-    position: fixed; left: 0; top: 0; height: 100%;
+    width:250px; background: linear-gradient(to bottom, #000000, #4caf50); color: white; min-height:100vh; padding:20px;
+    position: fixed; left: 0; top: 0; height: 100%;box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
 }
 .sidebar h2 {text-align:center; margin-bottom:30px;}
 .sidebar ul {list-style:none;}
@@ -132,4 +132,145 @@ fieldset input, fieldset select, fieldset textarea {
     padding: 5px 8px;
     font-size: 12px;
     min-width: auto;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .sidebar {
+        width: 220px;
+    }
+    .main {
+        margin-left: 220px;
+        width: calc(100% - 220px);
+    }
+}
+
+@media (max-width: 992px) {
+    .sidebar {
+        width: 200px;
+    }
+    .main {
+        margin-left: 200px;
+        width: calc(100% - 200px);
+        padding: 20px;
+    }
+
+    .cards {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    body {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        position: relative;
+        width: 100%;
+        min-height: auto;
+        padding: 15px;
+    }
+
+    .main {
+        margin-left: 0;
+        width: 100%;
+        padding: 15px;
+    }
+
+    .sidebar ul {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .sidebar ul li {
+        margin: 5px 0;
+    }
+
+    .sidebar ul li a {
+        padding: 8px 12px;
+        font-size: 14px;
+    }
+
+    .dashboard-header {
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start;
+    }
+
+    .table-container {
+        overflow-x: auto;
+        font-size: 14px;
+    }
+
+    .modal-content {
+        width: 95%;
+        margin: 10% auto;
+    }
+}
+
+@media (max-width: 576px) {
+    .main {
+        padding: 10px;
+    }
+
+    .card {
+        padding: 15px;
+    }
+
+    .user-detail {
+        flex-direction: column;
+    }
+
+    .user-detail label {
+        min-width: auto;
+        margin-bottom: 5px;
+    }
+
+    .btn {
+        padding: 8px 12px;
+        font-size: 14px;
+    }
+
+    .sidebar ul {
+        flex-direction: column;
+    }
+}
+
+/* Zoomed out state */
+body.zoomed-out .sidebar {
+    width: 180px;
+}
+
+body.zoomed-out .main {
+    margin-left: 180px;
+    width: calc(100% - 180px);
+}
+
+body.zoomed-out .sidebar ul li a {
+    padding: 6px 8px;
+    font-size: 13px;
+}
+
+body.zoomed-out .card {
+    padding: 15px;
+}
+
+body.zoomed-out .dashboard-header h1 {
+    font-size: 1.5rem;
+}
+
+body.zoomed-out .btn {
+    padding: 6px 10px;
+    font-size: 13px;
+}
+
+body.zoomed-out table {
+    font-size: 13px;
+}
+
+body.zoomed-out th,
+body.zoomed-out td {
+    padding: 8px;
 }
