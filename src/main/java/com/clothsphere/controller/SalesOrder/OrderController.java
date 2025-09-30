@@ -14,6 +14,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.Optional;
 
 @Controller
@@ -26,14 +27,30 @@ public class OrderController {
     // Dashboard - Main page
     @GetMapping
     public String dashboard(Model model) {
-        Map<String, Object> stats = orderService.getDashboardStats();
-        List<Order> recentOrders = orderService.getRecentOrders();
-        List<Order> overdueOrders = orderService.getOverdueOrders();
+        try {
+            Map<String, Object> stats = orderService.getDashboardStats();
+            List<Order> recentOrders = orderService.getRecentOrders();
+            List<Order> overdueOrders = orderService.getOverdueOrders();
 
-        model.addAttribute("stats", stats);
-        model.addAttribute("recentOrders", recentOrders);
-        model.addAttribute("overdueOrders", overdueOrders);
-        model.addAttribute("orderStatuses", OrderStatus.values());
+            model.addAttribute("stats", stats != null ? stats : new HashMap<>());
+            model.addAttribute("recentOrders", recentOrders != null ? recentOrders : new ArrayList<>());
+            model.addAttribute("overdueOrders", overdueOrders != null ? overdueOrders : new ArrayList<>());
+            model.addAttribute("orderStatuses", OrderStatus.values());
+        } catch (Exception e) {
+            // If there's an error, provide default empty data
+            Map<String, Object> defaultStats = new HashMap<>();
+            defaultStats.put("totalOrders", 0L);
+            defaultStats.put("pendingCount", 0L);
+            defaultStats.put("in_productionCount", 0L);
+            defaultStats.put("deliveredCount", 0L);
+            defaultStats.put("todayOrdersCount", 0);
+
+            model.addAttribute("stats", defaultStats);
+            model.addAttribute("recentOrders", new ArrayList<>());
+            model.addAttribute("overdueOrders", new ArrayList<>());
+            model.addAttribute("orderStatuses", OrderStatus.values());
+            model.addAttribute("errorMessage", "Unable to load some dashboard data: " + e.getMessage());
+        }
 
         return "sales-orders/dashboard";
     }

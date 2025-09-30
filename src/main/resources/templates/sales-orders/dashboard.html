@@ -117,9 +117,7 @@
                                 <td th:text="${#numbers.formatCurrency(order.totalAmount)}"></td>
                                 <td>
                                             <span class="badge"
-                                                  th:classappend="${order.orderStatus.name() == 'PENDING'} ? 'bg-warning text-dark' :
-                                                                 ${order.orderStatus.name() == 'IN_PRODUCTION'} ? 'bg-info' :
-                                                                 ${order.orderStatus.name() == 'DELIVERED'} ? 'bg-success' : 'bg-secondary'"
+                                                  th:classappend="${order.orderStatus.name() == 'PENDING' ? 'bg-warning text-dark' : (order.orderStatus.name() == 'IN_PRODUCTION' ? 'bg-info' : (order.orderStatus.name() == 'DELIVERED' ? 'bg-success' : 'bg-secondary'))}"
                                                   th:text="${order.orderStatus.displayName}">
                                             </span>
                                 </td>

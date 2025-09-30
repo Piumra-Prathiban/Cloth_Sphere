@@ -71,7 +71,7 @@ public class LoginController {
                 case "customer-officer":
                     return "redirect:/customerDashboard";
                 case "sales-order-manager":
-                    return "redirect:/salesDashboard";
+                    return "redirect:/sales-orders";
                 case "employee":
                     return "redirect:/employeeDashboard";
                 default:
@@ -154,24 +154,7 @@ public class LoginController {
 
     @GetMapping("/salesDashboard")
     public String showSalesDashboard(HttpSession session, Model model) {
-        SystemUser currentUser = (SystemUser) session.getAttribute("currentUser");
-        if (currentUser == null) {
-            return "redirect:/systemUserLogin";
-        }
-
-        model.addAttribute("user", currentUser);
-
-        // Add mock data to prevent null errors
-        Map<String, Object> stats = new HashMap<>();
-        stats.put("totalOrders", 0);
-        stats.put("pendingCount", 0);
-        stats.put("in_productionCount", 0);
-        stats.put("deliveredCount", 0);
-
-        model.addAttribute("stats", stats);
-        model.addAttribute("recentOrders", new java.util.ArrayList<>());
-        model.addAttribute("overdueOrders", new java.util.ArrayList<>());
-
-        return "salesDashboard";
+        // Redirect to the new sales orders dashboard
+        return "redirect:/sales-orders";
     }
 }
