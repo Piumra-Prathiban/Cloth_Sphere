@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Cloth Sphere</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+</head>
+<body>
+
+<header class="header">
+    <div class="logo-section">
+        <button class="menu-toggle" id="menuToggle">
+            <i class="fas fa-bars"></i>
+        </button>
+        <div class="logo">
+            <i class="fas fa-tshirt" style="color: white; font-size: 24px;"></i>
+        </div>
+        <h1 class="company-name">Cloth Sphere</h1>
+    </div>
+    <div class="user-info">
+        <div class="user-details">
+            <div class="user-name">Ama Berugoda</div>
+            <div class="user-role">Inventory Manager</div>
+            <div class="user-id">STAFF_003</div>
+        </div>
+        <div class="profile-pic">AB</div>
+    </div>
+</header>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<div class="container">
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <a href="/inventoryDashboard" class="nav-item active"><i class="fas fa-chart-pie"></i><span>Dashboard</span></a>
+        <a href="/fabrics" class="nav-item"><i class="fas fa-layer-group"></i><span>Fabrics</span></a>
+        <a href="/garments" class="nav-item"><i class="fas fa-boxes"></i><span>Garments</span></a>
+        <a href="/reports" class="nav-item"><i class="fas fa-file-alt"></i><span>Stock Reports</span></a>
+        <a href="/profile" class="nav-item"><i class="fas fa-user"></i><span>Edit Profile</span></a>
+        <a href="/logout" class="nav-item logout-btn"><i class="fas fa-sign-out-alt"></i><span>Log Out</span></a>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="page-header">
+            <h2 class="page-title"><i class="fas fa-chart-pie"></i> Dashboard Overview</h2>
+        </div>
+
+        <div class="welcome-text">
+            Welcome to your inventory management dashboard. Monitor your fabric and garment stock levels in real-time.
+        </div>
+
+        <!-- Fabric Stats -->
+        <h3 class="section-title" style="margin: 20px 0 15px 0;"><i class="fas fa-layer-group"></i> Fabric Inventory</h3>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon purple"><i class="fas fa-layer-group"></i></div>
+                <div class="stat-info">
+                    <h3 id="totalFabricTypes">0</h3>
+                    <p>Fabric Types</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon blue"><i class="fas fa-ruler"></i></div>
+                <div class="stat-info">
+                    <h3 id="totalMeters">0</h3>
+                    <p>Total Meters</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green"><i class="fas fa-arrow-up"></i></div>
+                <div class="stat-info">
+                    <h3 id="stockInToday">0</h3>
+
+                    <!-- Charts Container -->
+                    <div class="charts-container">
+                        <div class="chart-card">
+                            <div class="chart-title">
+                                <i class="fas fa-chart-bar"></i> Fabric Stock Levels
+                            </div>
+                            <canvas id="fabricChart"></canvas>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-title">
+                                <i class="fas fa-chart-pie"></i> Fabric Distribution by Type
+                            </div>
+                            <canvas id="fabricTypeChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Low Stock Alerts -->
+                    <div class="activity-section">
+                        <h3 class="section-title"><i class="fas fa-exclamation-triangle"></i> Low Stock Alerts (Below 50 meters)</h3>
+                        <div class="activity-list" id="lowStockList">
+                            <p style="text-align: center; color: #666; padding: 20px;">Loading alerts...</p>
+                        </div>
+                    </div>
+
+                    <!-- Production Status -->
+                    <div class="production-status">
+                        <h3 class="section-title"><i class="fas fa-cogs"></i> Production Status</h3>
+                        <div class="status-grid">
+                            <div class="status-card">
+                                <div class="status-header">
+                                    <h4>Fabric Processing</h4>
+                                    <span class="status-indicator active">
+                            <i class="fas fa-circle"></i> Active
+                        </span>
+                                </div>
+                                <div class="production-progress">
+                                    <div class="progress-info">
+                                        <span>Daily Target</span>
+                                        <span id="fabricTarget">-/-</span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" id="fabricProgress" style="width: 0%;"></div>
+                                    </div>
+                                </div>
+                                <div class="quality-stats">
+                                    <div class="quality-item">
+                                        <span class="quality-label">Quality Rate</span>
+                                        <span class="quality-value success" id="fabricQuality">-%</span>
+                                    </div>
+                                    <div class="quality-item">
+                                        <span class="quality-label">Efficiency</span>
+                                        <span class="quality-value success" id="fabricEfficiency">-%</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="status-card">
+                                <div class="status-header">
+                                    <h4>Garment Production</h4>
+                                    <span class="status-indicator active">
+                            <i class="fas fa-circle"></i> Active
+                        </span>
+                                </div>
+                                <div class="production-progress">
+                                    <div class="progress-info">
+                                        <span>Daily Target</span>
+                                        <span id="garmentTarget">-/-</span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" id="garmentProgress" style="width: 0%;"></div>
+                                    </div>
+                                </div>
+                                <div class="quality-stats">
+                                    <div class="quality-item">
+                                        <span class="quality-label">Quality Rate</span>
+                                        <span class="quality-value success" id="garmentQuality">-%</span>
+                                    </div>
+                                    <div class="quality-item">
+                                        <span class="quality-label">Efficiency</span>
+                                        <span class="quality-value success" id="garmentEfficiency">-%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+    </main>
+</div>
+
+<script>
+    // Mobile menu
+    const menuToggle = document.getElementById('menuToggle');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+    menuToggle.addEventListener('click', function() {
+        sidebar.classList.toggle('open');
+        sidebarOverlay.classList.toggle('show');
+    });
+
+    sidebarOverlay.addEventListener('click', function() {
+        sidebar.classList.remove('open');
+        sidebarOverlay.classList.remove('show');
+    });
+
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+        item.addEventListener('click', function() {
+            if (window.innerWidth <= 768) {
+                sidebar.classList.remove('open');
+                sidebarOverlay.classList.remove('show');
+            }
+        });
+    });
+
+    // Charts
+    let fabricChart, fabricTypeChart;
+
+    function initializeCharts() {
+        // Fabric Stock Chart
+        const fabricCtx = document.getElementById('fabricChart').getContext('2d');
+        fabricChart = new Chart(fabricCtx, {
+            type: 'bar',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Stock Level (meters)',
+                    data: [],
+                    backgroundColor: 'rgba(75, 0, 130, 0.8)',
+                    borderColor: 'rgba(75, 0, 130, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(0,0,0,0.1)' }
+                    },
+                    x: {
+                        grid: { color: 'rgba(0,0,0,0.1)' }
+                    }
+                }
+            }
+        });
+
+        // Fabric Type Chart
+        const typeCtx = document.getElementById('fabricTypeChart').getContext('2d');
+        fabricTypeChart = new Chart(typeCtx, {
+            type: 'doughnut',
+            data: {
+                labels: [],
+                datasets: [{
+                    data: [],
+                    backgroundColor: [
+                        'rgba(75, 0, 130, 0.8)',
+                        'rgba(52, 152, 219, 0.8)',
+                        'rgba(39, 174, 96, 0.8)',
+                        'rgba(243, 156, 18, 0.8)',
+                        'rgba(231, 76, 60, 0.8)',
+                        'rgba(155, 89, 182, 0.8)',
+                        'rgba(52, 73, 94, 0.8)'
+                    ],
+                    borderColor: '#fff',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Load dashboard data
+    function loadDashboardData() {
+        // Load stats
+        fetch('/api/dashboard/stats')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('totalFabricTypes').textContent = data.totalFabricTypes || 0;
+                document.getElementById('totalMeters').textContent = data.totalMeters || 0;
+                document.getElementById('stockInToday').textContent = data.stockInToday || 0;
+                document.getElementById('stockOutToday').textContent = data.stockOutToday || 0;
+            })
+            .catch(err => console.error('Error loading stats:', err));
+
+        // Load chart data
+        loadChartData();
+
+        // Load low stock alerts
+        loadLowStockAlerts();
+    }
+
+    function loadChartData() {
+        fetch('/api/dashboard/chart-data')
+            .then(res => res.json())
+            .then(data => {
+                // Update bar chart
+                fabricChart.data.labels = data.labels || [];
+                fabricChart.data.datasets[0].data = data.quantities || [];
+                fabricChart.update();
+
+                // Update type distribution chart
+                const typeData = calculateTypeDistribution(data.labels, data.quantities);
+                fabricTypeChart.data.labels = typeData.labels;
+                fabricTypeChart.data.datasets[0].data = typeData.values;
+                fabricTypeChart.update();
+            })
+            .catch(err => console.error('Error loading chart data:', err));
+    }
+
+    function calculateTypeDistribution(labels, quantities) {
+        const typeMap = {};
+
+        labels.forEach((label, index) => {
+            const type = label.split(' - ')[0]; // Extract type from "Type - Color"
+            if (!typeMap[type]) {
+                typeMap[type] = 0;
+            }
+            typeMap[type] += quantities[index];
+        });
+
+        return {
+            labels: Object.keys(typeMap),
+            values: Object.values(typeMap)
+        };
+    }
+
+    function loadLowStockAlerts() {
+        fetch('/api/dashboard/low-stock')
+            .then(res => res.json())
+            .then(data => {
+                const container = document.getElementById('lowStockList');
+
+                if (data && data.length > 0) {
+                    container.innerHTML = '';
+                    data.forEach(item => {
+                        const alertDiv = document.createElement('div');
+                        alertDiv.className = 'activity-item';
+                        alertDiv.innerHTML = `
+                    <div class="activity-icon warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="activity-content">
+                        <h5>${item.type} - ${item.color}</h5>
+                        <p><strong>Fabric ID:</strong> ${item.fabricId}</p>
+                        <p><strong>Current Stock:</strong> ${item.currentQuantity} meters (${item.shortage.toFixed(2)} meters below threshold)</p>
+                    </div>
+                `;
+                        container.appendChild(alertDiv);
+                    });
+                } else {
+                    container.innerHTML = '<p style="text-align: center; color: #27ae60; padding: 20px;"><i class="fas fa-check-circle"></i> All fabric stock levels are healthy!</p>';
+                }
+            })
+            .catch(err => {
+                console.error('Error loading alerts:', err);
+                document.getElementById('lowStockList').innerHTML = '<p style="text-align: center; color: #e74c3c; padding: 20px;">Error loading alerts</p>';
+            });
+    }
+
+    // Auto-refresh dashboard data every 5 minutes
+    setInterval(loadDashboardData, 300000);
+
+    // Initialize dashboard
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeCharts();
+        loadDashboardData();
+    });
+
+    // Responsive chart resize
+    window.addEventListener('resize', function() {
+        if (fabricChart) fabricChart.resize();
+        if (fabricTypeChart) fabricTypeChart.resize();
+    });
+
+    // Notification system
+    function showNotification(message, type = 'info') {
+        const existingNotification = document.querySelector('.notification');
+        if (existingNotification) {
+            existingNotification.remove();
+        }
+
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.innerHTML = `
+        <div class="notification-content">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : 'info-circle'}"></i>
+            <span>${message}</span>
+        </div>
+    `;
+
+        notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 10000;
+        padding: 15px 20px;
+        border-radius: 8px;
+        color: white;
+        font-weight: 500;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        transform: translateX(400px);
+        transition: transform 0.3s ease;
+        max-width: 400px;
+    `;
+
+        if (type === 'success') {
+            notification.style.background = 'linear-gradient(135deg, #27ae60, #2ecc71)';
+        } else if (type === 'error') {
+            notification.style.background = 'linear-gradient(135deg, #e74c3c, #c0392b)';
+        } else {
+            notification.style.background = 'linear-gradient(135deg, #3498db, #2980b9)';
+        }
+
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            notification.style.transform = 'translateX(0)';
+        }, 100);
+
+        setTimeout(() => {
+            notification.style.transform = 'translateX(400px)';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 300);
+        }, 4000);
+    }
+</script>
+
+</body>
+</html>

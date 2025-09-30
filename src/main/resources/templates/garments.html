@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finished Garments - Cloth Sphere</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<header class="header">
+    <div class="logo-section">
+        <button class="menu-toggle" id="menuToggle">
+            <i class="fas fa-bars"></i>
+        </button>
+        <div class="logo">
+            <i class="fas fa-tshirt" style="color: white; font-size: 24px;"></i>
+        </div>
+        <h1 class="company-name">Cloth Sphere</h1>
+    </div>
+    <div class="user-info">
+        <div class="user-details">
+            <div class="user-name">Ama Berugoda</div>
+            <div class="user-role">Inventory Manager</div>
+        </div>
+        <div class="profile-pic">AB</div>
+    </div>
+</header>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<div class="container">
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <a href="/inventoryDashboard" class="nav-item"><i class="fas fa-chart-pie"></i><span>Dashboard</span></a>
+        <a href="/fabrics" class="nav-item"><i class="fas fa-layer-group"></i><span>Fabrics</span></a>
+        <a href="/garments" class="nav-item active"><i class="fas fa-boxes"></i><span>Garments</span></a>
+        <a href="/reports" class="nav-item"><i class="fas fa-file-alt"></i><span>Stock Reports</span></a>
+        <a href="/profile" class="nav-item"><i class="fas fa-user"></i><span>Edit Profile</span></a>
+        <a href="/logout" class="nav-item logout-btn"><i class="fas fa-sign-out-alt"></i><span>Log Out</span></a>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="page-header">
+            <h2 class="page-title"><i class="fas fa-boxes"></i> Finished Garments</h2>
+        </div>
+
+        <div class="welcome-text">
+            Manage finished garments inventory, track production output, and monitor stock levels.
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="actions-header" style="display: flex; justify-content: flex-end; gap: 15px; margin-bottom: 25px;">
+            <button class="btn add" id="addNewGarmentBtn"><i class="fas fa-plus-circle"></i> Add New Garment Type</button>
+            <button class="btn add" id="addMovementBtn"><i class="fas fa-exchange-alt"></i> Record Movement</button>
+        </div>
+
+        <!-- Garment Movement Table -->
+        <div class="fabric-table-section">
+            <div class="actions-header">
+                <h3 class="section-title"><i class="fas fa-tasks"></i> Garment Movements</h3>
+                <div class="action-buttons">
+                    <select id="filterSelect" class="filter-dropdown">
+                        <option value="">All Types</option>
+                        <option value="T-Shirt">T-Shirt</option>
+                        <option value="Pants">Pants</option>
+                        <option value="Shirt">Shirt</option>
+                        <option value="Skirt">Skirt</option>
+                        <option value="Blouse">Blouse</option>
+                    </select>
+                    <select id="sizeFilter" class="filter-dropdown">
+                        <option value="">All Sizes</option>
+                        <option value="S">S</option>
+                        <option value="M">M</option>
+                        <option value="L">L</option>
+                        <option value="XL">XL</option>
+                    </select>
+                    <select id="statusFilter" class="filter-dropdown">
+                        <option value="">All Status</option>
+                        <option value="In">Stock In</option>
+                        <option value="Shipped">Shipped</option>
+                    </select>
+                </div>
+            </div>
+
+            <table class="fabric-table">
+                <thead>
+                <tr>
+                    <th>Movement ID</th>
+                    <th>Garment ID</th>
+                    <th>Type</th>
+                    <th>Size</th>
+                    <th>Fabric ID</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th>Quantity</th>
+                    <th>Total Stock</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody id="movementTableBody">
+                <!-- Data will be loaded from database -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+
+<!-- Add New Garment Type Modal -->
+<div id="addGarmentModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title"><i class="fas fa-plus-circle"></i> Add New Garment Type</h3>
+            <span class="close" id="closeGarmentModal">&times;</span>
+        </div>
+        <form id="addGarmentForm">
+            <div class="form-group">
+                <label for="newGarmentId">Garment ID</label>
+                <input type="text" id="newGarmentId" name="garmentId" placeholder="GAR001" pattern="GAR\d{3}" required>
+                <small class="form-help">Format: GAR followed by 3 digits (e.g., GAR001)</small>
+            </div>
+            <div class="form-group">
+                <label for="newGarmentType">Garment Type</label>
+                <select id="newGarmentType" name="garmentType" required>
+                    <option value="">Select Garment Type</option>
+                    <option value="T-Shirt">T-Shirt</option>
+                    <option value="Pants">Pants</option>
+                    <option value="Shirt">Shirt</option>
+                    <option value="Skirt">Skirt</option>
+                    <option value="Blouse">Blouse</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="newGarmentSize">Size</label>
+                <select id="newGarmentSize" name="size" required>
+                    <option value="">Select Size</option>
+                    <option value="S">S</option>
+                    <option value="M">M</option>
+                    <option value="L">L</option>
+                    <option value="XL">XL</option>
+                </select>
+            </div>
+            <div class="form-buttons">
+                <button type="button" class="btn btn-cancel" id="cancelGarmentBtn">Cancel</button>
+                <button type="submit" class="btn add">Add Garment</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Add Movement Modal -->
+<div id="addMovementModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title"><i class="fas fa-exchange-alt"></i> Record Garment Movement</h3>
+            <span class="close" id="closeMovementModal">&times;</span>
+        </div>
+        <form id="addMovementForm">
+            <div class="form-group">
+                <label for="movementId">Movement ID</label>
+                <input type="text" id="movementId" name="movementId" placeholder="GMI001" pattern="GMI\d{3}" required>
+                <small class="form-help">Format: GMI followed by 3 digits (e.g., GMI001)</small>
+            </div>
+            <div class="form-group">
+                <label for="garmentSelect">Select Garment</label>
+                <select id="garmentSelect" name="garmentId" required>
+                    <option value="">Choose Garment</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="fabricSelect">Select Fabric Used</label>
+                <select id="fabricSelect" name="fabricId" required>
+                    <option value="">Choose Fabric</option>
+                </select>
+                <small class="form-help">Fabric must exist to produce garments</small>
+            </div>
+            <div class="form-group">
+                <label for="movementStatus">Movement Type</label>
+                <select id="movementStatus" name="status" required>
+                    <option value="">Select Type</option>
+                    <option value="In">Stock In (Production)</option>
+                    <option value="Shipped">Shipped</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="movementQuantity">Quantity (pieces)</label>
+                <input type="number" id="movementQuantity" name="quantity" placeholder="Enter quantity" min="1" required>
+            </div>
+            <div class="form-buttons">
+                <button type="button" class="btn btn-cancel" id="cancelMovementBtn">Cancel</button>
+                <button type="submit" class="btn add">Record Movement</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeGarmentManagement();
+    });
+
+    function initializeGarmentManagement() {
+        setupEventListeners();
+        loadMovements();
+        loadGarmentsForDropdown();
+        loadFabricsForDropdown();
+    }
+
+    function setupEventListeners() {
+        // Mobile menu
+        const menuToggle = document.getElementById('menuToggle');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+
+        menuToggle?.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('show');
+        });
+
+        overlay?.addEventListener('click', () => {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('show');
+        });
+
+        // Garment modal
+        const addGarmentBtn = document.getElementById('addNewGarmentBtn');
+        const garmentModal = document.getElementById('addGarmentModal');
+        const closeGarmentModal = document.getElementById('closeGarmentModal');
+        const cancelGarmentBtn = document.getElementById('cancelGarmentBtn');
+        const garmentForm = document.getElementById('addGarmentForm');
+
+        addGarmentBtn?.addEventListener('click', () => garmentModal.style.display = 'block');
+        closeGarmentModal?.addEventListener('click', () => closeGarmentModalFn());
+        cancelGarmentBtn?.addEventListener('click', () => closeGarmentModalFn());
+        garmentForm?.addEventListener('submit', handleGarmentSubmit);
+
+        // Movement modal
+        const addMovementBtn = document.getElementById('addMovementBtn');
+        const movementModal = document.getElementById('addMovementModal');
+        const closeMovementModal = document.getElementById('closeMovementModal');
+        const cancelMovementBtn = document.getElementById('cancelMovementBtn');
+        const movementForm = document.getElementById('addMovementForm');
+
+        addMovementBtn?.addEventListener('click', () => movementModal.style.display = 'block');
+        closeMovementModal?.addEventListener('click', () => closeMovementModalFn());
+        cancelMovementBtn?.addEventListener('click', () => closeMovementModalFn());
+        movementForm?.addEventListener('submit', handleMovementSubmit);
+
+        // Close modals on outside click
+        window.addEventListener('click', (e) => {
+            if (e.target === garmentModal) closeGarmentModalFn();
+            if (e.target === movementModal) closeMovementModalFn();
+        });
+
+        // Filters
+        document.getElementById('filterSelect')?.addEventListener('change', applyFilters);
+        document.getElementById('sizeFilter')?.addEventListener('change', applyFilters);
+        document.getElementById('statusFilter')?.addEventListener('change', applyFilters);
+
+        // Delete buttons
+        document.addEventListener('click', handleDeleteMovement);
+    }
+
+    function closeGarmentModalFn() {
+        document.getElementById('addGarmentModal').style.display = 'none';
+        document.getElementById('addGarmentForm').reset();
+    }
+
+    function closeMovementModalFn() {
+        document.getElementById('addMovementModal').style.display = 'none';
+        document.getElementById('addMovementForm').reset();
+    }
+
+    // Add new garment type
+    function handleGarmentSubmit(e) {
+        e.preventDefault();
+        const form = e.target;
+        const data = {
+            garmentId: form.garmentId.value.trim().toUpperCase(),
+            garmentType: form.garmentType.value,
+            size: form.size.value
+        };
+
+        fetch('/api/garments/new', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+            .then(res => res.json())
+            .then(resp => {
+                if (resp.success) {
+                    showNotification('Garment type added successfully!', 'success');
+                    closeGarmentModalFn();
+                    loadGarmentsForDropdown();
+                } else {
+                    showNotification(resp.message || 'Error adding garment', 'error');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showNotification('Server error!', 'error');
+            });
+    }
+
+    // Add movement
+    function handleMovementSubmit(e) {
+        e.preventDefault();
+        const form = e.target;
+        const data = {
+            movementId: form.movementId.value.trim().toUpperCase(),
+            garmentId: form.garmentId.value,
+            fabricId: form.fabricId.value,
+            status: form.status.value,
+            quantity: parseInt(form.quantity.value)
+        };
+
+        fetch('/api/garment-movements', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+            .then(res => res.json())
+            .then(resp => {
+                if (resp.success) {
+                    showNotification('Movement recorded successfully!', 'success');
+                    closeMovementModalFn();
+                    loadMovements();
+                } else {
+                    showNotification(resp.message || 'Error recording movement', 'error');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showNotification('Server error!', 'error');
+            });
+    }
+
+    // Load all movements
+    function loadMovements() {
+        fetch('/api/garment-movements')
+            .then(res => res.json())
+            .then(data => {
+                const tbody = document.getElementById('movementTableBody');
+                tbody.innerHTML = '';
+
+                if (data && data.length > 0) {
+                    data.forEach(m => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                    <td>${m.movementId}</td>
+                    <td>${m.garmentId}</td>
+                    <td>${m.garmentType}</td>
+                    <td>${m.size}</td>
+                    <td>${m.fabricId}</td>
+                    <td><span class="status-badge ${m.status === 'In' ? 'status-in' : 'status-out'}">${m.status === 'In' ? 'Stock In' : 'Shipped'}</span></td>
+                    <td>${m.movementDate}</td>
+                    <td>${m.quantity}</td>
+                    <td>${m.totalQuantity}</td>
+                    <td>
+                        <button class="btn delete btn-delete-movement" data-id="${m.movementId}">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </td>
+                `;
+                        tbody.appendChild(row);
+                    });
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#666;">No movements recorded</td></tr>';
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                document.getElementById('movementTableBody').innerHTML = '<tr><td colspan="10" style="text-align:center;color:#e74c3c;">Error loading data</td></tr>';
+            });
+    }
+
+    // Load garments for dropdown
+    function loadGarmentsForDropdown() {
+        fetch('/api/garments/all')
+            .then(res => res.json())
+            .then(data => {
+                const select = document.getElementById('garmentSelect');
+                select.innerHTML = '<option value="">Choose Garment</option>';
+
+                if (data && data.length > 0) {
+                    data.forEach(g => {
+                        const option = document.createElement('option');
+                        option.value = g.garmentId;
+                        option.textContent = `${g.garmentId} - ${g.garmentType} (${g.size}) - Stock: ${g.currentStock}`;
+                        select.appendChild(option);
+                    });
+                }
+            })
+            .catch(err => console.error('Error loading garments:', err));
+    }
+
+    // Load fabrics for dropdown
+    function loadFabricsForDropdown() {
+        fetch('/api/fabrics/all')
+            .then(res => res.json())
+            .then(data => {
+                const select = document.getElementById('fabricSelect');
+                select.innerHTML = '<option value="">Choose Fabric</option>';
+
+                if (data && data.length > 0) {
+                    data.forEach(f => {
+                        const option = document.createElement('option');
+                        option.value = f.fabricId;
+                        option.textContent = `${f.fabricId} - ${f.fabricType} (${f.color}) - ${f.currentStock}m`;
+                        select.appendChild(option);
+                    });
+                }
+            })
+            .catch(err => console.error('Error loading fabrics:', err));
+    }
+
+    // Delete movement
+    function handleDeleteMovement(e) {
+        const btn = e.target.closest('.btn-delete-movement');
+        if (!btn) return;
+
+        const id = btn.dataset.id;
+        if (confirm('Delete this movement? This will affect stock calculations.')) {
+            fetch(`/api/garment-movements/${id}`, { method: 'DELETE' })
+                .then(res => res.json())
+                .then(resp => {
+                    if (resp.success) {
+                        showNotification('Movement deleted', 'success');
+                        loadMovements();
+                    } else {
+                        showNotification(resp.message, 'error');
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    showNotification('Error deleting movement', 'error');
+                });
+        }
+    }
+
+    // Filters
+    function applyFilters() {
+        const typeFilter = document.getElementById('filterSelect').value;
+        const sizeFilterValue = document.getElementById('sizeFilter').value;
+        const statusFilterValue = document.getElementById('statusFilter').value;
+
+        document.querySelectorAll('#movementTableBody tr').forEach(row => {
+            if (row.cells.length > 1) {
+                const type = row.cells[2].textContent;
+                const size = row.cells[3].textContent;
+                const status = row.cells[5].textContent.includes('In') ? 'In' : 'Shipped';
+
+                const typeMatch = !typeFilter || type === typeFilter;
+                const sizeMatch = !sizeFilterValue || size === sizeFilterValue;
+                const statusMatch = !statusFilterValue || status === statusFilterValue;
+
+                row.style.display = (typeMatch && sizeMatch && statusMatch) ? '' : 'none';
+            }
+        });
+    }
+
+    // Notification
+    function showNotification(msg, type = 'info') {
+        document.querySelector('.notification')?.remove();
+        const n = document.createElement('div');
+        n.className = `notification notification-${type}`;
+        n.innerHTML = `<div class="notification-content"><i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : 'info-circle'}"></i><span>${msg}</span></div>`;
+        n.style.cssText = `position:fixed;top:20px;right:20px;z-index:10000;padding:15px 20px;border-radius:8px;color:white;font-weight:500;box-shadow:0 4px 12px rgba(0,0,0,0.2);transform:translateX(400px);transition:transform 0.3s ease;max-width:400px;`;
+        n.style.background = type === 'success' ? 'linear-gradient(135deg,#27ae60,#2ecc71)' : type === 'error' ? 'linear-gradient(135deg,#e74c3c,#c0392b)' : 'linear-gradient(135deg,#3498db,#2980b9)';
+        document.body.appendChild(n);
+        setTimeout(() => n.style.transform = 'translateX(0)', 100);
+        setTimeout(() => {
+            n.style.transform = 'translateX(400px)';
+            setTimeout(() => n.remove(), 300);
+        }, 4000);
+    }
+</script>
+</body>
+</html>
