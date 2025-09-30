@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Production Management Dashboard - Cloth Sphere</title>
+    <link rel="stylesheet" th:href="@{/css/productionDashboard.css}">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <h1>Production Management Dashboard</h1>
+            <div class="user-info">
+                <span>Factory Manager</span>
+                <a href="/logout" class="logout-btn">Logout</a>
+            </div>
+        </header>
+
+        <!-- Statistics Cards -->
+        <section class="stats-section">
+            <div class="stat-card">
+                <h3>Total Orders</h3>
+                <p class="stat-number" th:text="${stats?.totalOrders ?: 0}">0</p>
+            </div>
+            <div class="stat-card pending">
+                <h3>Pending Orders</h3>
+                <p class="stat-number" th:text="${stats?.pendingOrders ?: 0}">0</p>
+            </div>
+            <div class="stat-card progress">
+                <h3>In Progress</h3>
+                <p class="stat-number" th:text="${stats?.inProgressOrders ?: 0}">0</p>
+            </div>
+            <div class="stat-card completed">
+                <h3>Completed</h3>
+                <p class="stat-number" th:text="${stats?.completedOrders ?: 0}">0</p>
+            </div>
+            <div class="stat-card delayed">
+                <h3>Delayed Orders</h3>
+                <p class="stat-number" th:text="${stats?.delayedOrders ?: 0}">0</p>
+            </div>
+            <div class="stat-card">
+                <h3>Active Workstations</h3>
+                <p class="stat-number" th:text="${stats?.activeWorkstations ?: 0}">0</p>
+            </div>
+        </section>
+
+        <!-- Navigation Tabs -->
+        <nav class="tab-navigation">
+            <button class="tab-btn active" onclick="showTab('orders')">Production Orders</button>
+            <button class="tab-btn" onclick="showTab('schedules')">Scheduling</button>
+            <button class="tab-btn" onclick="showTab('workstations')">Workstations</button>
+            <button class="tab-btn" onclick="showTab('assignments')">Staff Assignments</button>
+            <button class="tab-btn" onclick="showTab('performance')">Performance Metrics</button>
+        </nav>
+
+        <!-- Tab Content -->
+        <main class="tab-content">
+            <!-- Production Orders Tab -->
+            <div id="orders-tab" class="tab-pane active">
+                <div class="section-header">
+                    <h2>Production Orders</h2>
+                    <button class="btn-primary" onclick="showAddOrderModal()">+ New Order</button>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Product Name</th>
+                                <th>Quantity</th>
+                                <th>Priority</th>
+                                <th>Status</th>
+                                <th>Deadline</th>
+                                <th>Progress</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orders-tbody">
+                            <tr th:if="${#lists.isEmpty(recentOrders)}">
+                                <td colspan="8" style="text-align: center;">No orders found</td>
+                            </tr>
+                            <tr th:each="order : ${recentOrders}">
+                                <td th:text="${order.orderId}">po001</td>
+                                <td th:text="${order.productName}">T-Shirt</td>
+                                <td th:text="${order.quantity}">1000</td>
+                                <td><span class="badge" th:classappend="${order.priority}" th:text="${order.priority}">HIGH</span></td>
+                                <td><span class="badge" th:classappend="${order.status}" th:text="${order.status}">PENDING</span></td>
+                                <td th:text="${#temporals.format(order.deadline, 'yyyy-MM-dd')}">2024-12-31</td>
+                                <td>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" th:style="'width: ' + ${order.progressPercentage} + '%'"></div>
+                                    </div>
+                                    <span th:text="${#numbers.formatDecimal(order.progressPercentage, 1, 1)} + '%'">0%</span>
+                                </td>
+                                <td>
+                                    <button class="btn-small" th:onclick="'viewOrder(\'' + ${order.orderId} + '\')'">View</button>
+                                    <button class="btn-small" th:onclick="'editOrder(\'' + ${order.orderId} + '\')'">Edit</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Production Schedules Tab -->
+            <div id="schedules-tab" class="tab-pane">
+                <div class="section-header">
+                    <h2>Production Schedules</h2>
+                    <button class="btn-primary" onclick="showAddScheduleModal()">+ New Schedule</button>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Schedule ID</th>
+                                <th>Order ID</th>
+                                <th>Workstation</th>
+                                <th>Date</th>
+                                <th>Shift</th>
+                                <th>Quantity</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="schedules-tbody">
+                            <tr th:if="${#lists.isEmpty(todaySchedules)}">
+                                <td colspan="8" style="text-align: center;">No schedules found</td>
+                            </tr>
+                            <tr th:each="schedule : ${todaySchedules}">
+                                <td th:text="${schedule.scheduleId}">sch001</td>
+                                <td th:text="${schedule.orderId}">po001</td>
+                                <td th:text="${schedule.workstationId}">ws001</td>
+                                <td th:text="${#temporals.format(schedule.scheduledDate, 'yyyy-MM-dd')}">2024-12-01</td>
+                                <td th:text="${schedule.shift}">MORNING</td>
+                                <td th:text="${schedule.assignedQuantity}">500</td>
+                                <td><span class="badge" th:classappend="${schedule.status}" th:text="${schedule.status}">SCHEDULED</span></td>
+                                <td>
+                                    <button class="btn-small" th:onclick="'viewSchedule(\'' + ${schedule.scheduleId} + '\')'">View</button>
+                                    <button class="btn-small" th:onclick="'editSchedule(\'' + ${schedule.scheduleId} + '\')'">Edit</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Workstations Tab -->
+            <div id="workstations-tab" class="tab-pane">
+                <div class="section-header">
+                    <h2>Workstations</h2>
+                    <button class="btn-primary" onclick="showAddWorkstationModal()">+ New Workstation</button>
+                </div>
+                <div class="workstation-grid">
+                    <div th:if="${#lists.isEmpty(activeWorkstations)}" style="grid-column: 1/-1; text-align: center;">
+                        No workstations found
+                    </div>
+                    <div class="workstation-card" th:each="ws : ${activeWorkstations}">
+                        <h3 th:text="${ws.workstationName}">Cutting Station 1</h3>
+                        <p><strong>Type:</strong> <span th:text="${ws.workstationType}">CUTTING</span></p>
+                        <p><strong>Status:</strong> <span class="badge" th:classappend="${ws.status}" th:text="${ws.status}">ACTIVE</span></p>
+                        <p><strong>Capacity:</strong> <span th:text="${ws.currentLoad} + '/' + ${ws.capacity}">3/5</span></p>
+                        <div class="progress-bar">
+                            <div class="progress-fill" th:style="'width: ' + ${ws.utilizationPercentage} + '%'"></div>
+                        </div>
+                        <p class="utilization" th:text="${#numbers.formatDecimal(ws.utilizationPercentage, 1, 1)} + '% Utilization'">60% Utilization</p>
+                        <button class="btn-small" th:onclick="'viewWorkstation(\'' + ${ws.workstationId} + '\')'">View Details</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Staff Assignments Tab -->
+            <div id="assignments-tab" class="tab-pane">
+                <div class="section-header">
+                    <h2>Staff Assignments</h2>
+                    <button class="btn-primary" onclick="showAddAssignmentModal()">+ New Assignment</button>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Assignment ID</th>
+                                <th>Employee Name</th>
+                                <th>Workstation</th>
+                                <th>Date</th>
+                                <th>Shift</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Performance</th>
+                            </tr>
+                        </thead>
+                        <tbody id="assignments-tbody">
+                            <tr th:if="${#lists.isEmpty(todayAssignments)}">
+                                <td colspan="8" style="text-align: center;">No assignments found</td>
+                            </tr>
+                            <tr th:each="assignment : ${todayAssignments}">
+                                <td th:text="${assignment.assignmentId}">sa001</td>
+                                <td th:text="${assignment.employeeName}">John Doe</td>
+                                <td th:text="${assignment.workstationId}">ws001</td>
+                                <td th:text="${#temporals.format(assignment.assignmentDate, 'yyyy-MM-dd')}">2024-12-01</td>
+                                <td th:text="${assignment.shift}">MORNING</td>
+                                <td th:text="${assignment.role}">OPERATOR</td>
+                                <td><span class="badge" th:classappend="${assignment.status}" th:text="${assignment.status}">ASSIGNED</span></td>
+                                <td th:text="${#numbers.formatDecimal(assignment.performancePercentage, 1, 1)} + '%'">0%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Performance Metrics Tab -->
+            <div id="performance-tab" class="tab-pane">
+                <div class="section-header">
+                    <h2>Performance Metrics</h2>
+                    <button class="btn-primary" onclick="showAddMetricModal()">+ Record Metric</button>
+                </div>
+                <div class="metrics-container">
+                    <p style="text-align: center; padding: 2rem;">Performance metrics and reports will be displayed here</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script th:src="@{/js/productionDashboard.js}"></script>
+</body>
+</html>
