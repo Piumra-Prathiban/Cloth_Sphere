@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Order - ClothSphere</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .sidebar { background: linear-gradient(180deg, #2c3e50 0%, #3498db 100%); min-height: 100vh; }
+        .nav-link { color: rgba(255, 255, 255, 0.8) !important; transition: all 0.3s ease; border-radius: 10px; margin: 5px 0; padding: 12px 15px; }
+        .nav-link:hover { background-color: rgba(255, 255, 255, 0.1); color: white !important; }
+        .card { border: none; border-radius: 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+    </style>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-2 sidebar p-0">
+            <div class="p-3">
+                <h4 class="text-white mb-4"><i class="fas fa-tshirt"></i> ClothSphere</h4>
+                <nav class="nav flex-column">
+                    <a class="nav-link" href="/sales-orders">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                    <a class="nav-link" href="/sales-orders/list">
+                        <i class="fas fa-list"></i> All Orders
+                    </a>
+                    <a class="nav-link" href="/sales-orders/create">
+                        <i class="fas fa-plus-circle"></i> New Order
+                    </a>
+                    <a class="nav-link" href="/sales-orders/reports/sales">
+                        <i class="fas fa-chart-bar"></i> Sales Reports
+                    </a>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-10 p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 text-dark">Edit Order</h1>
+                <a th:href="@{/sales-orders/view/{id}(id=${order.id})}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Order
+                </a>
+            </div>
+
+            <!-- Alert Messages -->
+            <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-circle"></i> <span th:text="${errorMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <form method="post" th:action="@{/sales-orders/edit/{id}(id=${order.id})}">
+                        <!-- Buyer Information -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0"><i class="fas fa-user"></i> Buyer Information</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Buyer Name *</label>
+                                        <input type="text" class="form-control" name="buyerName"
+                                               th:value="${order.buyer.name}" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Email *</label>
+                                        <input type="email" class="form-control" name="buyerEmail"
+                                               th:value="${order.buyer.email}" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Phone</label>
+                                        <input type="tel" class="form-control" name="buyerPhone"
+                                               th:value="${order.buyer.phone}">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Address</label>
+                                        <textarea class="form-control" name="buyerAddress" rows="1"
+                                                  th:text="${order.buyer.address}"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Order Details -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-warning">
+                                <h5 class="mb-0"><i class="fas fa-file-invoice"></i> Order Details</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Order Number</label>
+                                        <input type="text" class="form-control" th:value="${order.orderNumber}" disabled>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Delivery Deadline *</label>
+                                        <input type="date" class="form-control" name="deliveryDeadline"
+                                               th:value="${order.deliveryDeadline}" required>
+                                    </div>
+                                    <div class="col-md-12 mb-3">
+                                        <label class="form-label">Notes</label>
+                                        <textarea class="form-control" name="notes" rows="3"
+                                                  th:text="${order.notes}"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex justify-content-end gap-2">
+                            <a th:href="@{/sales-orders/view/{id}(id=${order.id})}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

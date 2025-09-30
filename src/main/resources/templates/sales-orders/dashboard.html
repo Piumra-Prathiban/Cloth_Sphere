@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Orders Dashboard - ClothSphere</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .sidebar { background: linear-gradient(180deg, #2c3e50 0%, #3498db 100%); min-height: 100vh; }
+        .nav-link { color: rgba(255, 255, 255, 0.8) !important; transition: all 0.3s ease; border-radius: 10px; margin: 5px 0; padding: 12px 15px; }
+        .nav-link:hover, .nav-link.active { background-color: rgba(255, 255, 255, 0.1); color: white !important; }
+        .stat-card { border: none; border-radius: 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); transition: transform 0.3s ease; }
+        .stat-card:hover { transform: translateY(-5px); }
+    </style>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-2 sidebar p-0">
+            <div class="p-3">
+                <h4 class="text-white mb-4"><i class="fas fa-tshirt"></i> ClothSphere</h4>
+                <nav class="nav flex-column">
+                    <a class="nav-link active" href="/sales-orders">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                    <a class="nav-link" href="/sales-orders/list">
+                        <i class="fas fa-list"></i> All Orders
+                    </a>
+                    <a class="nav-link" href="/sales-orders/create">
+                        <i class="fas fa-plus-circle"></i> New Order
+                    </a>
+                    <a class="nav-link" href="/sales-orders/reports/sales">
+                        <i class="fas fa-chart-bar"></i> Sales Reports
+                    </a>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-10 p-4">
+            <h1 class="h3 text-dark mb-4">Sales Orders Dashboard</h1>
+
+            <!-- Alert Messages -->
+            <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="fas fa-check-circle"></i> <span th:text="${successMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="row mb-4">
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="card stat-card bg-primary text-white">
+                        <div class="card-body text-center">
+                            <i class="fas fa-shopping-cart fa-3x mb-3"></i>
+                            <h3 th:text="${stats.totalOrders}">0</h3>
+                            <p class="mb-0">Total Orders</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="card stat-card bg-warning text-white">
+                        <div class="card-body text-center">
+                            <i class="fas fa-clock fa-3x mb-3"></i>
+                            <h3 th:text="${stats.pendingCount}">0</h3>
+                            <p class="mb-0">Pending Orders</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="card stat-card bg-info text-white">
+                        <div class="card-body text-center">
+                            <i class="fas fa-cogs fa-3x mb-3"></i>
+                            <h3 th:text="${stats.in_productionCount}">0</h3>
+                            <p class="mb-0">In Production</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="card stat-card bg-success text-white">
+                        <div class="card-body text-center">
+                            <i class="fas fa-check-circle fa-3x mb-3"></i>
+                            <h3 th:text="${stats.deliveredCount}">0</h3>
+                            <p class="mb-0">Delivered</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Orders -->
+            <div class="card stat-card">
+                <div class="card-header bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-clock text-primary"></i> Recent Orders</h5>
+                        <a href="/sales-orders/list" class="btn btn-sm btn-outline-primary">View All</a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                            <tr>
+                                <th>Order #</th>
+                                <th>Buyer</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Deadline</th>
+                                <th>Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="order : ${recentOrders}">
+                                <td><strong th:text="${order.orderNumber}"></strong></td>
+                                <td th:text="${order.buyer.name}"></td>
+                                <td th:text="${#numbers.formatCurrency(order.totalAmount)}"></td>
+                                <td>
+                                            <span class="badge"
+                                                  th:classappend="${order.orderStatus.name() == 'PENDING'} ? 'bg-warning text-dark' :
+                                                                 ${order.orderStatus.name() == 'IN_PRODUCTION'} ? 'bg-info' :
+                                                                 ${order.orderStatus.name() == 'DELIVERED'} ? 'bg-success' : 'bg-secondary'"
+                                                  th:text="${order.orderStatus.displayName}">
+                                            </span>
+                                </td>
+                                <td th:text="${#temporals.format(order.deliveryDeadline, 'MMM dd, yyyy')}"></td>
+                                <td>
+                                    <a th:href="@{/sales-orders/view/{id}(id=${order.id})}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(recentOrders)}">
+                                <td colspan="6" class="text-center text-muted">No recent orders found</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Overdue Orders Alert -->
+            <div th:if="${!#lists.isEmpty(overdueOrders)}" class="card stat-card mt-4 border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle"></i> Overdue Orders
+                        <span class="badge bg-white text-danger" th:text="${#lists.size(overdueOrders)}"></span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        <div th:each="order : ${overdueOrders}" class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong th:text="${order.orderNumber}"></strong> -
+                                    <span th:text="${order.buyer.name}"></span>
+                                    <br>
+                                    <small class="text-danger">
+                                        Due: <span th:text="${#temporals.format(order.deliveryDeadline, 'MMM dd, yyyy')}"></span>
+                                    </small>
+                                </div>
+                                <a th:href="@{/sales-orders/view/{id}(id=${order.id})}" class="btn btn-sm btn-danger">
+                                    View <i class="fas fa-arrow-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

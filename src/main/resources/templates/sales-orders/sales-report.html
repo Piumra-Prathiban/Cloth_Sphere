@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Report - ClothSphere</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .sidebar { background: linear-gradient(180deg, #2c3e50 0%, #3498db 100%); min-height: 100vh; }
+        .nav-link { color: rgba(255, 255, 255, 0.8) !important; transition: all 0.3s ease; border-radius: 10px; margin: 5px 0; padding: 12px 15px; }
+        .nav-link:hover, .nav-link.active { background-color: rgba(255, 255, 255, 0.1); color: white !important; }
+        .card { border: none; border-radius: 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); margin-bottom: 20px; }
+        .stat-card { transition: transform 0.3s ease; }
+        .stat-card:hover { transform: translateY(-5px); }
+    </style>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-2 sidebar p-0">
+            <div class="p-3">
+                <h4 class="text-white mb-4"><i class="fas fa-tshirt"></i> ClothSphere</h4>
+                <nav class="nav flex-column">
+                    <a class="nav-link" href="/sales-orders">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                    <a class="nav-link" href="/sales-orders/list">
+                        <i class="fas fa-list"></i> All Orders
+                    </a>
+                    <a class="nav-link" href="/sales-orders/create">
+                        <i class="fas fa-plus-circle"></i> New Order
+                    </a>
+                    <a class="nav-link active" href="/sales-orders/reports/sales">
+                        <i class="fas fa-chart-bar"></i> Sales Reports
+                    </a>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-10 p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 text-dark">Sales Report</h1>
+                <a href="/sales-orders" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+
+            <!-- Date Range Filter -->
+            <div class="card">
+                <div class="card-body">
+                    <form method="get" action="/sales-orders/reports/sales">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-4">
+                                <label class="form-label">Start Date</label>
+                                <input type="date" class="form-control" name="startDate"
+                                       th:value="${startDate}" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">End Date</label>
+                                <input type="date" class="form-control" name="endDate"
+                                       th:value="${endDate}" required>
+                            </div>
+                            <div class="col-md-4">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-search"></i> Generate Report
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Report Summary -->
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card stat-card bg-success text-white">
+                        <div class="card-body text-center">
+                            <i class="fas fa-dollar-sign fa-3x mb-3"></i>
+                            <h3 th:text="${#numbers.formatCurrency(salesReport.totalSalesAmount)}">$0.00</h3>
+                            <p class="mb-0">Total Sales</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card stat-card bg-primary text-white">
+                        <div class="card-body text-center">
+                            <i class="fas fa-shopping-cart fa-3x mb-3"></i>
+                            <h3 th:text="${salesReport.totalOrdersCount}">0</h3>
+                            <p class="mb-0">Total Orders</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card stat-card bg-info text-white">
+                        <div class="card-body text-center">
+                            <i class="fas fa-chart-line fa-3x mb-3"></i>
+                            <h3 th:text="${#numbers.formatCurrency(salesReport.averageOrderValue)}">$0.00</h3>
+                            <p class="mb-0">Average Order Value</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Breakdown -->
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-pie"></i> Orders by Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                            <tr>
+                                <th>Status</th>
+                                <th class="text-center">Count</th>
+                                <th class="text-end">Percentage</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="status : ${orderStatuses}">
+                                <td>
+                                    <span class="badge"
+                                          th:classappend="${status.bootstrapClass} ? 'bg-' + ${status.bootstrapClass} : 'bg-secondary'"
+                                          th:text="${status.displayName}">
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <strong th:text="${salesReport.statusBreakdown.get(status)}">0</strong>
+                                </td>
+                                <td class="text-end">
+                                    <span th:if="${salesReport.totalOrdersCount > 0}"
+                                          th:text="${#numbers.formatDecimal(salesReport.statusBreakdown.get(status) * 100.0 / salesReport.totalOrdersCount, 1, 1)} + '%'">
+                                    </span>
+                                    <span th:if="${salesReport.totalOrdersCount == 0}">0.0%</span>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Report Period Info -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h6 class="text-muted">Report Period:</h6>
+                            <p>
+                                <strong>From:</strong> <span th:text="${#temporals.format(startDate, 'MMMM dd, yyyy')}"></span>
+                                <strong class="ms-3">To:</strong> <span th:text="${#temporals.format(endDate, 'MMMM dd, yyyy')}"></span>
+                            </p>
+                            <p class="text-muted mb-0">
+                                <i class="fas fa-info-circle"></i>
+                                This report includes all orders placed between the selected dates.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

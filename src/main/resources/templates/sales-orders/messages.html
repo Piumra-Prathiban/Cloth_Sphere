@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Messages - ClothSphere</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .sidebar { background: linear-gradient(180deg, #2c3e50 0%, #3498db 100%); min-height: 100vh; }
+        .nav-link { color: rgba(255, 255, 255, 0.8) !important; transition: all 0.3s ease; border-radius: 10px; margin: 5px 0; padding: 12px 15px; }
+        .nav-link:hover { background-color: rgba(255, 255, 255, 0.1); color: white !important; }
+        .card { border: none; border-radius: 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+        .message-item { border-left: 4px solid #007bff; padding: 15px; margin-bottom: 15px; background: white; border-radius: 10px; }
+        .message-item.unread { border-left-color: #dc3545; background-color: #fff3cd; }
+        .message-item.urgent { border-left-color: #dc3545; }
+    </style>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-2 sidebar p-0">
+            <div class="p-3">
+                <h4 class="text-white mb-4"><i class="fas fa-tshirt"></i> ClothSphere</h4>
+                <nav class="nav flex-column">
+                    <a class="nav-link" href="/sales-orders">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                    <a class="nav-link" href="/sales-orders/list">
+                        <i class="fas fa-list"></i> All Orders
+                    </a>
+                    <a class="nav-link" href="/sales-orders/create">
+                        <i class="fas fa-plus-circle"></i> New Order
+                    </a>
+                    <a class="nav-link" href="/sales-orders/reports/sales">
+                        <i class="fas fa-chart-bar"></i> Sales Reports
+                    </a>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-10 p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 text-dark">Order Messages</h1>
+                    <p class="text-muted mb-0">
+                        Order #<span th:text="${order.orderNumber}"></span>
+                        <span th:if="${unreadCount > 0}" class="badge bg-danger ms-2" th:text="${unreadCount} + ' unread'"></span>
+                    </p>
+                </div>
+                <a th:href="@{/sales-orders/view/{id}(id=${order.id})}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Order
+                </a>
+            </div>
+
+            <!-- Alert Messages -->
+            <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="fas fa-check-circle"></i> <span th:text="${successMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-circle"></i> <span th:text="${errorMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <div class="row">
+                <!-- Messages List -->
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0"><i class="fas fa-comments"></i> Message History</h5>
+                        </div>
+                        <div class="card-body" style="max-height: 600px; overflow-y: auto;">
+                            <div th:if="${#lists.isEmpty(messages)}" class="text-center py-5">
+                                <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
+                                <p class="text-muted">No messages yet</p>
+                            </div>
+
+                            <div th:each="message : ${messages}"
+                                 th:class="${message.isRead} ? 'message-item' : 'message-item unread'"
+                                 th:classappend="${message.messageType.name() == 'URGENT'} ? 'urgent' : ''">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <strong th:text="${message.senderName}">Sender</strong>
+                                        <span class="badge bg-secondary ms-2" th:text="${message.messageType.displayName}">Info</span>
+                                        <span th:if="${!message.isRead}" class="badge bg-danger ms-1">Unread</span>
+                                    </div>
+                                    <small class="text-muted" th:text="${#temporals.format(message.createdAt, 'MMM dd, yyyy HH:mm')}">Date</small>
+                                </div>
+                                <p class="mb-2" th:text="${message.message}">Message content</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">
+                                        To: <span th:text="${message.recipientName} ?: 'N/A'"></span>
+                                        (<span th:text="${message.recipientEmail} ?: 'N/A'"></span>)
+                                    </small>
+                                    <form th:if="${!message.isRead}" method="post"
+                                          th:action="@{/sales-orders/messages/{messageId}/mark-read(messageId=${message.id})}" class="d-inline">
+                                        <input type="hidden" name="orderId" th:value="${order.id}">
+                                        <button type="submit" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-check"></i> Mark as Read
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Send Message Form -->
+                <div class="col-md-4">
+                    <!-- General Message -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-success text-white">
+                            <h6 class="mb-0"><i class="fas fa-paper-plane"></i> Send Message</h6>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" th:action="@{/sales-orders/{orderId}/messages/send(orderId=${order.id})}">
+                                <div class="mb-3">
+                                    <label class="form-label">Your Name</label>
+                                    <input type="text" class="form-control" name="senderName" value="Sales Executive" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Message Type</label>
+                                    <select class="form-select" name="messageType">
+                                        <option value="INFO">Information</option>
+                                        <option value="STATUS_UPDATE">Status Update</option>
+                                        <option value="DELIVERY_UPDATE">Delivery Update</option>
+                                        <option value="QUERY">Query</option>
+                                        <option value="CONFIRMATION">Confirmation</option>
+                                        <option value="URGENT">Urgent</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Message</label>
+                                    <textarea class="form-control" name="message" rows="4" required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-success w-100">
+                                    <i class="fas fa-send"></i> Send
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Quick Messages -->
+                    <div class="card">
+                        <div class="card-header bg-warning">
+                            <h6 class="mb-0"><i class="fas fa-bolt"></i> Quick Actions</h6>
+                        </div>
+                        <div class="card-body">
+                            <!-- Delivery Update -->
+                            <form method="post" th:action="@{/sales-orders/{orderId}/messages/delivery-update(orderId=${order.id})}" class="mb-2">
+                                <div class="mb-2">
+                                    <input type="text" class="form-control form-control-sm" name="senderName" value="Sales Executive" hidden>
+                                    <textarea class="form-control form-control-sm" name="deliveryInfo" rows="2" placeholder="Delivery update..." required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-sm btn-info w-100">
+                                    <i class="fas fa-truck"></i> Send Delivery Update
+                                </button>
+                            </form>
+
+                            <!-- Urgent Message -->
+                            <form method="post" th:action="@{/sales-orders/{orderId}/messages/urgent(orderId=${order.id})}">
+                                <div class="mb-2">
+                                    <input type="text" class="form-control form-control-sm" name="senderName" value="Sales Executive" hidden>
+                                    <textarea class="form-control form-control-sm" name="urgentMessage" rows="2" placeholder="Urgent message..." required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-sm btn-danger w-100">
+                                    <i class="fas fa-exclamation-triangle"></i> Send Urgent Message
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -4,6 +4,7 @@ import com.clothsphere.model.SalesOrder.*;
 import com.clothsphere.repository.SalesOrder.OrderRepository;
 import com.clothsphere.repository.SalesOrder.BuyerRepository;
 import com.clothsphere.repository.SalesOrder.ProductRepository;
+import com.clothsphere.repository.SalesOrder.OrderMessageRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +27,9 @@ public class OrderService {
 
     @Autowired
     private ProductRepository productRepository;
+
+    @Autowired
+    private OrderMessageRepository orderMessageRepository;
 
     // Create simple order (corrected to match your classes)
     public Order createSimpleOrder(String buyerName, String buyerEmail, String buyerPhone,
@@ -194,5 +198,146 @@ public class OrderService {
         report.put("averageOrderValue", averageOrderValue);
 
         return report;
+    }
+
+    // ========== MESSAGING FUNCTIONALITY ==========
+
+    /**
+     * Send an order update message to the buyer
+     */
+    public OrderMessage sendOrderUpdateMessage(Long orderId, String message, String senderName, String senderType) {
+        Optional<Order> orderOpt = orderRepository.findById(orderId);
+        if (!orderOpt.isPresent()) {
+            throw new IllegalArgumentException("Order not found with ID: " + orderId);
+        }
+
+        Order order = orderOpt.get();
+        OrderMessage orderMessage = new OrderMessage(order, message, senderName, senderType);
+
+        // Set recipient information
+        if (order.getBuyer() != null) {
+            orderMessage.setRecipientName(order.getBuyer().getName());
+            orderMessage.setRecipientEmail(order.getBuyer().getEmail());
+        }
+
+        orderMessage.setMessageType(MessageType.STATUS_UPDATE);
+
+        return orderMessageRepository.save(orderMessage);
+    }
+
+    /**
+     * Send a status change notification
+     */
+    public OrderMessage sendStatusChangeNotification(Long orderId, OrderStatus oldStatus, OrderStatus newStatus, String senderName) {
+        String message = String.format(
+            "Order status updated from '%s' to '%s'. %s",
+            oldStatus.getDisplayName(),
+            newStatus.getDisplayName(),
+            newStatus.getDescription()
+        );
+
+        return sendOrderUpdateMessage(orderId, message, senderName, "SYSTEM");
+    }
+
+    /**
+     * Send a custom message for an order
+     */
+    public OrderMessage sendCustomMessage(Long orderId, String message, String senderName,
+                                          String senderType, MessageType messageType) {
+        Optional<Order> orderOpt = orderRepository.findById(orderId);
+        if (!orderOpt.isPresent()) {
+            throw new IllegalArgumentException("Order not found with ID: " + orderId);
+        }
+
+        Order order = orderOpt.get();
+        OrderMessage orderMessage = new OrderMessage(order, message, senderName, senderType);
+
+        // Set recipient information
+        if (order.getBuyer() != null) {
+            orderMessage.setRecipientName(order.getBuyer().getName());
+            orderMessage.setRecipientEmail(order.getBuyer().getEmail());
+        }
+
+        orderMessage.setMessageType(messageType);
+
+        return orderMessageRepository.save(orderMessage);
+    }
+
+    /**
+     * Get all messages for an order
+     */
+    public List<OrderMessage> getOrderMessages(Long orderId) {
+        return orderMessageRepository.findByOrder_IdOrderByCreatedAtDesc(orderId);
+    }
+
+    /**
+     * Get unread messages for an order
+     */
+    public List<OrderMessage> getUnreadOrderMessages(Long orderId) {
+        return orderMessageRepository.findUnreadMessagesByOrderId(orderId);
+    }
+
+    /**
+     * Mark a message as read
+     */
+    public void markMessageAsRead(Long messageId) {
+        Optional<OrderMessage> messageOpt = orderMessageRepository.findById(messageId);
+        if (messageOpt.isPresent()) {
+            OrderMessage message = messageOpt.get();
+            message.markAsRead();
+            orderMessageRepository.save(message);
+        }
+    }
+
+    /**
+     * Get count of unread messages for an order
+     */
+    public long getUnreadMessageCount(Long orderId) {
+        return orderMessageRepository.countUnreadMessagesByOrderId(orderId);
+    }
+
+    /**
+     * Get recent messages across all orders
+     */
+    public List<OrderMessage> getRecentMessages() {
+        return orderMessageRepository.findTop20ByOrderByCreatedAtDesc();
+    }
+
+    /**
+     * Send delivery update message
+     */
+    public OrderMessage sendDeliveryUpdate(Long orderId, String deliveryInfo, String senderName) {
+        String message = "Delivery Update: " + deliveryInfo;
+        return sendCustomMessage(orderId, message, senderName, "SALES_EXECUTIVE", MessageType.DELIVERY_UPDATE);
+    }
+
+    /**
+     * Send urgent message
+     */
+    public OrderMessage sendUrgentMessage(Long orderId, String urgentMessage, String senderName) {
+        String message = "URGENT: " + urgentMessage;
+        return sendCustomMessage(orderId, message, senderName, "SALES_EXECUTIVE", MessageType.URGENT);
+    }
+
+    /**
+     * Enhanced update order status with automatic messaging
+     */
+    public Order updateOrderStatusWithNotification(Long id, OrderStatus newStatus, String updatedBy) {
+        Optional<Order> orderOpt = orderRepository.findById(id);
+        if (!orderOpt.isPresent()) {
+            throw new IllegalArgumentException("Order not found with ID: " + id);
+        }
+
+        Order order = orderOpt.get();
+        OrderStatus oldStatus = order.getOrderStatus();
+
+        // Update the status
+        order.setOrderStatus(newStatus);
+        Order updatedOrder = orderRepository.save(order);
+
+        // Send automatic notification
+        sendStatusChangeNotification(id, oldStatus, newStatus, updatedBy);
+
+        return updatedOrder;
     }
 }
