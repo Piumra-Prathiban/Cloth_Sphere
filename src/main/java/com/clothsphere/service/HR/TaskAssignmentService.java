@@ -476,4 +476,51 @@ public class TaskAssignmentService {
 
         return updatedAssignment;
     }
+
+    /**
+     * Update assignment status with automatic completion date and actual hours
+     */
+    @Transactional
+    public TaskAssignment updateAssignmentStatus(String assignmentId, String newStatus, Integer actualHours) {
+        Optional<TaskAssignment> optionalAssignment = taskAssignmentRepository.findById(assignmentId);
+        if (!optionalAssignment.isPresent()) {
+            return null;
+        }
+
+        TaskAssignment assignment = optionalAssignment.get();
+        String oldStatus = assignment.getStatus();
+        assignment.setStatus(newStatus);
+
+        // If status changed to COMPLETED and wasn't completed before
+        if ("COMPLETED".equals(newStatus) && !"COMPLETED".equals(oldStatus)) {
+            // Set completion date to current date
+            assignment.setCompletionDate(LocalDate.now());
+
+            // Set actual hours if provided, otherwise keep existing or null
+            if (actualHours != null) {
+                assignment.setActualHours(actualHours);
+            }
+            // Don't set automatic hours - let employee input them
+
+            System.out.println("Assignment " + assignmentId + " marked as completed. " +
+                    "Completion date: " + assignment.getCompletionDate() + ", " +
+                    "Actual hours: " + assignment.getActualHours());
+        }
+
+        // If status changed from COMPLETED to something else, clear completion date
+        if (!"COMPLETED".equals(newStatus) && "COMPLETED".equals(oldStatus)) {
+            assignment.setCompletionDate(null);
+            // Keep actual hours as they might represent historical data
+        }
+
+        TaskAssignment updatedAssignment = taskAssignmentRepository.save(assignment);
+
+        // Update the task status based on all assignments
+        if (updatedAssignment != null && assignment.getTask() != null) {
+            updateTaskStatusBasedOnAssignments(assignment.getTask().getTaskId());
+        }
+
+        return updatedAssignment;
+    }
+
 }

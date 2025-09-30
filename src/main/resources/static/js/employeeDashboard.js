@@ -229,6 +229,7 @@
  }
 
  // Display tasks in table
+ // Display tasks in table - Enhanced version
  function displayTasks(tasks) {
      const tableBody = document.getElementById('tasks-table-body');
      const noTasksMessage = document.getElementById('no-tasks-message');
@@ -247,6 +248,11 @@
          const isOverdue = new Date(task.deadline) < new Date() && task.status !== 'COMPLETED';
          const rowClass = isOverdue ? 'overdue-task' : '';
 
+         // Format completion date and show actual hours if completed
+         const completionInfo = task.status === 'COMPLETED' && task.completionDate ?
+             `<br><small class="text-success">Completed: ${formatDate(task.completionDate)}${task.actualHours ? ` (${task.actualHours}h)` : ''}</small>` :
+             '';
+
          return `
             <tr class="${rowClass}">
                 <td>${task.assignmentId || 'N/A'}</td>
@@ -260,11 +266,15 @@
                     ${formatDate(task.deadline)}
                     ${isOverdue ? '<br><small class="overdue-deadline">Overdue</small>' : ''}
                 </td>
-                <td>${task.estimatedHours || 'N/A'} hrs</td>
+                <td>
+                    ${task.estimatedHours || 'N/A'} hrs
+                    ${task.actualHours ? `<br><small class="text-success">Actual: ${task.actualHours}h</small>` : ''}
+                </td>
                 <td>
                     <span class="status-badge status-${task.status.toLowerCase().replace('_', '-')}">
                         ${getStatusLabel(task.status)}
                     </span>
+                    ${completionInfo}
                 </td>
                 <td>
                     <div class="task-actions">
@@ -328,6 +338,7 @@
  }
 
  // Open status update modal
+ // Open status update modal - Enhanced version with actual hours input
  function openStatusModal(assignmentId) {
      currentAssignmentId = assignmentId;
      const task = currentTasks.find(t => t.assignmentId === assignmentId);
@@ -339,7 +350,7 @@
             <div class="status-modal-content">
                 <div class="status-modal-header">
                     <h4>Update Task Status</h4>
-                </div>production_task\
+                </div>
                 <div class="status-modal-body">
                     <p><strong>Task:</strong> ${task.taskName}</p>
                     <p><strong>Current Status:</strong> ${getStatusLabel(task.status)}</p>
@@ -359,6 +370,17 @@
                             <p>Mark this task as finished</p>
                         </div>
                     ` : ''}
+                    
+                    <!-- Actual Hours Input (only shown when COMPLETED is selected) -->
+                    <div id="actual-hours-section" style="margin-top: 15px; display: none;">
+                        <div class="form-group">
+                            <label for="actual-hours-input"><strong>Actual Hours Worked:</strong></label>
+                            <input type="number" id="actual-hours-input" class="form-control" 
+                                   placeholder="Enter hours worked" min="1" max="24" 
+                                   value="${task.estimatedHours || 8}">
+                            <small class="form-text">Please enter the actual hours you spent on this task</small>
+                        </div>
+                    </div>
                     
                     <div id="selected-status" style="margin-top: 15px; display: none;">
                         <strong>Selected: </strong><span id="selected-status-label"></span>
@@ -382,6 +404,7 @@
 
      document.body.insertAdjacentHTML('beforeend', modalHtml);
  }
+
 
  // Select status in modal
  let selectedStatus = null;
@@ -414,6 +437,8 @@
  }
 
  // Update task status - Enhanced version
+ // Update task status - Enhanced version with completion date and actual hours
+ // Update task status - Enhanced version with actual hours input
  function updateTaskStatus() {
      if (!currentAssignmentId || !selectedStatus) {
          showMessage('Please select a status', 'error');
@@ -424,14 +449,37 @@
      updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
      updateBtn.disabled = true;
 
-     fetch(`/api/employee/assignments/${currentAssignmentId}/status`, {
+     // Get actual hours if COMPLETED status
+     let actualHours = null;
+     if (selectedStatus === 'COMPLETED') {
+         const actualHoursInput = document.getElementById('actual-hours-input');
+         actualHours = parseInt(actualHoursInput.value);
+
+         if (!actualHours || actualHours < 1) {
+             showMessage('Please enter valid actual hours (minimum 1 hour)', 'error');
+             updateBtn.innerHTML = 'Update Status';
+             updateBtn.disabled = false;
+             return;
+         }
+     }
+
+     // Prepare request data
+     const requestData = {
+         status: selectedStatus
+     };
+
+     // Add actual hours only for COMPLETED status
+     if (selectedStatus === 'COMPLETED' && actualHours) {
+         requestData.actualHours = actualHours;
+     }
+
+     // Use the employee-specific endpoint
+     fetch(`/api/assignments/employee/${currentAssignmentId}/status`, {
          method: 'PUT',
          headers: {
              'Content-Type': 'application/json',
          },
-         body: JSON.stringify({
-             status: selectedStatus
-         })
+         body: JSON.stringify(requestData)
      })
          .then(response => {
              if (!response.ok) {
@@ -442,6 +490,14 @@
          .then(data => {
              if (data.success) {
                  let message = 'Task status updated successfully!';
+
+                 // Add completion information if status is COMPLETED
+                 if (selectedStatus === 'COMPLETED') {
+                     message += ` Completed on ${new Date(data.completionDate).toLocaleDateString()}`;
+                     if (data.actualHours) {
+                         message += ` with ${data.actualHours} hours worked`;
+                     }
+                 }
 
                  // Add task progress information if available
                  if (data.taskProgress) {
@@ -455,7 +511,7 @@
 
                  showMessage(message, 'success');
                  closeStatusModal();
-                 loadEmployeeTasks(); // Reload tasks
+                 loadEmployeeTasks(); // Reload tasks to show updated completion date and hours
              } else {
                  throw new Error(data.message || 'Failed to update status');
              }
@@ -469,6 +525,7 @@
  }
 
  // View task details
+ // View task details - Enhanced version
  function viewTaskDetails(assignmentId) {
      const task = currentTasks.find(t => t.assignmentId === assignmentId);
      if (!task) return;
@@ -512,6 +569,18 @@
                             <label>Estimated Hours</label>
                             <div class="value">${task.estimatedHours || 'N/A'} hours</div>
                         </div>
+                        ${task.actualHours ? `
+                        <div class="info-group">
+                            <label>Actual Hours</label>
+                            <div class="value text-success">${task.actualHours} hours</div>
+                        </div>
+                        ` : ''}
+                        ${task.completionDate ? `
+                        <div class="info-group">
+                            <label>Completion Date</label>
+                            <div class="value text-success">${formatDate(task.completionDate)}</div>
+                        </div>
+                        ` : ''}
                         <div class="info-group">
                             <label>Current Status</label>
                             <div class="value">
