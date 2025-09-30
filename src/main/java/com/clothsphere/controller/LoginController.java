@@ -8,6 +8,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @Controller
 public class LoginController {
 
@@ -67,12 +70,12 @@ public class LoginController {
                     return "redirect:/inventoryDashboard";
                 case "customer-officer":
                     return "redirect:/customerDashboard";
-                case "sales-executive":
+                case "sales-order-manager":
                     return "redirect:/salesDashboard";
                 case "employee":
                     return "redirect:/employeeDashboard";
                 default:
-                    return "redirect:/dashboard";
+                    return "redirect:/Dashboard";
             }
         } else {
             System.out.println("User validation failed for: " + username);
@@ -151,6 +154,24 @@ public class LoginController {
 
     @GetMapping("/salesDashboard")
     public String showSalesDashboard(HttpSession session, Model model) {
-        return loadDashboard("salesDashboard", session, model);
+        SystemUser currentUser = (SystemUser) session.getAttribute("currentUser");
+        if (currentUser == null) {
+            return "redirect:/systemUserLogin";
+        }
+
+        model.addAttribute("user", currentUser);
+
+        // Add mock data to prevent null errors
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalOrders", 0);
+        stats.put("pendingCount", 0);
+        stats.put("in_productionCount", 0);
+        stats.put("deliveredCount", 0);
+
+        model.addAttribute("stats", stats);
+        model.addAttribute("recentOrders", new java.util.ArrayList<>());
+        model.addAttribute("overdueOrders", new java.util.ArrayList<>());
+
+        return "salesDashboard";
     }
 }

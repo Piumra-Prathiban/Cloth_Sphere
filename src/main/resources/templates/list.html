@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orders List - ClothSphere</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .filter-card { border: none; border-radius: 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .orders-card { border: none; border-radius: 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+        .table-hover tbody tr:hover { background-color: rgba(0, 123, 255, 0.1); }
+    </style>
+</head>
+<body>
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 text-dark mb-1">Sales Orders</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/sales-orders">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Orders List</li>
+                </ol>
+            </nav>
+        </div>
+        <div>
+            <a href="/sales-orders/create" class="btn btn-primary me-2">
+                <i class="fas fa-plus"></i> New Order
+            </a>
+            <a href="/sales-orders" class="btn btn-outline-secondary">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Alert Messages -->
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fas fa-check-circle"></i> <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Search and Filter -->
+    <div class="card filter-card mb-4">
+        <div class="card-body">
+            <form method="get" action="/sales-orders/list" class="row g-3">
+                <div class="col-md-3">
+                    <label for="buyerName" class="form-label">
+                        <i class="fas fa-user"></i> Buyer Name
+                    </label>
+                    <input type="text" class="form-control" id="buyerName" name="buyerName"
+                           placeholder="Search by buyer name..." th:value="${buyerName}">
+                </div>
+                <div class="col-md-3">
+                    <label for="orderStatus" class="form-label">
+                        <i class="fas fa-list"></i> Order Status
+                    </label>
+                    <select class="form-select" id="orderStatus" name="orderStatus">
+                        <option value="">All Statuses</option>
+                        <option th:each="status : ${orderStatuses}"
+                                th:value="${status}"
+                                th:text="${status.displayName}"
+                                th:selected="${status == orderStatus}">
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="startDate" class="form-label">
+                        <i class="fas fa-calendar"></i> From Date
+                    </label>
+                    <input type="date" class="form-control" id="startDate" name="startDate" th:value="${startDate}">
+                </div>
+                <div class="col-md-2">
+                    <label for="endDate" class="form-label">
+                        <i class="fas fa-calendar"></i> To Date
+                    </label>
+                    <input type="date" class="form-control" id="endDate" name="endDate" th:value="${endDate}">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <div class="w-100">
+                        <button type="submit" class="btn btn-light w-100 mb-1">
+                            <i class="fas fa-search"></i> Search
+                        </button>
+                        <a href="/sales-orders/list" class="btn btn-outline-light w-100">
+                            <i class="fas fa-times"></i> Clear
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Orders Table -->
+    <div class="card orders-card">
+        <div class="card-header bg-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-list text-primary"></i> Orders List
+                    <span class="badge bg-primary" th:text="${#lists.size(orders)}">0</span>
+                </h5>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                    <tr>
+                        <th>Order Number</th>
+                        <th>Buyer Information</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Deadline</th>
+                        <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="order : ${orders}" th:if="${!orderSempty}">
+                        <td>
+                            <strong th:text="${order.orderNumber}"></strong>
+                            <br>
+                            <small class="text-muted" th:text="${#temporals.format(order.orderDate, 'MMM dd, yyyy HH:mm')}"></small>
+                        </td>
+                        <td>
+                            <strong th:text="${order.buyer.name}"></strong>
+                            <br>
+                            <small class="text-muted" th:text="${order.buyer.email}"></small>
+                        </td>
+                        <td>
+                            <strong th:text="${#numbers.formatCurrency(order.totalAmount)}"></strong>
+                            <br>
+                            <small class="text-muted" th:text="${order.totalItems} + ' items'"></small>
+                        </td>
+                        <td>
+                                    <span class="badge"
+                                          th:classappend="${order.orderStatus.name() == 'PENDING'} ? 'bg-warning text-dark' :
+                                                         ${order.orderStatus.name() == 'CONFIRMED'} ? 'bg-info' :
+                                                         ${order.orderStatus.name() == 'IN_PRODUCTION'} ? 'bg-primary' :
+                                                         ${order.orderStatus.name() == 'READY_TO_SHIP'} ? 'bg-success' :
+                                                         ${order.orderStatus.name() == 'DELIVERED'} ? 'bg-success' : 'bg-secondary'"
+                                          th:text="${order.orderStatus.displayName}">
+                                    </span>
+                        </td>
+                        <td>
+                            <strong th:text="${#temporals.format(order.deliveryDeadline, 'MMM dd, yyyy')}"></strong>
+                            <br>
+                            <small th:if="${order.overdue}" class="text-danger">
+                                <i class="fas fa-exclamation-triangle"></i> Overdue
+                            </small>
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a th:href="@{/sales-orders/view/{id}(id=${order.id})}"
+                                   class="btn btn-sm btn-outline-primary" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a th:href="@{/sales-orders/edit/{id}(id=${order.id})}"
+                                   class="btn btn-sm btn-outline-secondary" title="Edit Order">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr th:if="${ordersempty}">
+                        <td colspan="6" class="text-center py-5">
+                            <div class="text-muted">
+                                <i class="fas fa-inbox fa-3x mb-3"></i>
+                                <h5>No orders found</h5>
+                                <p>Try adjusting your search criteria or create a new order.</p>
+                                <a href="/sales-orders/create" class="btn btn-primary">
+                                    <i class="fas fa-plus"></i> Create New Order
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

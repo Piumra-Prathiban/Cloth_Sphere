@@ -12,7 +12,7 @@ public class SystemUser {
     private String userName;
 
     @Id
-    @Column(name = "role", length = 15, nullable = false)
+    @Column(name = "role", length = 40, nullable = false)
     private String role;
 
     @Column(name = "password", length = 100, nullable = false)
