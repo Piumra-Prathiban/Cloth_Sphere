@@ -413,7 +413,7 @@
      selectedStatus = null;
  }
 
- // Update task status
+ // Update task status - Enhanced version
  function updateTaskStatus() {
      if (!currentAssignmentId || !selectedStatus) {
          showMessage('Please select a status', 'error');
@@ -441,7 +441,19 @@
          })
          .then(data => {
              if (data.success) {
-                 showMessage('Task status updated successfully!', 'success');
+                 let message = 'Task status updated successfully!';
+
+                 // Add task progress information if available
+                 if (data.taskProgress) {
+                     const progress = data.taskProgress;
+                     message += ` Task progress: ${progress.completedAssignments}/${progress.totalAssignments} completed`;
+
+                     if (data.taskStatus) {
+                         message += ` (Overall task: ${getStatusLabel(data.taskStatus)})`;
+                     }
+                 }
+
+                 showMessage(message, 'success');
                  closeStatusModal();
                  loadEmployeeTasks(); // Reload tasks
              } else {

@@ -1,16 +1,17 @@
 package com.clothsphere.controller.HR;
 
 import com.clothsphere.model.HR.TaskAssignment;
+import com.clothsphere.model.HR.ProductionTask;
 import com.clothsphere.model.SystemUser;
 import com.clothsphere.service.HR.TaskAssignmentService;
-import com.clothsphere.service.HR.DepartmentService; // Add this import
+import com.clothsphere.service.HR.productionTaskService;
+import com.clothsphere.service.HR.DepartmentService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,11 +25,11 @@ public class TaskAssignmentController {
     private TaskAssignmentService taskAssignmentService;
 
     @Autowired
-    private DepartmentService departmentService; // Fixed variable name
+    private DepartmentService departmentService;
 
-    /**
-     * Get all task assignments - CORRECTED VERSION
-     */
+    @Autowired
+    private productionTaskService productionTaskService;
+
     /**
      * Get all task assignments - SIMPLIFIED VERSION
      */
@@ -183,7 +184,7 @@ public class TaskAssignmentController {
     }
 
     /**
-     * Update assignment
+     * Update assignment - UPDATED VERSION with automatic task status update
      */
     @PutMapping("/{assignmentId}")
     public ResponseEntity<Map<String, Object>> updateAssignment(
@@ -229,13 +230,22 @@ public class TaskAssignmentController {
                 updatedData.setNotes((String) assignmentData.get("notes"));
             }
 
-            // Update assignment
-            TaskAssignment updatedAssignment = taskAssignmentService.updateAssignment(assignmentId, updatedData);
+            // Update assignment with automatic task status update
+            TaskAssignment updatedAssignment = taskAssignmentService.updateAssignmentWithTaskStatus(assignmentId, updatedData);
 
             if (updatedAssignment != null) {
                 response.put("success", true);
                 response.put("message", "Assignment updated successfully!");
                 response.put("assignment", updatedAssignment);
+
+                // Get updated task status
+                String taskId = updatedAssignment.getTask().getTaskId();
+                Optional<ProductionTask> taskOpt = productionTaskService.getTaskById(taskId);
+                if (taskOpt.isPresent()) {
+                    response.put("taskStatus", taskOpt.get().getStatus());
+                    response.put("taskProgress", taskAssignmentService.getTaskCompletionProgress(taskId));
+                }
+
                 return new ResponseEntity<>(response, HttpStatus.OK);
             } else {
                 response.put("success", false);
@@ -370,6 +380,25 @@ public class TaskAssignmentController {
         }
     }
 
+    /**
+     * Get task completion progress
+     */
+    @GetMapping("/task/{taskId}/progress")
+    public ResponseEntity<Map<String, Object>> getTaskProgress(
+            @PathVariable String taskId,
+            HttpSession session) {
 
+        SystemUser currentUser = (SystemUser) session.getAttribute("currentUser");
+        if (currentUser == null || !"hr-manager".equals(currentUser.getRole())) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
 
+        try {
+            Map<String, Object> progress = taskAssignmentService.getTaskCompletionProgress(taskId);
+            return new ResponseEntity<>(progress, HttpStatus.OK);
+        } catch (Exception e) {
+            System.out.println("Error fetching task progress: " + e.getMessage());
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 }

@@ -6,6 +6,7 @@ import com.clothsphere.model.HR.ProductionTask;
 import com.clothsphere.model.HR.TaskAssignment;
 import com.clothsphere.repository.HR.TaskAssignmentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,8 +24,8 @@ public class TaskAssignmentService {
     private EmployeeService employeeService;
 
     @Autowired
+    @Lazy
     private productionTaskService productionTaskService;
-
 
     /**
      * Generate the next assignment ID in format asg01, asg02, etc.
@@ -190,9 +191,6 @@ public class TaskAssignmentService {
     }
 
     /**
-     * Get assignments by department
-     */
-    /**
      * Get assignments by department ID - Make sure this method exists
      */
     @Transactional(readOnly = true)
@@ -308,6 +306,7 @@ public class TaskAssignmentService {
 
         return result;
     }
+
     /**
      * Get all assignments (simple version) - FIXED VERSION
      */
@@ -348,6 +347,7 @@ public class TaskAssignmentService {
 
         return assignments;
     }
+
     /**
      * Get assignments by employee username
      */
@@ -358,5 +358,122 @@ public class TaskAssignmentService {
                         assignment.getEmployee() != null &&
                                 assignment.getEmployee().getUsername().equals(username))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Get task completion progress
+     */
+    @Transactional(readOnly = true)
+    public Map<String, Object> getTaskCompletionProgress(String taskId) {
+        Map<String, Object> progress = new HashMap<>();
+
+        try {
+            List<TaskAssignment> assignments = getAssignmentsByTaskId(taskId);
+            long totalAssignments = assignments.size();
+            long completedAssignments = assignments.stream()
+                    .filter(assignment -> "COMPLETED".equals(assignment.getStatus()))
+                    .count();
+
+            progress.put("totalAssignments", totalAssignments);
+            progress.put("completedAssignments", completedAssignments);
+            progress.put("completionPercentage", totalAssignments > 0 ?
+                    (completedAssignments * 100) / totalAssignments : 0);
+            progress.put("isFullyCompleted", completedAssignments == totalAssignments && totalAssignments > 0);
+
+        } catch (Exception e) {
+            System.out.println("Error getting task completion progress: " + e.getMessage());
+            progress.put("totalAssignments", 0);
+            progress.put("completedAssignments", 0);
+            progress.put("completionPercentage", 0);
+            progress.put("isFullyCompleted", false);
+        }
+
+        return progress;
+    }
+
+    /**
+     * Update production task status based on assignment completions
+     */
+    @Transactional
+    public void updateTaskStatusBasedOnAssignments(String taskId) {
+        try {
+            Optional<ProductionTask> taskOpt = productionTaskService.getTaskById(taskId);
+            if (!taskOpt.isPresent()) {
+                return;
+            }
+
+            ProductionTask task = taskOpt.get();
+            List<TaskAssignment> assignments = getAssignmentsByTaskId(taskId);
+
+            if (assignments.isEmpty()) {
+                // No assignments, set to PENDING
+                task.setStatus("PENDING");
+                productionTaskService.updateTask(taskId, task);
+                return;
+            }
+
+            // Count assignments by status
+            long totalAssignments = assignments.size();
+            long completedAssignments = assignments.stream()
+                    .filter(assignment -> "COMPLETED".equals(assignment.getStatus()))
+                    .count();
+            long inProgressAssignments = assignments.stream()
+                    .filter(assignment -> "IN_PROGRESS".equals(assignment.getStatus()))
+                    .count();
+            long assignedAssignments = assignments.stream()
+                    .filter(assignment -> "ASSIGNED".equals(assignment.getStatus()))
+                    .count();
+
+            String newTaskStatus = determineTaskStatus(totalAssignments, completedAssignments,
+                    inProgressAssignments, assignedAssignments);
+
+            // Update task status if changed
+            if (!newTaskStatus.equals(task.getStatus())) {
+                task.setStatus(newTaskStatus);
+                productionTaskService.updateTask(taskId, task);
+                System.out.println("Updated task " + taskId + " status to: " + newTaskStatus);
+            }
+        } catch (Exception e) {
+            System.out.println("Error updating task status based on assignments: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Determine task status based on assignment progress
+     */
+    private String determineTaskStatus(long total, long completed, long inProgress, long assigned) {
+        if (total == 0) {
+            return "PENDING";
+        }
+
+        if (completed == total) {
+            // All employees completed their assignments
+            return "COMPLETED";
+        } else if (completed > 0 || inProgress > 0) {
+            // At least one employee started or completed work
+            return "IN_PROGRESS";
+        } else if (assigned == total) {
+            // All assignments are assigned but no one started
+            return "PENDING";
+        }
+
+        return "PENDING";
+    }
+
+    /**
+     * Update assignment and automatically update task status
+     */
+    @Transactional
+    public TaskAssignment updateAssignmentWithTaskStatus(String assignmentId, TaskAssignment assignmentData) {
+        TaskAssignment updatedAssignment = updateAssignment(assignmentId, assignmentData);
+
+        if (updatedAssignment != null && assignmentData.getStatus() != null) {
+            // Update the task status based on all assignments
+            String taskId = updatedAssignment.getTask().getTaskId();
+            updateTaskStatusBasedOnAssignments(taskId);
+        }
+
+        return updatedAssignment;
     }
 }

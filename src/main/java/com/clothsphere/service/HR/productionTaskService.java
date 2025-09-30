@@ -2,7 +2,6 @@ package com.clothsphere.service.HR;
 
 import com.clothsphere.model.HR.Department;
 import com.clothsphere.model.HR.ProductionTask;
-import com.clothsphere.repository.HR.DepartmentRepository;
 import com.clothsphere.repository.HR.ProductionTaskRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
