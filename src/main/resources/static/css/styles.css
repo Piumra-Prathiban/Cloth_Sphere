@@ -1435,3 +1435,175 @@ input:checked + .slider:before {
     border-bottom: 1px solid #eee;
 
 }
+
+/* Add this at the END of your existing styles.css file */
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .menu-toggle {
+        display: block !important;
+    }
+
+    .sidebar {
+        position: fixed;
+        left: 0;
+        top: 80px;
+        height: calc(100vh - 80px);
+        transform: translateX(-100%);
+        z-index: 999;
+    }
+
+    .sidebar.open {
+        transform: translateX(0);
+    }
+
+    .sidebar-overlay.show {
+        display: block;
+    }
+
+    .company-name {
+        font-size: 20px;
+    }
+
+    .user-details {
+        display: none;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .charts-container {
+        grid-template-columns: 1fr;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .main-content {
+        padding: 15px;
+    }
+
+    .fabric-table {
+        font-size: 12px;
+    }
+
+    .fabric-table th,
+    .fabric-table td {
+        padding: 10px 8px;
+    }
+}
+
+/* Tablet Responsiveness */
+@media (max-width: 1024px) and (min-width: 769px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .charts-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Section Divider for Dashboard */
+.section-divider {
+    margin: 30px 0 20px 0;
+    padding: 15px 0;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.section-divider .section-title {
+    margin: 0;
+}
+
+/* Enhanced Action Buttons */
+.actions-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+/* Better table overflow handling */
+.fabric-table-section {
+    overflow-x: auto;
+}
+
+/* Improved notification positioning */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+    padding: 15px 20px;
+    border-radius: 8px;
+    color: white;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    transform: translateX(400px);
+    transition: transform 0.3s ease;
+    max-width: 400px;
+}
+
+.notification-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.notification-success {
+    background: linear-gradient(135deg, #27ae60, #2ecc71);
+}
+
+.notification-error {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+}
+
+.notification-info {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+}
+
+/* User ID Display */
+.user-id {
+    font-size: 12px;
+    color: #999;
+    font-weight: 400;
+}
+
+/* Better spacing for low stock alerts */
+.activity-section .activity-item {
+    padding: 20px 15px;
+}
+
+.activity-section .activity-item:hover {
+    padding: 20px 15px;
+}
+
+/* Chart responsive height */
+@media (max-width: 768px) {
+    .chart-card canvas {
+        max-height: 250px !important;
+    }
+}
+
+/* Print styles for reports */
+@media print {
+    .header,
+    .sidebar,
+    .sidebar-overlay,
+    .action-buttons,
+    .btn {
+        display: none !important;
+    }
+
+    .main-content {
+        padding: 0;
+    }
+
+    .fabric-table {
+        box-shadow: none;
+    }
+}
