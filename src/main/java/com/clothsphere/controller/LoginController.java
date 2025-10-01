@@ -113,7 +113,7 @@ public class LoginController {
                 case "hr-manager":
                     return "redirect:/hrDashboard";
                 case "factory-manager":
-                    return "redirect:/factoryDashboard";
+                    return "redirect:/factory/dashboard";
                 case "inventory-manager":
                     return "redirect:/inventoryDashboard";
                 case "customer-officer":
@@ -183,10 +183,10 @@ public class LoginController {
         return "redirect:/systemUserLogin";
     }
 
-    // Other role-based dashboards
+    // Other role-based dashboards - Factory Manager now uses /factory/dashboard
     @GetMapping("/factoryDashboard")
     public String showFactoryDashboard(HttpSession session, Model model) {
-        return loadDashboard("factoryDashboard", session, model);
+        return "redirect:/factory/dashboard";
     }
 
     @GetMapping("/inventoryDashboard")

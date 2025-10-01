@@ -1,6 +1,8 @@
 package com.clothsphere.controller.Production;
 
+import com.clothsphere.model.HR.Employee;
 import com.clothsphere.model.Production.*;
+import com.clothsphere.repository.HR.EmployeeRepository;
 import com.clothsphere.service.Production.ProductionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -19,6 +21,9 @@ public class ProductionController {
 
     @Autowired
     private ProductionService productionService;
+
+    @Autowired
+    private EmployeeRepository employeeRepository;
 
     // ===================== DASHBOARD =====================
 
@@ -342,9 +347,28 @@ public class ProductionController {
      */
     @PostMapping("/api/assignments")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> createAssignment(@RequestBody StaffAssignment assignment) {
+    public ResponseEntity<Map<String, Object>> createAssignment(@RequestBody Map<String, Object> requestData) {
         Map<String, Object> response = new HashMap<>();
         try {
+            StaffAssignment assignment = new StaffAssignment();
+            assignment.setScheduleId((String) requestData.get("scheduleId"));
+            assignment.setWorkstationId((String) requestData.get("workstationId"));
+            assignment.setAssignmentDate(LocalDate.parse((String) requestData.get("assignmentDate")));
+            assignment.setShift((String) requestData.get("shift"));
+            assignment.setRole((String) requestData.get("role"));
+            assignment.setStatus((String) requestData.get("status"));
+            assignment.setAssignedQuantity((Integer) requestData.get("assignedQuantity"));
+
+            // Get employee from repository
+            String employeeId = (String) requestData.get("employeeId");
+            Employee employee = employeeRepository.findById(employeeId).orElse(null);
+            if (employee == null) {
+                response.put("success", false);
+                response.put("message", "Employee not found with ID: " + employeeId);
+                return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+            }
+            assignment.setEmployee(employee);
+
             StaffAssignment created = productionService.createAssignment(assignment);
             response.put("success", true);
             response.put("message", "Assignment created successfully");
@@ -354,6 +378,20 @@ public class ProductionController {
             response.put("success", false);
             response.put("message", "Error creating assignment: " + e.getMessage());
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Get all employees (for assignment creation)
+     */
+    @GetMapping("/api/employees")
+    @ResponseBody
+    public ResponseEntity<List<Employee>> getAllEmployees() {
+        try {
+            List<Employee> employees = employeeRepository.findAll();
+            return new ResponseEntity<>(employees, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
