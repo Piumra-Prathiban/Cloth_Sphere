@@ -30,4 +30,12 @@ public class BuyerService {
         }
         return null;
     }
+    public Buyer updateBuyer(Buyer buyer) {
+        return buyerRepository.save(buyer);  // save() works as update if ID exists
+    }
+    public Buyer getBuyerById(Long id) {
+        return buyerRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Buyer not found"));
+    }
+
 }

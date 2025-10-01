@@ -4,7 +4,7 @@ import com.clothsphere.model.HR.Department;
 import com.clothsphere.model.HR.Employee;
 import com.clothsphere.model.SystemUser;
 import com.clothsphere.repository.HR.EmployeeRepository;
-import com.clothsphere.service.DepartmentService;
+import com.clothsphere.service.HR.DepartmentService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Product Catalog - ClothSphere</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f2f2f2; margin: 0; padding: 0; }
+        .container { max-width: 1200px; margin: auto; padding: 20px; }
+        h1 { text-align: center; color: #ff4d94; margin-bottom: 40px; }
+        .products { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
+        .product-card { background: white; border-radius: 10px; width: 250px; padding: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); text-align: center; }
+        .product-card img { width: 100%; height: 200px; object-fit: cover; border-radius: 10px; }
+        .product-card h3 { color: #ff4d94; margin: 15px 0 10px; }
+        .product-card p { color: #555; font-size: 0.95rem; }
+        .product-card .price { font-weight: bold; margin-top: 10px; color: #333; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Product Catalog</h1>
+    <div class="products">
+        <div class="product-card" th:each="product : ${products}">
+            <img th:src="${product.imageUrl}" alt="Product Image"/>
+            <h3 th:text="${product.name}">Product Name</h3>
+            <p th:text="${product.description}">Product description goes here.</p>
+            <p class="price" th:text="'$' + ${product.price}">Price</p>
+        </div>
+    </div>
+</div>
+</body>
+</html>

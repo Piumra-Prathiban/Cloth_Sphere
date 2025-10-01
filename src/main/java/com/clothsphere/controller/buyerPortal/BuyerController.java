@@ -1,11 +1,14 @@
 package com.clothsphere.controller.buyerPortal;
 
+
 import com.clothsphere.model.buyerPortal.Buyer;
 import com.clothsphere.service.buyerPortal.BuyerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import jakarta.servlet.http.HttpSession;
+
 
 @Controller
 public class BuyerController {
@@ -48,14 +51,78 @@ public class BuyerController {
     @PostMapping("/login")
     public String login(@RequestParam String email,
                         @RequestParam String password,
+                        HttpSession session,
                         Model model) {
         Buyer buyer = buyerService.login(email, password);
         if (buyer != null) {
-            model.addAttribute("buyerName", buyer.getName()); // ← Add this
-            return "dashboard"; // ← Show dashboard.html
+            // Store buyer info in session
+            session.setAttribute("buyerId", buyer.getId());
+            session.setAttribute("buyerName", buyer.getName());
+            return "dashboard";
         } else {
             model.addAttribute("error", true);
             return "login";
         }
     }
+
+
+
+
+    // Handle logout
+    @GetMapping("/logout")
+    public String logout(HttpSession session) {
+        session.invalidate(); // Clear the session
+        return "redirect:/login"; // Redirect to login page
+    }
+
+    // View Profile
+    @GetMapping("/profile")
+    public String viewProfile(HttpSession session, Model model) {
+        Long buyerId = (Long) session.getAttribute("buyerId");
+        if (buyerId == null) {
+            return "redirect:/profile"; // If not logged in, redirect
+        }
+
+        Buyer buyer = buyerService.getBuyerById(buyerId);
+        model.addAttribute("buyer", buyer);
+        return "profile"; // Return profile.html
+    }
+
+    // Show edit profile page
+    @GetMapping("/edit_profile")
+    public String editProfile(Model model, HttpSession session) {
+        Long buyerId = (Long) session.getAttribute("buyerId");
+        Buyer buyer = buyerService.getBuyerById(buyerId);
+        model.addAttribute("buyer", buyer);
+        return "edit_profile"; // Thymeleaf will load edit_profile.html
+    }
+
+    // --- Save edited profile ---
+    @PostMapping("/profile/edit")
+    public String saveProfile(@ModelAttribute Buyer buyer, HttpSession session) {
+        // Get currently logged-in buyer ID
+        Long buyerId = (Long) session.getAttribute("buyerId");
+        if (buyerId == null) {
+            return "redirect:/login"; // If not logged in, redirect
+        }
+
+        // Ensure we update the correct buyer
+        buyer.setId(buyerId);
+
+        // Save changes to DB
+        buyerService.updateBuyer(buyer);
+
+        // Redirect back to profile page
+        return "redirect:/profile";
+    }
+
+
+
 }
+
+
+
+
+
+
+

@@ -1,4 +1,4 @@
-package com.clothsphere.service;
+package com.clothsphere.service.HR;
 
 import com.clothsphere.model.HR.Employee;
 import com.clothsphere.repository.HR.EmployeeRepository;
