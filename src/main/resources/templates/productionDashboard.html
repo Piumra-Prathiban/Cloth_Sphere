@@ -94,8 +94,8 @@
                                     <span th:text="${#numbers.formatDecimal(order.progressPercentage, 1, 1)} + '%'">0%</span>
                                 </td>
                                 <td>
-                                    <button class="btn-small" th:onclick="'viewOrder(\'' + ${order.orderId} + '\')'">View</button>
-                                    <button class="btn-small" th:onclick="'editOrder(\'' + ${order.orderId} + '\')'">Edit</button>
+                                    <button class="btn-small" th:attr="data-order-id=${order.orderId}" onclick="viewOrder(this.getAttribute('data-order-id'))">View</button>
+                                    <button class="btn-small" th:attr="data-order-id=${order.orderId}" onclick="editOrder(this.getAttribute('data-order-id'))">Edit</button>
                                 </td>
                             </tr>
                         </tbody>
@@ -136,8 +136,8 @@
                                 <td th:text="${schedule.assignedQuantity}">500</td>
                                 <td><span class="badge" th:classappend="${schedule.status}" th:text="${schedule.status}">SCHEDULED</span></td>
                                 <td>
-                                    <button class="btn-small" th:onclick="'viewSchedule(\'' + ${schedule.scheduleId} + '\')'">View</button>
-                                    <button class="btn-small" th:onclick="'editSchedule(\'' + ${schedule.scheduleId} + '\')'">Edit</button>
+                                    <button class="btn-small" th:attr="data-schedule-id=${schedule.scheduleId}" onclick="viewSchedule(this.getAttribute('data-schedule-id'))">View</button>
+                                    <button class="btn-small" th:attr="data-schedule-id=${schedule.scheduleId}" onclick="editSchedule(this.getAttribute('data-schedule-id'))">Edit</button>
                                 </td>
                             </tr>
                         </tbody>
@@ -164,7 +164,7 @@
                             <div class="progress-fill" th:style="'width: ' + ${ws.utilizationPercentage} + '%'"></div>
                         </div>
                         <p class="utilization" th:text="${#numbers.formatDecimal(ws.utilizationPercentage, 1, 1)} + '% Utilization'">60% Utilization</p>
-                        <button class="btn-small" th:onclick="'viewWorkstation(\'' + ${ws.workstationId} + '\')'">View Details</button>
+                        <button class="btn-small" th:attr="data-workstation-id=${ws.workstationId}" onclick="viewWorkstation(this.getAttribute('data-workstation-id'))">View Details</button>
                     </div>
                 </div>
             </div>
@@ -219,6 +219,231 @@
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- Modals -->
+    <!-- Add Order Modal -->
+    <div id="addOrderModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Create New Production Order</h2>
+                <span class="close" onclick="closeModal('addOrderModal')">&times;</span>
+            </div>
+            <form id="addOrderForm" onsubmit="submitOrder(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="productName">Product Name *</label>
+                        <input type="text" id="productName" name="productName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="productType">Product Type</label>
+                        <input type="text" id="productType" name="productType">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="quantity">Quantity *</label>
+                        <input type="number" id="quantity" name="quantity" required min="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="priority">Priority *</label>
+                        <select id="priority" name="priority" required>
+                            <option value="LOW">Low</option>
+                            <option value="MEDIUM" selected>Medium</option>
+                            <option value="HIGH">High</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="orderDate">Order Date *</label>
+                        <input type="date" id="orderDate" name="orderDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="deadline">Deadline *</label>
+                        <input type="date" id="deadline" name="deadline" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="customerName">Customer Name</label>
+                        <input type="text" id="customerName" name="customerName">
+                    </div>
+                    <div class="form-group">
+                        <label for="customerId">Customer ID</label>
+                        <input type="text" id="customerId" name="customerId">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="notes">Notes</label>
+                    <textarea id="notes" name="notes" rows="3"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeModal('addOrderModal')">Cancel</button>
+                    <button type="submit" class="btn-primary">Create Order</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Schedule Modal -->
+    <div id="addScheduleModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Create New Schedule</h2>
+                <span class="close" onclick="closeModal('addScheduleModal')">&times;</span>
+            </div>
+            <form id="addScheduleForm" onsubmit="submitSchedule(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="scheduleOrderId">Order ID *</label>
+                        <input type="text" id="scheduleOrderId" name="orderId" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="scheduleWorkstationId">Workstation ID *</label>
+                        <input type="text" id="scheduleWorkstationId" name="workstationId" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="scheduledDate">Scheduled Date *</label>
+                        <input type="date" id="scheduledDate" name="scheduledDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="scheduleShift">Shift *</label>
+                        <select id="scheduleShift" name="shift" required>
+                            <option value="MORNING">Morning</option>
+                            <option value="AFTERNOON">Afternoon</option>
+                            <option value="NIGHT">Night</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="assignedQuantity">Assigned Quantity *</label>
+                    <input type="number" id="assignedQuantity" name="assignedQuantity" required min="1">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeModal('addScheduleModal')">Cancel</button>
+                    <button type="submit" class="btn-primary">Create Schedule</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Workstation Modal -->
+    <div id="addWorkstationModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Create New Workstation</h2>
+                <span class="close" onclick="closeModal('addWorkstationModal')">&times;</span>
+            </div>
+            <form id="addWorkstationForm" onsubmit="submitWorkstation(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="workstationName">Workstation Name *</label>
+                        <input type="text" id="workstationName" name="workstationName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="workstationType">Type *</label>
+                        <select id="workstationType" name="workstationType" required>
+                            <option value="CUTTING">Cutting</option>
+                            <option value="SEWING">Sewing</option>
+                            <option value="FINISHING">Finishing</option>
+                            <option value="QUALITY_CHECK">Quality Check</option>
+                            <option value="PACKING">Packing</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="capacity">Capacity *</label>
+                        <input type="number" id="capacity" name="capacity" required min="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="location">Location</label>
+                        <input type="text" id="location" name="location">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="supervisorName">Supervisor Name</label>
+                        <input type="text" id="supervisorName" name="supervisorName">
+                    </div>
+                    <div class="form-group">
+                        <label for="supervisorId">Supervisor ID</label>
+                        <input type="text" id="supervisorId" name="supervisorId">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeModal('addWorkstationModal')">Cancel</button>
+                    <button type="submit" class="btn-primary">Create Workstation</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Assignment Modal -->
+    <div id="addAssignmentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Create New Staff Assignment</h2>
+                <span class="close" onclick="closeModal('addAssignmentModal')">&times;</span>
+            </div>
+            <form id="addAssignmentForm" onsubmit="submitAssignment(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="assignmentScheduleId">Schedule ID *</label>
+                        <input type="text" id="assignmentScheduleId" name="scheduleId" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="assignmentWorkstationId">Workstation ID *</label>
+                        <input type="text" id="assignmentWorkstationId" name="workstationId" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="employeeId">Employee ID *</label>
+                        <input type="text" id="employeeId" name="employeeId" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="employeeName">Employee Name *</label>
+                        <input type="text" id="employeeName" name="employeeName" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="assignmentDate">Assignment Date *</label>
+                        <input type="date" id="assignmentDate" name="assignmentDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="assignmentShift">Shift *</label>
+                        <select id="assignmentShift" name="shift" required>
+                            <option value="MORNING">Morning</option>
+                            <option value="AFTERNOON">Afternoon</option>
+                            <option value="NIGHT">Night</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="role">Role *</label>
+                        <select id="role" name="role" required>
+                            <option value="OPERATOR">Operator</option>
+                            <option value="QUALITY_CHECKER">Quality Checker</option>
+                            <option value="SUPERVISOR">Supervisor</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="assignmentAssignedQuantity">Assigned Quantity</label>
+                        <input type="number" id="assignmentAssignedQuantity" name="assignedQuantity" min="1">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeModal('addAssignmentModal')">Cancel</button>
+                    <button type="submit" class="btn-primary">Create Assignment</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <script th:src="@{/js/productionDashboard.js}"></script>

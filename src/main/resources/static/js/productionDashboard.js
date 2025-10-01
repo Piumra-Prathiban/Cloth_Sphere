@@ -182,51 +182,342 @@ function formatDate(dateString) {
     return date.toISOString().split('T')[0];
 }
 
-// Modal functions (placeholders - implement as needed)
+// Modal functions
 function showAddOrderModal() {
-    alert('Add Order Modal - To be implemented\n\nThis will open a form to create a new production order.');
+    console.log('🎯 showAddOrderModal() called');
+    const modal = document.getElementById('addOrderModal');
+    if (modal) {
+        modal.classList.add('show');
+        modal.style.display = 'block';
+        console.log('✅ Order modal opened');
+        // Set today's date as default
+        document.getElementById('orderDate').value = new Date().toISOString().split('T')[0];
+    } else {
+        console.error('❌ addOrderModal element not found!');
+    }
 }
 
 function showAddScheduleModal() {
-    alert('Add Schedule Modal - To be implemented\n\nThis will open a form to create a new production schedule.');
+    console.log('🎯 showAddScheduleModal() called');
+    const modal = document.getElementById('addScheduleModal');
+    if (modal) {
+        modal.classList.add('show');
+        modal.style.display = 'block';
+        console.log('✅ Schedule modal opened');
+        document.getElementById('scheduledDate').value = new Date().toISOString().split('T')[0];
+    } else {
+        console.error('❌ addScheduleModal element not found!');
+    }
 }
 
 function showAddWorkstationModal() {
-    alert('Add Workstation Modal - To be implemented\n\nThis will open a form to create a new workstation.');
+    console.log('🎯 showAddWorkstationModal() called');
+    const modal = document.getElementById('addWorkstationModal');
+    if (modal) {
+        modal.classList.add('show');
+        modal.style.display = 'block';
+        console.log('✅ Workstation modal opened');
+    } else {
+        console.error('❌ addWorkstationModal element not found!');
+    }
 }
 
 function showAddAssignmentModal() {
-    alert('Add Assignment Modal - To be implemented\n\nThis will open a form to create a new staff assignment.');
+    console.log('🎯 showAddAssignmentModal() called');
+    const modal = document.getElementById('addAssignmentModal');
+    if (modal) {
+        modal.classList.add('show');
+        modal.style.display = 'block';
+        console.log('✅ Assignment modal opened');
+        document.getElementById('assignmentDate').value = new Date().toISOString().split('T')[0];
+    } else {
+        console.error('❌ addAssignmentModal element not found!');
+    }
 }
 
 function showAddMetricModal() {
-    alert('Add Metric Modal - To be implemented\n\nThis will open a form to record performance metrics.');
+    console.log('🎯 showAddMetricModal() called');
+    alert('Performance Metrics feature coming soon!');
+}
+
+function closeModal(modalId) {
+    console.log('🎯 closeModal() called for:', modalId);
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+        console.log('✅ Modal closed:', modalId);
+    }
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    if (event.target.classList.contains('modal')) {
+        event.target.classList.remove('show');
+    }
+}
+
+// Form submission functions
+function submitOrder(event) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    const orderData = {
+        productName: formData.get('productName'),
+        productType: formData.get('productType'),
+        quantity: parseInt(formData.get('quantity')),
+        priority: formData.get('priority'),
+        status: 'PENDING',
+        orderDate: formData.get('orderDate'),
+        deadline: formData.get('deadline'),
+        customerName: formData.get('customerName'),
+        customerId: formData.get('customerId'),
+        notes: formData.get('notes')
+    };
+
+    fetch('/production/api/orders', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Order created successfully!');
+            closeModal('addOrderModal');
+            event.target.reset();
+            loadOrders(); // Reload the orders table
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to create order. Please try again.');
+    });
+}
+
+function submitSchedule(event) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    const scheduleData = {
+        orderId: formData.get('orderId'),
+        workstationId: formData.get('workstationId'),
+        scheduledDate: formData.get('scheduledDate'),
+        shift: formData.get('shift'),
+        assignedQuantity: parseInt(formData.get('assignedQuantity')),
+        status: 'SCHEDULED'
+    };
+
+    fetch('/production/api/schedules', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(scheduleData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Schedule created successfully!');
+            closeModal('addScheduleModal');
+            event.target.reset();
+            loadSchedules();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to create schedule. Please try again.');
+    });
+}
+
+function submitWorkstation(event) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    const workstationData = {
+        workstationName: formData.get('workstationName'),
+        workstationType: formData.get('workstationType'),
+        capacity: parseInt(formData.get('capacity')),
+        status: 'ACTIVE',
+        location: formData.get('location'),
+        supervisorName: formData.get('supervisorName'),
+        supervisorId: formData.get('supervisorId')
+    };
+
+    fetch('/production/api/workstations', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(workstationData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Workstation created successfully!');
+            closeModal('addWorkstationModal');
+            event.target.reset();
+            loadWorkstations();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to create workstation. Please try again.');
+    });
+}
+
+function submitAssignment(event) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    const assignmentData = {
+        scheduleId: formData.get('scheduleId'),
+        employeeId: formData.get('employeeId'),
+        employeeName: formData.get('employeeName'),
+        workstationId: formData.get('workstationId'),
+        assignmentDate: formData.get('assignmentDate'),
+        shift: formData.get('shift'),
+        role: formData.get('role'),
+        assignedQuantity: formData.get('assignedQuantity') ? parseInt(formData.get('assignedQuantity')) : null,
+        status: 'ASSIGNED'
+    };
+
+    fetch('/production/api/assignments', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(assignmentData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Assignment created successfully!');
+            closeModal('addAssignmentModal');
+            event.target.reset();
+            loadAssignments();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to create assignment. Please try again.');
+    });
 }
 
 // View/Edit functions
 function viewOrder(orderId) {
-    alert(`View Order: ${orderId}\n\nThis will show detailed order information.`);
+    fetch(`/production/api/orders/${orderId}`)
+        .then(response => response.json())
+        .then(order => {
+            const details = `Order Details:
+
+Order ID: ${order.orderId}
+Product: ${order.productName} (${order.productType || 'N/A'})
+Quantity: ${order.quantity}
+Completed: ${order.completedQuantity || 0}
+Priority: ${order.priority}
+Status: ${order.status}
+Customer: ${order.customerName || 'N/A'}
+Order Date: ${order.orderDate}
+Deadline: ${order.deadline}
+Progress: ${order.progressPercentage?.toFixed(1) || 0}%
+Notes: ${order.notes || 'None'}`;
+
+            alert(details);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to load order details.');
+        });
 }
 
 function editOrder(orderId) {
-    alert(`Edit Order: ${orderId}\n\nThis will open an edit form for the order.`);
+    alert(`Edit Order: ${orderId}\n\nEdit functionality coming soon!`);
 }
 
 function viewSchedule(scheduleId) {
-    alert(`View Schedule: ${scheduleId}\n\nThis will show detailed schedule information.`);
+    fetch(`/production/api/schedules/${scheduleId}`)
+        .then(response => response.json())
+        .then(schedule => {
+            const details = `Schedule Details:
+
+Schedule ID: ${schedule.scheduleId}
+Order ID: ${schedule.orderId}
+Workstation: ${schedule.workstationId}
+Date: ${schedule.scheduledDate}
+Shift: ${schedule.shift}
+Assigned Quantity: ${schedule.assignedQuantity}
+Status: ${schedule.status}`;
+
+            alert(details);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to load schedule details.');
+        });
 }
 
 function editSchedule(scheduleId) {
-    alert(`Edit Schedule: ${scheduleId}\n\nThis will open an edit form for the schedule.`);
+    alert(`Edit Schedule: ${scheduleId}\n\nEdit functionality coming soon!`);
 }
 
 function viewWorkstation(workstationId) {
-    alert(`View Workstation: ${workstationId}\n\nThis will show detailed workstation information.`);
+    // Fetch from API or find in current data
+    fetch(`/production/api/workstations`)
+        .then(response => response.json())
+        .then(workstations => {
+            const ws = workstations.find(w => w.workstationId === workstationId);
+            if (ws) {
+                const details = `Workstation Details:
+
+ID: ${ws.workstationId}
+Name: ${ws.workstationName}
+Type: ${ws.workstationType}
+Status: ${ws.status}
+Capacity: ${ws.capacity} workers
+Current Load: ${ws.currentLoad || 0} workers
+Utilization: ${ws.utilizationPercentage?.toFixed(1) || 0}%
+Location: ${ws.location || 'N/A'}
+Supervisor: ${ws.supervisorName || 'N/A'}`;
+
+                alert(details);
+            } else {
+                alert('Workstation not found!');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to load workstation details.');
+        });
 }
 
 // Initialize dashboard on page load
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Production Dashboard loaded');
+    console.log('✅ Production Dashboard JavaScript loaded successfully');
+    console.log('✅ Modal functions available:', {
+        showAddOrderModal: typeof showAddOrderModal,
+        showAddScheduleModal: typeof showAddScheduleModal,
+        showAddWorkstationModal: typeof showAddWorkstationModal,
+        showAddAssignmentModal: typeof showAddAssignmentModal
+    });
+
     // Load initial data for the active tab
     loadOrders();
+
+    // Test modal availability
+    const modals = ['addOrderModal', 'addScheduleModal', 'addWorkstationModal', 'addAssignmentModal'];
+    modals.forEach(modalId => {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            console.log(`✅ Modal found: ${modalId}`);
+        } else {
+            console.error(`❌ Modal NOT found: ${modalId}`);
+        }
+    });
 });
