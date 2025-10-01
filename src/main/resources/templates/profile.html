@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Profile - Cloth Sphere</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
+</head>
+<body>
+<header class="header">
+    <div class="logo-section">
+        <button class="menu-toggle" id="menuToggle">
+            <i class="fas fa-bars"></i>
+        </button>
+        <div class="logo">
+            <img src="logo.png" alt="Cloth Sphere Logo" class="logo-img">
+        </div>
+        <h1 class="company-name">Cloth Sphere</h1>
+    </div>
+    <div class="user-info">
+        <div class="user-details">
+            <div class="user-name">Ama Berugoda</div>
+            <div class="user-role">Inventory Manager</div>
+        </div>
+        <div class="profile-pic">AB</div>
+    </div>
+</header>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<div class="container">
+    <nav class="sidebar" id="sidebar">
+        <a href="dashboard.html" class="nav-item"><i class="fas fa-chart-pie"></i><span>Dashboard</span></a>
+        <a href="fabric.html" class="nav-item"><i class="fas fa-tshirt"></i><span>Fabrics</span></a>
+        <a href="garments.html" class="nav-item"><i class="fas fa-boxes"></i><span>Garments</span></a>
+        <a href="reports.html" class="nav-item"><i class="fas fa-file-alt"></i><span>Stock Reports</span></a>
+        <a href="profile.html" class="nav-item active"><i class="fas fa-user"></i><span>Edit Profile</span></a>
+        <a href="logout.html" class="nav-item logout-btn"><i class="fas fa-sign-out-alt"></i><span>Log Out</span></a>
+    </nav>
+
+    <main class="main-content">
+        <div class="page-header">
+            <h2 class="page-title">
+                <i class="fas fa-user-edit"></i>
+                Edit Profile
+            </h2>
+        </div>
+
+        <div class="welcome-text">
+            Manage your personal information, security settings, and account preferences.
+        </div>
+
+        <div class="profile-container">
+
+            <!-- Profile Edit Form -->
+            <div class="profile-form-section">
+                <h3 class="section-title">
+                    <i class="fas fa-user"></i>
+                    Personal Information
+                </h3>
+
+                <form id="profileForm" class="profile-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="firstName">First Name</label>
+                            <input type="text" id="firstName" name="firstName" value="Ama" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="lastName">Last Name</label>
+                            <input type="text" id="lastName" name="lastName" value="Berugoda" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="email">Email Address</label>
+                            <input type="email" id="email" name="email" value="ama.berugoda@clothsphere.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="phone">Phone Number</label>
+                            <input type="tel" id="phone" name="phone" value="+94 77 123 4567" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="address">Address</label>
+                            <textarea id="address" name="address" rows="3" required>123 Main Street, Negombo, Western Province, Sri Lanka</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="dateOfBirth">Date of Birth</label>
+                            <input type="date" id="dateOfBirth" name="dateOfBirth" value="1990-05-15" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="department">Department</label>
+                            <input type="text" id="department" name="department" value="Inventory Management" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="staffId">Staff ID</label>
+                            <input type="text" id="staffId" name="staffId" value="STF001" readonly>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-primary" onclick="saveProfile()">
+                        <i class="fas fa-save"></i>
+                        Save
+                    </button>
+                </div>
+            </div>
+
+            <!-- Security Settings -->
+            <div class="security-section">
+                <h3 class="section-title">
+                    <i class="fas fa-shield-alt"></i>
+                    Change Password
+                </h3>
+
+                <form id="securityForm" class="security-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="newPassword">New Password</label>
+                            <input type="password" id="newPassword" name="newPassword" placeholder="Enter new password">
+                            <small class="form-help">Password must be at least 8 characters long</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="confirmPassword">Confirm New Password</label>
+                            <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm new password">
+                        </div>
+                    </div>
+                </form>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-primary" onclick="changePassword()">
+                        <i class="fas fa-key"></i>
+                        Confirm Change Password
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="/js/inventoryprofile.js"></script>
+</body>
+</html>

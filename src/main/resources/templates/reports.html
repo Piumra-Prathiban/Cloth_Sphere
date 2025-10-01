@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Reports - Cloth Sphere</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- jsPDF for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+
+<header class="header">
+    <div class="logo-section">
+        <button class="menu-toggle" id="menuToggle">
+            <i class="fas fa-bars"></i>
+        </button>
+        <div class="logo">
+            <i class="fas fa-tshirt" style="color: white; font-size: 24px;"></i>
+        </div>
+        <h1 class="company-name">Cloth Sphere</h1>
+    </div>
+    <div class="user-info">
+        <div class="user-details">
+            <div class="user-name">Ama Berugoda</div>
+            <div class="user-role">Inventory Manager</div>
+        </div>
+        <div class="profile-pic">AB</div>
+    </div>
+</header>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<div class="container">
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <a href="/inventoryDashboard" class="nav-item"><i class="fas fa-chart-pie"></i><span>Dashboard</span></a>
+        <a href="/fabrics" class="nav-item"><i class="fas fa-layer-group"></i><span>Fabrics</span></a>
+        <a href="/garments" class="nav-item"><i class="fas fa-boxes"></i><span>Garments</span></a>
+        <a href="/reports" class="nav-item active"><i class="fas fa-file-alt"></i><span>Stock Reports</span></a>
+        <a href="/profile" class="nav-item"><i class="fas fa-user"></i><span>Edit Profile</span></a>
+        <a href="/logout" class="nav-item logout-btn"><i class="fas fa-sign-out-alt"></i><span>Log Out</span></a>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="page-header">
+            <h2 class="page-title"><i class="fas fa-file-alt"></i> Stock Reports</h2>
+        </div>
+
+        <div class="welcome-text">
+            Generate comprehensive reports for fabric and garment inventory management.
+        </div>
+
+        <!-- Reports Grid -->
+        <div class="reports-section">
+            <h3 class="section-title"><i class="fas fa-chart-bar"></i> Available Reports</h3>
+
+            <div class="reports-grid">
+                <!-- Fabric Usage Report -->
+                <div class="report-card">
+                    <div class="report-header">
+                        <div class="report-icon fabric">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="report-title">
+                            <h4>Fabric Usage Report</h4>
+                            <p>Track fabric consumption by type and color within a specific date range</p>
+                        </div>
+                    </div>
+                    <div class="report-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Report Type</span>
+                            <span class="stat-value">Time-based</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Includes</span>
+                            <span class="stat-value">Type, Color, Usage</span>
+                        </div>
+                    </div>
+                    <div class="report-actions">
+                        <button class="generate-btn" onclick="showDateSelectionModal('fabric-usage')">
+                            <i class="fas fa-calendar-alt"></i> Select Date Range
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Fabric Availability Report -->
+                <div class="report-card">
+                    <div class="report-header">
+                        <div class="report-icon fabric">
+                            <i class="fas fa-warehouse"></i>
+                        </div>
+                        <div class="report-title">
+                            <h4>Fabric Availability Report</h4>
+                            <p>Current stock levels of all fabrics with colors</p>
+                        </div>
+                    </div>
+                    <div class="report-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Report Type</span>
+                            <span class="stat-value">Current Stock</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Includes</span>
+                            <span class="stat-value">Type, Color, Stock</span>
+                        </div>
+                    </div>
+                    <div class="report-actions">
+                        <button class="generate-btn" onclick="generateFabricAvailabilityReport()">
+                            <i class="fas fa-file-alt"></i> Generate Report
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Garment Movement Report -->
+                <div class="report-card">
+                    <div class="report-header">
+                        <div class="report-icon finished">
+                            <i class="fas fa-exchange-alt"></i>
+                        </div>
+                        <div class="report-title">
+                            <h4>Garment Movement Report</h4>
+                            <p>Track garment production and shipments within a date range</p>
+                        </div>
+                    </div>
+                    <div class="report-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Report Type</span>
+                            <span class="stat-value">Time-based</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Includes</span>
+                            <span class="stat-value">Type, Size, Movements</span>
+                        </div>
+                    </div>
+                    <div class="report-actions">
+                        <button class="generate-btn" onclick="showDateSelectionModal('garment-movement')">
+                            <i class="fas fa-calendar-alt"></i> Select Date Range
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Garment Availability Report -->
+                <div class="report-card">
+                    <div class="report-header">
+                        <div class="report-icon finished">
+                            <i class="fas fa-boxes"></i>
+                        </div>
+                        <div class="report-title">
+                            <h4>Garment Availability Report</h4>
+                            <p>Current stock levels of all finished garments</p>
+                        </div>
+                    </div>
+                    <div class="report-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Report Type</span>
+                            <span class="stat-value">Current Stock</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Includes</span>
+                            <span class="stat-value">Type, Size, Stock</span>
+                        </div>
+                    </div>
+                    <div class="report-actions">
+                        <button class="generate-btn" onclick="generateGarmentAvailabilityReport()">
+                            <i class="fas fa-file-alt"></i> Generate Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Date Selection Modal -->
+<div id="dateSelectionModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title"><i class="fas fa-calendar-alt"></i> Select Date Range</h3>
+            <span class="close" id="closeDateModal">&times;</span>
+        </div>
+        <div class="date-selection">
+            <div class="form-group">
+                <label for="startDate">Start Date</label>
+                <input type="date" id="startDate" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="endDate">End Date</label>
+                <input type="date" id="endDate" class="form-control" required>
+            </div>
+        </div>
+        <div class="form-buttons">
+            <button type="button" class="btn btn-cancel" onclick="closeDateModal()">Cancel</button>
+            <button type="button" class="btn add" onclick="generateSelectedReport()">Generate Report</button>
+        </div>
+    </div>
+</div>
+
+<!-- Report View Modal -->
+<div id="reportViewModal" class="modal report-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title" id="reportTitle"><i class="fas fa-file-alt"></i> Report</h3>
+            <span class="close" id="closeReportModal">&times;</span>
+        </div>
+        <div class="report-content" id="reportContent">
+            <!-- Report data will be loaded here -->
+        </div>
+        <div class="form-buttons">
+            <button type="button" class="btn btn-cancel" onclick="closeReportModal()">Close</button>
+            <button type="button" class="btn add" onclick="downloadReportAsPDF()">
+                <i class="fas fa-download"></i> Download PDF
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentReportType = '';
+    let currentReportData = null;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        setupEventListeners();
+        setDefaultDates();
+    });
+
+    function setupEventListeners() {
+        // Mobile menu
+        const menuToggle = document.getElementById('menuToggle');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+
+        menuToggle?.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('show');
+        });
+
+        overlay?.addEventListener('click', () => {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('show');
+        });
+
+        // Modal close buttons
+        document.getElementById('closeDateModal')?.addEventListener('click', closeDateModal);
+        document.getElementById('closeReportModal')?.addEventListener('click', closeReportModal);
+    }
+</script>
+
+</body>
+</html>
+function setDefaultDates() {
+const today = new Date();
+const lastWeek = new Date(today);
+lastWeek.setDate(today.getDate() - 7);
+
+document.getElementById('endDate').valueAsDate = today;
+document.getElementById('startDate').valueAsDate = lastWeek;
+}
+
+function showDateSelectionModal(reportType) {
+currentReportType = reportType;
+document.getElementById('dateSelectionModal').style.display = 'block';
+}
+
+function closeDateModal() {
+document.getElementById('dateSelectionModal').style.display = 'none';
+}
+
+function closeReportModal() {
+document.getElementById('reportViewModal').style.display = 'none';
+}
+
+function generateSelectedReport() {
+const startDate = document.getElementById('startDate').value;
+const endDate = document.getElementById('endDate').value;
+
+if (!startDate || !endDate) {
+showNotification('Please select both start and end dates', 'error');
+return;
+}
+
+closeDateModal();
+
+if (currentReportType === 'fabric-usage') {
+generateFabricUsageReport(startDate, endDate);
+} else if (currentReportType === 'garment-movement') {
+generateGarmentMovementReport(startDate, endDate);
+}
+}
+
+// ========== FABRIC USAGE REPORT ==========
+function generateFabricUsageReport(startDate, endDate) {
+showNotification('Generating fabric usage report...', 'info');
+
+fetch(`/api/reports/fabric-usage?startDate=${startDate}&endDate=${endDate}`)
+.then(res => res.json())
+.then(data => {
+currentReportData = data;
+displayFabricUsageReport(data);
+document.getElementById('reportViewModal').style.display = 'block';
+showNotification('Report generated successfully!', 'success');
+})
+.catch(err => {
+console.error(err);
+showNotification('Error generating report', 'error');
+});
+}
+
+function displayFabricUsageReport(data) {
+document.getElementById('reportTitle').innerHTML = '<i class="fas fa-chart-line"></i> Fabric Usage Report';
+
+let html = `
+<div class="report-section">
+    <h4><i class="fas fa-info-circle"></i> Report Information</h4>
+    <div class="stat-item">
+        <span class="stat-label">Report Type:</span>
+        <span class="stat-value">${data.reportType}</span>
+    </div>
+    <div class="stat-item">
+        <span class="stat-label">Date Range:</span>
+        <span class="stat-value">${data.startDate} to ${data.endDate}</span>
+    </div>
+    <div class="stat-item">
+        <span class="stat-label">Generated On:</span>
+        <span class="stat-value">${data.generatedDate}</span>
+    </div>
+    <div class="stat-item">
+        <span class="stat-label">Total Records:</span>
+        <span class="stat-value">${data.totalRecords}</span>
+    </div>
+</div>
+
+<div class="report-section">
+    <h4><i class="fas fa-table"></i> Fabric Usage Details</h4>
+    <table class="fabric-table">
+        <thead>
+        <tr>
+            <th>Fabric ID</th>
+            <th>Type</th>
+            <th>Color</th>
+            <th>Stock In (m)</th>
+            <th>Stock Out (m)</th>
+            <th>Net Usage (m)</th>
+        </tr>
+        </thead>
+        <tbody>
+        `;
+
+        if (data.data && data.data.length > 0) {
+        data.data.forEach(item => {
+        html += `
+        <tr>
+            <td>${item.fabricId}</td>
+            <td>${item.type}</td>
+            <td>${item.color}</td>
+            <td>${item.totalIn.toFixed(2)}</td>
+            <td>${item.totalOut.toFixed(2)}</td>
+            <td>${item.netUsage.toFixed(2)}</td>
+        </tr>
+        `;
+        });
+        } else {
+        html += '<tr><td colspan="6" style="text-align:center;">No data available for this date range</td></tr>';
+        }
+
+        html += `
+        </tbody>
+    </table>
+</div>
+`;
+
+document.getElementById('reportContent').innerHTML = html;
+}
+
+// ========== FABRIC AVAILABILITY REPORT ==========
+function generateFabricAvailabilityReport() {
+showNotification('Generating fabric availability report...', 'info');
+
+fetch('/api/reports/fabric-availability')
+.then(res => res.json())
+.then(data => {
+currentReportData = data;
+displayFabricAvailabilityReport(data);
+document.getElementById('reportViewModal').style.display = 'block';
+showNotification('Report generated successfully!', 'success');
+})
+.catch(err => {
+console.error(err);
+showNotification('Error generating report', 'error');
+});
+}
+
+function displayFabricAvailabilityReport(data) {
+document.getElementById('reportTitle').innerHTML = '<i class="fas fa-warehouse"></i> Fabric Availability Report';
+
+let html = `
+<div class="report-section">
+    <h4><i class="fas fa-info-circle"></i> Report Information</h4>
+    <div class="stat-item">
+        <span class="stat-label">Report Type:</span>
+        <span class="stat-value">${data.reportType}</span>
+    </div>
+    <div class="stat-item">
+        <span class="stat-label">Generated On:</span>
+        <span class="stat-value">${data.generatedDate}</span>
+    </div>
+    <div class="stat-item">
+        <span class="stat-label">Total Fabrics:</span>
+        <span class="stat-value">${data.totalFabrics}</span>
+    </div>
+    <div class="stat-item">
+        <span class="stat-label">Low Stock Items:</span>
+        <span class="stat-value" style="color: #e74c3c;">${data.lowStockCount}</span>
+    </div>
+</div>
+
+<div class="report-section">
+    <h4><i class="fas fa-table"></i> Current Stock Levels</h4>
+    <table class="fabric-table">
+        <thead>
+        <tr>
+            <th>Fabric ID</th>
+            <th>Type</th>
+            <th>Color</th>
+            <th>Current Stock (m)</th>
+            <th>Status</th>
+            <th>Last Updated</th>
+        </tr>
+        </thead>
+        <tbody>
+        `;
+
+        if (data.data && data.data.length > 0) {
+        data.data.forEach(item => {
+        const statusColor = item.status === 'Low Stock' ? '#e74c3c' :
+        item.status === 'Overstocked' ? '#f39c12' : '#27ae60';
+        html += `
+        <tr>
+            <td>${item.fabricId}</td>
+            <td>${item.type}</td>
+            <td>${item.color}</td>
+            <td>${item.currentStock.toFixed(2)}</td>
+            <td><span style="color: ${statusColor}; font-weight: 600;">${item.status}</span></td>
+            <td>${item.lastUpdated}</td>
+        </tr>
+        `;
+        });
+        } else {
+        html += '<tr><td colspan="6" style="text-align:center;">No fabric data available</td></tr>';
+        }
+
+        html += `
+        </tbody>
+    </table>
+</div>
+`;
+
+document.getElementById('reportContent').innerHTML = html;
+}
+
+// ========== GARMENT MOVEMENT REPORT ==========
+function generateGarmentMovementReport(startDate, endDate) {
+showNotification('Generating garment movement report...', 'info');
+
+fetch(`/api/reports/garment-movement?startDate=${startDate}&endDate=${endDate}`)
+.then(res => res.json())
+.then(data => {
+currentReportData = data;
+displayGarmentMovementReport(data);
+document.getElementById('reportViewModal').style.display = 'block';
+showNotification('Report generated successfully!', 'success');
+})
+.catch(err => {
+console.error(err);
+showNotification('Error generating report', 'error');
+});
+}
+
+function displayGarmentMovementReport(data) {
+document.getElementById('reportTitle').innerHTML = '<i class="fas fa-exchange-alt"></i> Garment Movement Report';
+
+let html = `
+<div class="report-section">
+    <h4><i class="fas fa-info-circle"></i> Report Information</h4>
+    <div class="stat-item">
+        <span class="stat-label">Report Type:</span>
+        <span class="stat-value">${data.reportType}</span>
+    </div>
+    <div class="stat-item">
+        <span class="stat-label">Date Range:</span>
+        <span class="stat-value">${data.startDate} to ${data.endDate}</span>
+    </div>
+    <div class="stat-item">
+        <span class="stat-label">Generated On:</span>
+        <span class="stat-value">${data.generatedDate}</span>
+    </div>
+    <div class="stat-item">
+        <span class="stat-label">Total Records:</span>
+        <span class="stat-value">${data.totalRecords}</span>
+    </div>
+</div>
+
+<div class="report-section">
+    <h4><i class="fas fa-table"></i> Garment Movement Details</h4>
+    <table class="fabric-table">
+        <thead>
+        <tr>
+            <th>Garment ID</th>
+            <th>Type</th>
+            <th>Size</th>
+            <th>Produced</th>
+            <th>Shipped</th>
+            <th>Net Movement</th>
+        </tr>
+        </thead>
+        <tbody>
+        `;
+
+        if (data.data && data.data.length > 0) {
+        data.data.forEach(item => {
+        html += `
+        <tr>
+            <td>${item.garmentId}</td>
+            <td>${item.type}</td>
+            <td>${item.size}</td>
+            <td>${item.totalProduced}</td>
+            <td>${item.totalShipped}</td>
+            <td>${item.netMovement}</td>
+        </tr>
+        `;
+        });
+        } else {
+        html += '<tr><td colspan="6" style="text-align:center;">No data available for this date range</td></tr>';
+        }
+
+        html += `
+        </tbody>
+    </table>
+</div>
+`;
+
+document.getElementById('reportContent').innerHTML = html;
+}
+
+// ========== GARMENT AVAILABILITY REPORT ==========
+function generateGarmentAvailabilityReport() {
+showNotification('Generating garment availability report...', 'info');
+
+fetch('/api/reports/garment-availability')
+.then(res => res.json())
+.then(data => {
+currentReportData = data;
+displayGarmentAvailabilityReport(data);
+document.getElementById('reportViewModal').style.display = 'block';
+showNotification('Report generated successfully!', 'success');
+})
+.catch(err => {
+console.error(err);
+showNotification('Error generating report', 'error');
+});
+}
+
+function displayGarmentAvailabilityReport(data) {
+document.getElementById('reportTitle').innerHTML = '<i class="fas fa-boxes"></i> Garment Availability Report';
+
+let html = `
+<div class="report-section">
+    <h4><i class="fas fa-info-circle"></i> Report Information</h4>
+    <div class="stat-item">
+        <span class="stat-label">Report Type:</span>
+        <span class="stat-value">${data.reportType}</span>
+    </div>
+    <div class="stat-item">
+        <span class="stat-label">Generated On:</span>
+        <span class="stat-value">${data.generatedDate}</span>
+    </div>
+    <div class="stat-item">
+        <span class="stat-label">Total Garments:</span>
+        <span class="stat-value">${data.totalGarments}</span>
+    </div>
+    <div class="stat-item">
+        <span class="stat-label">Low Stock Items:</span>
+        <span class="stat-value" style="color: #e74c3c;">${data.lowStockCount}</span>
+    </div>
+</div>
+
+<div class="report-section">
+    <h4><i class="fas fa-table"></i> Current Stock Levels</h4>
+    <table class="fabric-table">
+        <thead>
+        <tr>
+            <th>Garment ID</th>
+            <th>Type</th>
+            <th>Size</th>
+            <th>Fabric Type</th>
+            <th>Color</th>
+            <th>Stock</th>
+            <th>Status</th>
+            <th>Last Updated</th>
+        </tr>
+        </thead>
+        <tbody>
+        `;
+
+        if (data.data && data.data.length > 0) {
+        data.data.forEach(item => {
+        const statusColor = item.status === 'Low Stock' ? '#e74c3c' :
+        item.status === 'Overstocked' ? '#f39c12' : '#27ae60';
+        html += `
+        <tr>
+            <td>${item.garmentId}</td>
+            <td>${item.type}</td>
+            <td>${item.size}</td>
+            <td>${item.fabricType}</td>
+            <td>${item.color}</td>
+            <td>${item.currentStock}</td>
+            <td><span style="color: ${statusColor}; font-weight: 600;">${item.status}</span></td>
+            <td>${item.lastUpdated}</td>
+        </tr>
+        `;
+        });
+        } else {
+        html += '<tr><td colspan="8" style="text-align:center;">No garment data available</td></tr>';
+        }
+
+        html += `
+        </tbody>
+    </table>
+</div>
+`;
+
+document.getElementById('reportContent').innerHTML = html;
+}
+
+// ========== PDF GENERATION ==========
+function downloadReportAsPDF() {
+if (!currentReportData) {
+showNotification('No report data to download', 'error');
+return;
+}
+
+const { jsPDF } = window.jspdf;
+const doc = new jsPDF();
+
+// Add header
+doc.setFontSize(20);
+doc.setTextColor(75, 0, 130);
+doc.text('Cloth Sphere', 105, 15, { align: 'center' });
+
+doc.setFontSize(16);
+doc.text(currentReportData.reportType, 105, 25, { align: 'center' });
+
+doc.setFontSize(10);
+doc.setTextColor(100);
+doc.text(`Generated: ${currentReportData.generatedDate || new Date().toISOString().split('T')[0]}`, 105, 32, { align: 'center' });
+
+if (currentReportData.startDate && currentReportData.endDate) {
+doc.text(`Period: ${currentReportData.startDate} to ${currentReportData.endDate}`, 105, 37, { align: 'center' });
+}
+
+// Prepare table data
+let headers = [];
+let rows = [];
+
+if (currentReportData.reportType.includes('Fabric Usage')) {
+headers = [['Fabric ID', 'Type', 'Color', 'Stock In', 'Stock Out', 'Net Usage']];
+rows = currentReportData.data.map(item => [
+item.fabricId,
+item.type,
+item.color,
+item.totalIn.toFixed(2),
+item.totalOut.toFixed(2),
+item.netUsage.toFixed(2)
+]);
+} else if (currentReportData.reportType.includes('Fabric Availability')) {
+headers = [['Fabric ID', 'Type', 'Color', 'Stock (m)', 'Status', 'Last Updated']];
+rows = currentReportData.data.map(item => [
+item.fabricId,
+item.type,
+item.color,
+item.currentStock.toFixed(2),
+item.status,
+item.lastUpdated
+]);
+} else if (currentReportData.reportType.includes('Garment Movement')) {
+headers = [['Garment ID', 'Type', 'Size', 'Produced', 'Shipped', 'Net']];
+rows = currentReportData.data.map(item => [
+item.garmentId,
+item.type,
+item.size,
+item.totalProduced,
+item.totalShipped,
+item.netMovement
+]);
+} else if (currentReportData.reportType.includes('Garment Availability')) {
+headers = [['Garment ID', 'Type', 'Size', 'Fabric', 'Color', 'Stock', 'Status']];
+rows = currentReportData.data.map(item => [
+item.garmentId,
+item.type,
+item.size,
+item.fabricType,
+item.color,
+item.currentStock,
+item.status
+]);
+}
+
+// Add table
+doc.autoTable({
+startY: 45,
+head: headers,
+body: rows,
+theme: 'grid',
+headStyles: {
+fillColor: [75, 0, 130],
+textColor: 255,
+fontSize: 10,
+fontStyle: 'bold'
+},
+bodyStyles: {
+fontSize: 9
+},
+alternateRowStyles: {
+fillColor: [245, 245, 245]
+}
+});
+
+// Save PDF
+const filename = `${currentReportData.reportType.replace(/ /g, '_')}_${currentReportData.generatedDate || 'report'}.pdf`;
+doc.save(filename);
+
+showNotification('PDF downloaded successfully!', 'success');
+}
+
+// Notification
+function showNotification(msg, type = 'info') {
+document.querySelector('.notification')?.remove();
+const n = document.createElement('div');
+n.className = `notification notification-${type}`;
+n.innerHTML = `<div class="notification-content"><i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : 'info-circle'}"></i><span>${msg}</span></div>`;
+n.style.cssText = `position:fixed;top:20px;right:20px;z-index:10000;padding:15px 20px;border-radius:8px;color:white;font-weight:500;box-shadow:0 4px 12px rgba(0,0,0,0.2);transform:translateX(400px);transition:transform 0.3s ease;max-width:400px;`;
+n.style.background = type === 'success' ? 'linear-gradient(135deg,#27ae60,#2ecc71)' : type === 'error' ? 'linear-gradient(135deg,#e74c3c,#c0392b)' : 'linear-gradient(135deg,#3498db,#2980b9)';
+document.body.appendChild(n);
+setTimeout(() => n.style.transform = 'translateX(0)', 100);
+setTimeout(() => {
+n.style.transform = 'translateX(400px)';
+setTimeout(() => n.remove(), 300);
+}, 4000);
+}
