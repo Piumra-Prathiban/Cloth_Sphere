@@ -1,0 +1,1702 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factory Manager Dashboard - ClothSphere</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --success: #27ae60;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --info: #16a085;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: rgba(44, 62, 80, 0.95);
+            backdrop-filter: blur(10px);
+            color: white;
+            box-shadow: 5px 0 20px rgba(0,0,0,0.2);
+        }
+
+        .sidebar-header {
+            padding: 25px 20px;
+            background: rgba(0,0,0,0.3);
+            border-bottom: 2px solid rgba(52, 152, 219, 0.3);
+        }
+
+        .sidebar-header h2 {
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sidebar-header .icon {
+            width: 40px;
+            height: 40px;
+            background: var(--secondary);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sidebar-menu {
+            padding: 20px 0;
+        }
+
+        .menu-section {
+            margin-bottom: 25px;
+        }
+
+        .menu-section-title {
+            padding: 10px 20px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.5);
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .menu-item {
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: white;
+            text-decoration: none;
+            border-left: 3px solid transparent;
+        }
+
+        .menu-item:hover {
+            background: rgba(52, 152, 219, 0.2);
+            border-left-color: var(--secondary);
+        }
+
+        .menu-item.active {
+            background: rgba(52, 152, 219, 0.3);
+            border-left-color: var(--secondary);
+        }
+
+        .menu-item i {
+            width: 20px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            background: rgba(255,255,255,0.05);
+        }
+
+        .content-wrapper {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 25px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .top-bar h1 {
+            color: var(--primary);
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--secondary), var(--info));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--secondary), var(--info));
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+        }
+
+        .stat-icon.blue { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .stat-icon.green { background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%); color: white; }
+        .stat-icon.orange { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white; }
+        .stat-icon.red { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 1rem;
+            color: #666;
+            font-weight: 500;
+        }
+
+        /* Content Sections */
+        .section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .section-header h3 {
+            font-size: 1.4rem;
+            color: var(--dark);
+            font-weight: 600;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--secondary), var(--info));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success), #2ecc71);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(39, 174, 96, 0.4);
+        }
+
+        .btn-sm {
+            padding: 8px 15px;
+            font-size: 0.85rem;
+        }
+
+        /* Task List */
+        .task-list {
+            list-style: none;
+        }
+
+        .task-item {
+            padding: 18px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .task-item:hover {
+            background: #f8f9fa;
+            padding-left: 25px;
+        }
+
+        .task-info h4 {
+            font-size: 1.05rem;
+            margin-bottom: 8px;
+            color: var(--dark);
+            font-weight: 600;
+        }
+
+        .task-meta {
+            font-size: 0.9rem;
+            color: #666;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .task-meta span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .badge {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .badge-pending { background: #fff3e0; color: var(--warning); }
+        .badge-progress { background: #e3f2fd; color: var(--secondary); }
+        .badge-completed { background: #e8f5e9; color: var(--success); }
+        .badge-overdue { background: #ffebee; color: var(--danger); }
+        .badge-critical { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; }
+        .badge-high { background: #fff3e0; color: var(--warning); }
+        .badge-medium { background: #e3f2fd; color: var(--secondary); }
+        .badge-low { background: #e8f5e9; color: var(--success); }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 50px 20px;
+            color: #999;
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(5px);
+            animation: fadeIn 0.3s;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 35px;
+            max-width: 650px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .modal-header h2 {
+            font-size: 1.6rem;
+            color: var(--dark);
+            font-weight: 700;
+        }
+
+        .close-modal {
+            cursor: pointer;
+            font-size: 1.8rem;
+            color: #999;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+
+        .close-modal:hover {
+            color: var(--danger);
+            background: #ffebee;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--secondary);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-group small {
+            display: block;
+            margin-top: 5px;
+            color: #666;
+            font-size: 0.85rem;
+        }
+
+        /* Tables */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th {
+            background: #f8f9fa;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--dark);
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .data-table td {
+            padding: 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .data-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-icon {
+            width: 35px;
+            height: 35px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+        }
+
+        .btn-view {
+            background: #e3f2fd;
+            color: var(--secondary);
+        }
+
+        .btn-edit {
+            background: #fff3e0;
+            color: var(--warning);
+        }
+
+        .btn-delete {
+            background: #ffebee;
+            color: var(--danger);
+        }
+
+        .btn-icon:hover {
+            transform: scale(1.1);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--secondary);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .main-content {
+                padding: 15px;
+            }
+
+            .top-bar {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="icon">
+                <i class="fas fa-industry"></i>
+            </div>
+            <div>
+                <h2>Factory Manager</h2>
+            </div>
+        </div>
+        <nav class="sidebar-menu">
+            <div class="menu-section">
+                <div class="menu-section-title">Main</div>
+                <a href="/factory/dashboard" class="menu-item active">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </a>
+            </div>
+            <div class="menu-section">
+                <div class="menu-section-title">Production</div>
+                <a href="#" class="menu-item" onclick="showAllTasks(); return false;">
+                    <i class="fas fa-tasks"></i>
+                    <span>All Tasks</span>
+                </a>
+                <a href="#" class="menu-item" onclick="showAllAssignments(); return false;">
+                    <i class="fas fa-users-cog"></i>
+                    <span>Staff Assignments</span>
+                </a>
+                <a href="#" class="menu-item" onclick="showWorkloadReport(); return false;">
+                    <i class="fas fa-chart-pie"></i>
+                    <span>Workload Report</span>
+                </a>
+            </div>
+            <div class="menu-section">
+                <div class="menu-section-title">Reports</div>
+                <a href="#" class="menu-item" onclick="showPerformanceReport(); return false;">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Performance</span>
+                </a>
+                <a href="#" class="menu-item" onclick="showDepartmentStats(); return false;">
+                    <i class="fas fa-building"></i>
+                    <span>Department Stats</span>
+                </a>
+            </div>
+            <div class="menu-section">
+                <div class="menu-section-title">Account</div>
+                <a href="/systemUserLogin" class="menu-item">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="content-wrapper">
+            <!-- Top Bar -->
+            <div class="top-bar">
+                <div>
+                    <h1>Factory Manager Dashboard</h1>
+                    <p style="color: #666; margin-top: 5px;">Production Management System</p>
+                </div>
+                <div class="user-info">
+                    <div>
+                        <div style="font-weight: 600; text-align: right;" th:text="${user != null ? user.userName : 'User'}">User</div>
+                        <div style="font-size: 0.9rem; color: #666; text-align: right;">Factory Manager</div>
+                    </div>
+                    <div class="user-avatar" th:text="${user != null ? user.userName.substring(0,1).toUpperCase() : 'U'}">U</div>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-label">Total Tasks</div>
+                            <div class="stat-value" th:text="${taskStats.totalTasks}">0</div>
+                        </div>
+                        <div class="stat-icon blue">
+                            <i class="fas fa-tasks"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-label">In Progress</div>
+                            <div class="stat-value" th:text="${taskStats.inProgressTasks}">0</div>
+                        </div>
+                        <div class="stat-icon orange">
+                            <i class="fas fa-spinner fa-pulse"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-label">Completed</div>
+                            <div class="stat-value" th:text="${taskStats.completedTasks}">0</div>
+                        </div>
+                        <div class="stat-icon green">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-label">Overdue</div>
+                            <div class="stat-value" th:text="${taskStats.overdueTasks}">0</div>
+                        </div>
+                        <div class="stat-icon red">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="section">
+                <div class="section-header">
+                    <h3>Quick Actions</h3>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <button class="btn btn-primary" onclick="openCreateTaskModal()">
+                        <i class="fas fa-plus"></i> Create New Task
+                    </button>
+                    <button class="btn btn-success" onclick="openAssignTaskModal()">
+                        <i class="fas fa-user-plus"></i> Assign Task to Staff
+                    </button>
+                    <button class="btn btn-primary" onclick="showAllTasks()">
+                        <i class="fas fa-list"></i> View All Tasks
+                    </button>
+                    <button class="btn btn-success" onclick="showWorkloadReport()">
+                        <i class="fas fa-chart-pie"></i> Workload Report
+                    </button>
+                </div>
+            </div>
+
+            <!-- Active Tasks Section -->
+            <div class="section">
+                <div class="section-header">
+                    <h3>Active Production Tasks</h3>
+                    <button class="btn btn-primary btn-sm" onclick="showAllTasks()">
+                        <i class="fas fa-arrow-right"></i> View All
+                    </button>
+                </div>
+                <ul class="task-list" id="activeTasksList">
+                    <li class="task-item" th:each="task : ${activeTasks}">
+                        <div class="task-info">
+                            <h4 th:text="${task.taskName}">Task Name</h4>
+                            <div class="task-meta">
+                                <span><i class="fas fa-calendar"></i> <span th:text="${task.deadline}">2024-01-01</span></span>
+                                <span><i class="fas fa-building"></i> <span th:text="${task.department != null ? task.department.departmentName : 'N/A'}">Department</span></span>
+                                <span class="badge" th:classappend="${task.priority == 'P0' ? 'badge-critical' : (task.priority == 'P1' ? 'badge-high' : (task.priority == 'P2' ? 'badge-medium' : 'badge-low'))}" th:text="${task.priorityLabel}">Priority</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <span class="badge badge-progress">In Progress</span>
+                            <button class="btn-icon btn-edit edit-task-btn" th:attr="data-task-id=${task.taskId}" title="Edit Task">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn-icon status-update-btn" th:attr="data-task-id=${task.taskId},data-task-name=${task.taskName},data-task-status=${task.status}" style="background: #e8f5e9; color: var(--success);" title="Update Status">
+                                <i class="fas fa-check-circle"></i>
+                            </button>
+                        </div>
+                    </li>
+                    <li class="empty-state" th:if="${#lists.isEmpty(activeTasks)}">
+                        <i class="fas fa-inbox"></i>
+                        <p>No active tasks</p>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Pending Tasks -->
+            <div class="section">
+                <div class="section-header">
+                    <h3>Pending Tasks (Need Assignment)</h3>
+                </div>
+                <ul class="task-list">
+                    <li class="task-item" th:each="task : ${pendingTasks}">
+                        <div class="task-info">
+                            <h4 th:text="${task.taskName}">Task Name</h4>
+                            <div class="task-meta">
+                                <span><i class="fas fa-calendar"></i> <span th:text="${task.deadline}">2024-01-01</span></span>
+                                <span><i class="fas fa-building"></i> <span th:text="${task.department != null ? task.department.departmentName : 'N/A'}">Department</span></span>
+                                <span class="badge" th:classappend="${task.priority == 'P0' ? 'badge-critical' : (task.priority == 'P1' ? 'badge-high' : (task.priority == 'P2' ? 'badge-medium' : 'badge-low'))}" th:text="${task.priorityLabel}">Priority</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-success btn-sm assign-task-btn" th:attr="data-task-id=${task.taskId}">
+                                <i class="fas fa-user-plus"></i> Assign Staff
+                            </button>
+                            <button class="btn-icon btn-edit edit-task-btn" th:attr="data-task-id=${task.taskId}" title="Edit Task">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                    </li>
+                    <li class="empty-state" th:if="${#lists.isEmpty(pendingTasks)}">
+                        <i class="fas fa-check-circle" style="color: var(--success);"></i>
+                        <p>All tasks are assigned!</p>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Overdue Alerts -->
+            <div class="section" th:if="${!#lists.isEmpty(overdueTasks)}">
+                <div class="section-header">
+                    <h3 style="color: var(--danger);"><i class="fas fa-exclamation-triangle"></i> Urgent: Overdue Tasks</h3>
+                </div>
+                <ul class="task-list">
+                    <li class="task-item" th:each="task : ${overdueTasks}">
+                        <div class="task-info">
+                            <h4 th:text="${task.taskName}">Overdue Task</h4>
+                            <div class="task-meta">
+                                <span style="color: var(--danger);"><i class="fas fa-calendar-times"></i> Overdue since: <span th:text="${task.deadline}">2024-01-01</span></span>
+                                <span><i class="fas fa-building"></i> <span th:text="${task.department != null ? task.department.departmentName : 'N/A'}">Department</span></span>
+                            </div>
+                        </div>
+                        <span class="badge badge-overdue">Overdue</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Task Modal -->
+<div id="createTaskModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2><i class="fas fa-plus-circle"></i> Create New Production Task</h2>
+            <span class="close-modal" onclick="closeModal('createTaskModal')">&times;</span>
+        </div>
+        <form id="createTaskForm" onsubmit="createTask(event)">
+            <div class="form-group">
+                <label for="taskName">Task Name *</label>
+                <input type="text" id="taskName" placeholder="Enter task name" required>
+            </div>
+            <div class="form-group">
+                <label for="description">Description</label>
+                <textarea id="description" placeholder="Enter task description"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="deadline">Deadline *</label>
+                <input type="date" id="deadline" required>
+            </div>
+            <div class="form-group">
+                <label for="priority">Priority *</label>
+                <select id="priority" required>
+                    <option value="P0">Critical (P0) - Highest Priority</option>
+                    <option value="P1">High (P1)</option>
+                    <option value="P2" selected>Medium (P2)</option>
+                    <option value="P3">Low (P3)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="departmentId">Department *</label>
+                <select id="departmentId" required>
+                    <option value="">Select Department</option>
+                    <option th:each="dept : ${departments}" th:value="${dept.id}" th:text="${dept.departmentName}">Department</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 25px;">
+                <button type="button" class="btn" onclick="closeModal('createTaskModal')" style="background: #e0e0e0; color: #666;">Cancel</button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-check"></i> Create Task
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Assign Task Modal -->
+<div id="assignTaskModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2><i class="fas fa-user-plus"></i> Assign Task to Staff</h2>
+            <span class="close-modal" onclick="closeModal('assignTaskModal')">&times;</span>
+        </div>
+        <form id="assignTaskForm" onsubmit="assignTask(event)">
+            <div class="form-group">
+                <label for="assignTaskId">Select Task *</label>
+                <select id="assignTaskId" required>
+                    <option value="">Select a task to assign</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="assignEmployees">Select Employees *</label>
+                <select id="assignEmployees" multiple required style="height: 150px;">
+                </select>
+                <small><i class="fas fa-info-circle"></i> employee selection </small>
+            </div>
+            <div class="form-group">
+                <label for="estimatedHours">Estimated Hours *</label>
+                <input type="number" id="estimatedHours" placeholder="Enter estimated hours" required min="1">
+            </div>
+            <div class="form-group">
+                <label for="assignNotes">Notes (Optional)</label>
+                <textarea id="assignNotes" placeholder="Add any additional notes or instructions"></textarea>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 25px;">
+                <button type="button" class="btn" onclick="closeModal('assignTaskModal')" style="background: #e0e0e0; color: #666;">Cancel</button>
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-check"></i> Assign Task
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- All Tasks Modal -->
+<div id="allTasksModal" class="modal">
+    <div class="modal-content" style="max-width: 1000px;">
+        <div class="modal-header">
+            <h2><i class="fas fa-tasks"></i> All Production Tasks</h2>
+            <span class="close-modal" onclick="closeModal('allTasksModal')">&times;</span>
+        </div>
+        <div id="allTasksContent">
+            <div class="spinner"></div>
+        </div>
+    </div>
+</div>
+
+<!-- All Assignments Modal -->
+<div id="allAssignmentsModal" class="modal">
+    <div class="modal-content" style="max-width: 1000px;">
+        <div class="modal-header">
+            <h2><i class="fas fa-users-cog"></i> Staff Assignments</h2>
+            <span class="close-modal" onclick="closeModal('allAssignmentsModal')">&times;</span>
+        </div>
+        <div id="allAssignmentsContent">
+            <div class="spinner"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Workload Report Modal -->
+<div id="workloadModal" class="modal">
+    <div class="modal-content" style="max-width: 1000px;">
+        <div class="modal-header">
+            <h2><i class="fas fa-chart-pie"></i> Employee Workload Report</h2>
+            <span class="close-modal" onclick="closeModal('workloadModal')">&times;</span>
+        </div>
+        <div id="workloadContent">
+            <div class="spinner"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Performance Report Modal -->
+<div id="performanceModal" class="modal">
+    <div class="modal-content" style="max-width: 1000px;">
+        <div class="modal-header">
+            <h2><i class="fas fa-chart-bar"></i> Performance Report</h2>
+            <span class="close-modal" onclick="closeModal('performanceModal')">&times;</span>
+        </div>
+        <div id="performanceContent">
+            <div class="spinner"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Department Stats Modal -->
+<div id="departmentModal" class="modal">
+    <div class="modal-content" style="max-width: 1000px;">
+        <div class="modal-header">
+            <h2><i class="fas fa-building"></i> Department Performance</h2>
+            <span class="close-modal" onclick="closeModal('departmentModal')">&times;</span>
+        </div>
+        <div id="departmentContent">
+            <div class="spinner"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Task Modal -->
+<div id="editTaskModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2><i class="fas fa-edit"></i> Edit Production Task</h2>
+            <span class="close-modal" onclick="closeModal('editTaskModal')">&times;</span>
+        </div>
+        <form id="editTaskForm" onsubmit="updateTask(event)">
+            <input type="hidden" id="editTaskId">
+            <div class="form-group">
+                <label for="editTaskName">Task Name *</label>
+                <input type="text" id="editTaskName" placeholder="Enter task name" required>
+            </div>
+            <div class="form-group">
+                <label for="editDescription">Description</label>
+                <textarea id="editDescription" placeholder="Enter task description"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="editDeadline">Deadline *</label>
+                <input type="date" id="editDeadline" required>
+            </div>
+            <div class="form-group">
+                <label for="editPriority">Priority *</label>
+                <select id="editPriority" required>
+                    <option value="P0">Critical (P0) - Highest Priority</option>
+                    <option value="P1">High (P1)</option>
+                    <option value="P2">Medium (P2)</option>
+                    <option value="P3">Low (P3)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="editStatus">Status *</label>
+                <select id="editStatus" required>
+                    <option value="PENDING">Pending</option>
+                    <option value="IN_PROGRESS">In Progress</option>
+                    <option value="COMPLETED">Completed</option>
+                    <option value="CANCELLED">Cancelled</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="editDepartmentId">Department *</label>
+                <select id="editDepartmentId" required>
+                    <option value="">Select Department</option>
+                    <option th:each="dept : ${departments}" th:value="${dept.id}" th:text="${dept.departmentName}">Department</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 25px;">
+                <button type="button" class="btn" onclick="closeModal('editTaskModal')" style="background: #e0e0e0; color: #666;">Cancel</button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Update Task
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Quick Status Update Modal -->
+<div id="statusUpdateModal" class="modal">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+            <h2><i class="fas fa-tasks"></i> Update Task Status</h2>
+            <span class="close-modal" onclick="closeModal('statusUpdateModal')">&times;</span>
+        </div>
+        <div style="margin-bottom: 20px;">
+            <p style="color: #666; margin-bottom: 15px;">Task: <strong id="statusTaskName">-</strong></p>
+            <p style="color: #666;">Current Status: <span id="statusTaskCurrent" class="badge">-</span></p>
+        </div>
+        <form onsubmit="quickUpdateStatus(event)">
+            <input type="hidden" id="statusTaskId">
+            <div class="form-group">
+                <label for="statusNewStatus">New Status *</label>
+                <select id="statusNewStatus" required style="font-size: 1.1rem; padding: 15px;">
+                    <option value="PENDING">📝 Pending</option>
+                    <option value="IN_PROGRESS">⚙️ In Progress</option>
+                    <option value="COMPLETED">✅ Completed</option>
+                    <option value="CANCELLED">❌ Cancelled</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 25px;">
+                <button type="button" class="btn" onclick="closeModal('statusUpdateModal')" style="background: #e0e0e0; color: #666;">Cancel</button>
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-check"></i> Update Status
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    console.log('Factory Manager Dashboard initialized');
+
+    // ==================== MODAL FUNCTIONS ====================
+    function openCreateTaskModal() {
+        console.log('Opening create task modal');
+        document.getElementById('createTaskModal').classList.add('active');
+    }
+
+    function openAssignTaskModal() {
+        console.log('Opening assign task modal');
+        loadTasksForAssignment();
+        loadEmployeesForAssignment();
+        document.getElementById('assignTaskModal').classList.add('active');
+    }
+
+    function closeModal(modalId) {
+        console.log('Closing modal:', modalId);
+        document.getElementById(modalId).classList.remove('active');
+    }
+
+    function assignTaskQuick(taskId) {
+        console.log('Quick assign for task:', taskId);
+        loadTasksForAssignment();
+        loadEmployeesForAssignment();
+        setTimeout(() => {
+            document.getElementById('assignTaskId').value = taskId;
+        }, 500);
+        document.getElementById('assignTaskModal').classList.add('active');
+    }
+
+    // ==================== LOAD DATA FOR FORMS ====================
+    function loadTasksForAssignment() {
+        console.log('Loading tasks...');
+        fetch('/factory/api/tasks')
+            .then(response => response.json())
+            .then(tasks => {
+                console.log('Tasks loaded:', tasks.length);
+                const select = document.getElementById('assignTaskId');
+                select.innerHTML = '<option value="">Select a task to assign</option>';
+                tasks.filter(t => t.status !== 'COMPLETED' && t.status !== 'CANCELLED').forEach(task => {
+                    const option = document.createElement('option');
+                    option.value = task.taskId;
+                    option.textContent = `${task.taskName} (${task.priorityLabel}) - ${task.deadline}`;
+                    select.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('Error loading tasks:', error);
+                alert('Error loading tasks. Please try again.');
+            });
+    }
+
+    function loadEmployeesForAssignment() {
+        console.log('Loading employees...');
+        fetch('/factory/api/employees')
+            .then(response => response.json())
+            .then(employees => {
+                console.log('Employees loaded:', employees.length);
+                const select = document.getElementById('assignEmployees');
+                select.innerHTML = '';
+                employees.forEach(emp => {
+                    const option = document.createElement('option');
+                    option.value = emp.id;
+                    const deptName = emp.department ? emp.department.departmentName : 'No Dept';
+                    option.textContent = `${emp.fullName} (${deptName})`;
+                    select.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('Error loading employees:', error);
+                alert('Error loading employees. Please try again.');
+            });
+    }
+
+    // ==================== CREATE TASK ====================
+    function createTask(event) {
+        event.preventDefault();
+        console.log('Creating task...');
+
+        const taskData = {
+            taskName: document.getElementById('taskName').value,
+            description: document.getElementById('description').value,
+            deadline: document.getElementById('deadline').value,
+            priority: document.getElementById('priority').value,
+            departmentId: document.getElementById('departmentId').value
+        };
+
+        console.log('Task data:', taskData);
+
+        fetch('/factory/api/tasks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(taskData)
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Response:', data);
+                if (data.success) {
+                    alert('✅ Task created successfully!');
+                    closeModal('createTaskModal');
+                    document.getElementById('createTaskForm').reset();
+                    location.reload();
+                } else {
+                    alert('❌ Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('❌ Error creating task. Please try again.');
+            });
+    }
+
+    // ==================== ASSIGN TASK ====================
+    function assignTask(event) {
+        event.preventDefault();
+        console.log('Assigning task...');
+
+        const taskId = document.getElementById('assignTaskId').value;
+        const select = document.getElementById('assignEmployees');
+        const employeeIds = Array.from(select.selectedOptions).map(opt => opt.value);
+        const estimatedHours = parseInt(document.getElementById('estimatedHours').value);
+        const notes = document.getElementById('assignNotes').value;
+
+        if (!taskId) {
+            alert('⚠️ Please select a task');
+            return;
+        }
+
+        if (employeeIds.length === 0) {
+            alert('⚠️ Please select at least one employee');
+            return;
+        }
+
+        const assignmentData = {
+            taskId: taskId,
+            employeeIds: employeeIds,
+            estimatedHours: estimatedHours,
+            notes: notes
+        };
+
+        console.log('Assignment data:', assignmentData);
+
+        fetch('/factory/api/assignments/assign', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(assignmentData)
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Response:', data);
+                if (data.success) {
+                    alert('✅ ' + data.message);
+                    closeModal('assignTaskModal');
+                    document.getElementById('assignTaskForm').reset();
+                    location.reload();
+                } else {
+                    alert('❌ Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('❌ Error assigning task. Please try again.');
+            });
+    }
+
+    // ==================== VIEW ALL TASKS ====================
+    function showAllTasks() {
+        console.log('Loading all tasks...');
+        document.getElementById('allTasksModal').classList.add('active');
+        document.getElementById('allTasksContent').innerHTML = '<div class="spinner"></div>';
+
+        fetch('/factory/api/tasks')
+            .then(response => response.json())
+            .then(tasks => {
+                console.log('All tasks loaded:', tasks.length);
+                let html = '<table class="data-table">';
+                html += '<thead><tr><th>Task ID</th><th>Task Name</th><th>Department</th><th>Priority</th><th>Deadline</th><th>Status</th><th>Actions</th></tr></thead>';
+                html += '<tbody>';
+
+                if (tasks.length === 0) {
+                    html += '<tr><td colspan="7" style="text-align: center; padding: 40px;">No tasks found</td></tr>';
+                } else {
+                    tasks.forEach(task => {
+                        const statusClass = task.status === 'COMPLETED' ? 'badge-completed' :
+                            task.status === 'IN_PROGRESS' ? 'badge-progress' :
+                                task.status === 'PENDING' ? 'badge-pending' : 'badge-overdue';
+                        const priorityClass = task.priority === 'P0' ? 'badge-critical' :
+                            task.priority === 'P1' ? 'badge-high' :
+                                task.priority === 'P2' ? 'badge-medium' : 'badge-low';
+
+                        html += `<tr>
+                            <td>${task.taskId}</td>
+                            <td><strong>${task.taskName}</strong></td>
+                            <td>${task.department ? task.department.departmentName : 'N/A'}</td>
+                            <td><span class="badge ${priorityClass}">${task.priorityLabel}</span></td>
+                            <td>${task.deadline}</td>
+                            <td><span class="badge ${statusClass}">${task.status}</span></td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn-icon btn-view" onclick="viewTaskDetails('${task.taskId}')" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn-icon btn-edit" onclick="editTask('${task.taskId}'); closeModal('allTasksModal');" title="Edit Task">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn-icon" style="background: #e8f5e9; color: var(--success);" onclick="quickStatusUpdate('${task.taskId}', '${task.taskName}', '${task.status}'); closeModal('allTasksModal');" title="Update Status">
+                                        <i class="fas fa-tasks"></i>
+                                    </button>
+                                    <button class="btn-icon btn-delete" onclick="deleteTask('${task.taskId}', '${task.taskName}')" title="Delete Task">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>`;
+                    });
+                }
+
+                html += '</tbody></table>';
+                document.getElementById('allTasksContent').innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('allTasksContent').innerHTML = '<p style="text-align: center; color: red;">Error loading tasks</p>';
+            });
+    }
+
+    // ==================== VIEW ALL ASSIGNMENTS ====================
+    function showAllAssignments() {
+        console.log('Loading all assignments...');
+        document.getElementById('allAssignmentsModal').classList.add('active');
+        document.getElementById('allAssignmentsContent').innerHTML = '<div class="spinner"></div>';
+
+        fetch('/factory/api/assignments')
+            .then(response => response.json())
+            .then(assignments => {
+                console.log('Assignments loaded:', assignments.length);
+                let html = '<table class="data-table">';
+                html += '<thead><tr><th>ID</th><th>Task</th><th>Employee</th><th>Department</th><th>Status</th><th>Est. Hours</th><th>Actual Hours</th><th>Assigned Date</th></tr></thead>';
+                html += '<tbody>';
+
+                if (assignments.length === 0) {
+                    html += '<tr><td colspan="8" style="text-align: center; padding: 40px;">No assignments found</td></tr>';
+                } else {
+                    assignments.forEach(assignment => {
+                        const statusClass = assignment.status === 'COMPLETED' ? 'badge-completed' :
+                            assignment.status === 'IN_PROGRESS' ? 'badge-progress' : 'badge-pending';
+
+                        html += `<tr>
+                            <td>${assignment.assignmentId}</td>
+                            <td>${assignment.task ? assignment.task.taskName : 'N/A'}</td>
+                            <td>${assignment.employee ? assignment.employee.fullName : 'N/A'}</td>
+                            <td>${assignment.department ? assignment.department.departmentName : 'N/A'}</td>
+                            <td><span class="badge ${statusClass}">${assignment.status}</span></td>
+                            <td>${assignment.estimatedHours || 'N/A'}</td>
+                            <td>${assignment.actualHours || '-'}</td>
+                            <td>${assignment.assignedDate}</td>
+                        </tr>`;
+                    });
+                }
+
+                html += '</tbody></table>';
+                document.getElementById('allAssignmentsContent').innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('allAssignmentsContent').innerHTML = '<p style="text-align: center; color: red;">Error loading assignments</p>';
+            });
+    }
+
+    // ==================== WORKLOAD REPORT ====================
+    function showWorkloadReport() {
+        console.log('Loading workload report...');
+        document.getElementById('workloadModal').classList.add('active');
+        document.getElementById('workloadContent').innerHTML = '<div class="spinner"></div>';
+
+        fetch('/factory/api/reports/workload')
+            .then(response => response.json())
+            .then(workload => {
+                console.log('Workload data loaded:', workload.length);
+                let html = '<table class="data-table">';
+                html += '<thead><tr><th>Employee ID</th><th>Employee Name</th><th>Department</th><th>Active Tasks</th><th>Total Est. Hours</th><th>Workload Status</th></tr></thead>';
+                html += '<tbody>';
+
+                if (workload.length === 0) {
+                    html += '<tr><td colspan="6" style="text-align: center; padding: 40px;">No workload data found</td></tr>';
+                } else {
+                    workload.forEach(emp => {
+                        const workloadStatus = emp.activeTasksCount === 0 ? 'Available' :
+                            emp.activeTasksCount <= 2 ? 'Light' :
+                                emp.activeTasksCount <= 4 ? 'Moderate' : 'Heavy';
+                        const statusColor = workloadStatus === 'Available' ? 'var(--success)' :
+                            workloadStatus === 'Light' ? 'var(--info)' :
+                                workloadStatus === 'Moderate' ? 'var(--warning)' : 'var(--danger)';
+
+                        html += `<tr>
+                            <td>${emp.employeeId}</td>
+                            <td><strong>${emp.employeeName}</strong></td>
+                            <td>${emp.department}</td>
+                            <td>${emp.activeTasksCount}</td>
+                            <td>${emp.totalEstimatedHours} hrs</td>
+                            <td><span class="badge" style="background: ${statusColor}; color: white;">${workloadStatus}</span></td>
+                        </tr>`;
+                    });
+                }
+
+                html += '</tbody></table>';
+                document.getElementById('workloadContent').innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('workloadContent').innerHTML = '<p style="text-align: center; color: red;">Error loading workload report</p>';
+            });
+    }
+
+    // ==================== PERFORMANCE REPORT ====================
+    function showPerformanceReport() {
+        console.log('Loading performance report...');
+        document.getElementById('performanceModal').classList.add('active');
+        document.getElementById('performanceContent').innerHTML = '<div class="spinner"></div>';
+
+        fetch('/factory/api/reports/task-stats')
+            .then(response => response.json())
+            .then(stats => {
+                console.log('Performance stats loaded:', stats);
+                let html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;">';
+
+                const statItems = [
+                    { label: 'Total Tasks', value: stats.totalTasks, icon: 'fa-tasks', color: 'blue' },
+                    { label: 'Pending', value: stats.pendingTasks, icon: 'fa-clock', color: 'orange' },
+                    { label: 'In Progress', value: stats.inProgressTasks, icon: 'fa-spinner', color: 'blue' },
+                    { label: 'Completed', value: stats.completedTasks, icon: 'fa-check-circle', color: 'green' },
+                    { label: 'Cancelled', value: stats.cancelledTasks, icon: 'fa-times-circle', color: 'red' },
+                    { label: 'Overdue', value: stats.overdueTasks, icon: 'fa-exclamation-triangle', color: 'red' }
+                ];
+
+                statItems.forEach(item => {
+                    html += `
+                        <div style="background: white; padding: 20px; border-radius: 10px; text-align: center;">
+                            <div class="stat-icon ${item.color}" style="margin: 0 auto 15px;">
+                                <i class="fas ${item.icon}"></i>
+                            </div>
+                            <div style="font-size: 2rem; font-weight: bold; margin-bottom: 5px;">${item.value}</div>
+                            <div style="color: #666;">${item.label}</div>
+                        </div>
+                    `;
+                });
+
+                html += '</div>';
+
+                // Priority breakdown
+                html += '<h3 style="margin: 30px 0 15px;">Tasks by Priority</h3>';
+                html += '<table class="data-table">';
+                html += '<thead><tr><th>Priority Level</th><th>Count</th><th>Percentage</th></tr></thead><tbody>';
+
+                const priorityData = [
+                    { label: 'Critical (P0)', value: stats.criticalTasks, class: 'badge-critical' },
+                    { label: 'High (P1)', value: stats.highPriorityTasks, class: 'badge-high' },
+                    { label: 'Medium (P2)', value: stats.mediumPriorityTasks, class: 'badge-medium' },
+                    { label: 'Low (P3)', value: stats.lowPriorityTasks, class: 'badge-low' }
+                ];
+
+                const total = stats.totalTasks || 1;
+                priorityData.forEach(priority => {
+                    const percentage = ((priority.value / total) * 100).toFixed(1);
+                    html += `<tr>
+                        <td><span class="badge ${priority.class}">${priority.label}</span></td>
+                        <td>${priority.value}</td>
+                        <td>${percentage}%</td>
+                    </tr>`;
+                });
+
+                html += '</tbody></table>';
+                document.getElementById('performanceContent').innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('performanceContent').innerHTML = '<p style="text-align: center; color: red;">Error loading performance report</p>';
+            });
+    }
+
+    // ==================== DEPARTMENT STATS ====================
+    function showDepartmentStats() {
+        console.log('Loading department stats...');
+        document.getElementById('departmentModal').classList.add('active');
+        document.getElementById('departmentContent').innerHTML = '<div class="spinner"></div>';
+
+        fetch('/factory/api/reports/department-performance')
+            .then(response => response.json())
+            .then(departments => {
+                console.log('Department stats loaded:', departments.length);
+                let html = '<table class="data-table">';
+                html += '<thead><tr><th>Department</th><th>Employees</th><th>Total Tasks</th><th>Completed</th><th>Completion Rate</th><th>Performance</th></tr></thead>';
+                html += '<tbody>';
+
+                if (departments.length === 0) {
+                    html += '<tr><td colspan="6" style="text-align: center; padding: 40px;">No department data found</td></tr>';
+                } else {
+                    departments.forEach(dept => {
+                        const rate = parseFloat(dept.completionRate);
+                        const performanceClass = rate >= 80 ? 'badge-completed' :
+                            rate >= 60 ? 'badge-medium' :
+                                rate >= 40 ? 'badge-warning' : 'badge-overdue';
+                        const performance = rate >= 80 ? 'Excellent' :
+                            rate >= 60 ? 'Good' :
+                                rate >= 40 ? 'Fair' : 'Needs Improvement';
+
+                        html += `<tr>
+                            <td><strong>${dept.departmentName}</strong></td>
+                            <td>${dept.employeeCount}</td>
+                            <td>${dept.totalTasks}</td>
+                            <td>${dept.completedTasks}</td>
+                            <td>${dept.completionRate}%</td>
+                            <td><span class="badge ${performanceClass}">${performance}</span></td>
+                        </tr>`;
+                    });
+                }
+
+                html += '</tbody></table>';
+                document.getElementById('departmentContent').innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('departmentContent').innerHTML = '<p style="text-align: center; color: red;">Error loading department stats</p>';
+            });
+    }
+
+    // ==================== VIEW TASK DETAILS ====================
+    function viewTaskDetails(taskId) {
+        console.log('Viewing task details:', taskId);
+
+        fetch('/factory/api/tasks/' + taskId)
+            .then(response => response.json())
+            .then(task => {
+                const details = `
+Task ID: ${task.taskId}
+Task Name: ${task.taskName}
+Description: ${task.description || 'No description'}
+Department: ${task.department ? task.department.departmentName : 'N/A'}
+Priority: ${task.priorityLabel}
+Status: ${task.status}
+Deadline: ${task.deadline}
+Created: ${task.createdDate}
+                `;
+                alert(details.trim());
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error loading task details');
+            });
+    }
+
+    // ==================== EDIT TASK ====================
+    function editTask(taskId) {
+        console.log('Editing task:', taskId);
+
+        fetch('/factory/api/tasks/' + taskId)
+            .then(response => response.json())
+            .then(task => {
+                console.log('Task loaded for editing:', task);
+
+                // Populate form
+                document.getElementById('editTaskId').value = task.taskId;
+                document.getElementById('editTaskName').value = task.taskName;
+                document.getElementById('editDescription').value = task.description || '';
+                document.getElementById('editDeadline').value = task.deadline;
+                document.getElementById('editPriority').value = task.priority;
+                document.getElementById('editStatus').value = task.status;
+                document.getElementById('editDepartmentId').value = task.department ? task.department.id : '';
+
+                // Open modal
+                document.getElementById('editTaskModal').classList.add('active');
+            })
+            .catch(error => {
+                console.error('Error loading task:', error);
+                alert('Error loading task for editing');
+            });
+    }
+
+    function updateTask(event) {
+        event.preventDefault();
+        console.log('Updating task...');
+
+        const taskId = document.getElementById('editTaskId').value;
+        const taskData = {
+            taskName: document.getElementById('editTaskName').value,
+            description: document.getElementById('editDescription').value,
+            deadline: document.getElementById('editDeadline').value,
+            priority: document.getElementById('editPriority').value,
+            status: document.getElementById('editStatus').value,
+            departmentId: document.getElementById('editDepartmentId').value
+        };
+
+        console.log('Update data:', taskData);
+
+        fetch('/factory/api/tasks/' + taskId, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(taskData)
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Update response:', data);
+                if (data.success) {
+                    alert('✅ Task updated successfully!');
+                    closeModal('editTaskModal');
+                    location.reload();
+                } else {
+                    alert('❌ Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('❌ Error updating task. Please try again.');
+            });
+    }
+
+    // ==================== QUICK STATUS UPDATE ====================
+    function quickStatusUpdate(taskId, taskName, currentStatus) {
+        console.log('Quick status update for:', taskId);
+
+        document.getElementById('statusTaskId').value = taskId;
+        document.getElementById('statusTaskName').textContent = taskName;
+        document.getElementById('statusTaskCurrent').textContent = currentStatus;
+        document.getElementById('statusTaskCurrent').className = 'badge ' +
+            (currentStatus === 'COMPLETED' ? 'badge-completed' :
+             currentStatus === 'IN_PROGRESS' ? 'badge-progress' :
+             currentStatus === 'PENDING' ? 'badge-pending' : 'badge-overdue');
+        document.getElementById('statusNewStatus').value = currentStatus;
+
+        document.getElementById('statusUpdateModal').classList.add('active');
+    }
+
+    function quickUpdateStatus(event) {
+        event.preventDefault();
+        console.log('Updating status...');
+
+        const taskId = document.getElementById('statusTaskId').value;
+        const newStatus = document.getElementById('statusNewStatus').value;
+
+        const taskData = { status: newStatus };
+
+        fetch('/factory/api/tasks/' + taskId, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(taskData)
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Status update response:', data);
+                if (data.success) {
+                    alert('✅ Task status updated to: ' + newStatus);
+                    closeModal('statusUpdateModal');
+                    location.reload();
+                } else {
+                    alert('❌ Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('❌ Error updating status. Please try again.');
+            });
+    }
+
+    // ==================== DELETE TASK ====================
+    function deleteTask(taskId, taskName) {
+        if (!confirm('Are you sure you want to delete task: ' + taskName + '?\n\nThis action cannot be undone.')) {
+            return;
+        }
+
+        console.log('Deleting task:', taskId);
+
+        fetch('/factory/api/tasks/' + taskId, {
+            method: 'DELETE'
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Delete response:', data);
+                if (data.success) {
+                    alert('✅ Task deleted successfully!');
+                    location.reload();
+                } else {
+                    alert('❌ Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('❌ Error deleting task. Please try again.');
+            });
+    }
+
+    // ==================== INITIALIZATION ====================
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM loaded, initializing...');
+
+        // Set minimum date for deadline
+        const deadlineInput = document.getElementById('deadline');
+        if (deadlineInput) {
+            const today = new Date().toISOString().split('T')[0];
+            deadlineInput.setAttribute('min', today);
+        }
+
+        // Add event listeners to assign buttons
+        const assignButtons = document.querySelectorAll('.assign-task-btn');
+        console.log('Found assign buttons:', assignButtons.length);
+        assignButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const taskId = this.getAttribute('data-task-id');
+                console.log('Assign button clicked for task:', taskId);
+                assignTaskQuick(taskId);
+            });
+        });
+
+        // Add event listeners to edit buttons
+        const editButtons = document.querySelectorAll('.edit-task-btn');
+        console.log('Found edit buttons:', editButtons.length);
+        editButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const taskId = this.getAttribute('data-task-id');
+                console.log('Edit button clicked for task:', taskId);
+                editTask(taskId);
+            });
+        });
+
+        // Add event listeners to status update buttons
+        const statusButtons = document.querySelectorAll('.status-update-btn');
+        console.log('Found status update buttons:', statusButtons.length);
+        statusButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const taskId = this.getAttribute('data-task-id');
+                const taskName = this.getAttribute('data-task-name');
+                const currentStatus = this.getAttribute('data-task-status');
+                console.log('Status update button clicked for task:', taskId);
+                quickStatusUpdate(taskId, taskName, currentStatus);
+            });
+        });
+
+        // Close modals on outside click
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.classList.remove('active');
+            }
+        };
+    });
+</script>
+</body>
+</html>
