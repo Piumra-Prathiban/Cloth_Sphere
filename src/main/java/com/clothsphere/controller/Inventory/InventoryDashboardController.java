@@ -1,52 +1,37 @@
 package com.clothsphere.controller.Inventory;
 
-import com.clothsphere.model.SystemUser;
-import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
 @Controller
 public class InventoryDashboardController {
 
-    // ✅ Helper method for session check
-    private String loadPage(String pageName, HttpSession session, Model model) {
-        SystemUser currentUser = (SystemUser) session.getAttribute("currentUser");
-        if (currentUser == null) {
-            return "redirect:/systemUserLogin"; // redirect if not logged in
-        }
-        model.addAttribute("user", currentUser);
-        return pageName; // Thymeleaf/JSP page name
-    }
-
-    // ✅ Fabrics
+    // Fabrics management page
     @GetMapping("/fabrics")
-    public String showFabrics(HttpSession session, Model model) {
-        return loadPage("fabrics", session, model);
+    public String showFabrics() {
+        return "fabrics";  // returns fabrics.html
     }
 
-    // ✅ Garments
+    // Garments management page
     @GetMapping("/garments")
-    public String showGarments(HttpSession session, Model model) {
-        return loadPage("garments", session, model);
+    public String showGarments() {
+        return "garments";  // returns garments.html
     }
 
-    // ✅ Stock Reports
+    // Reports page
     @GetMapping("/reports")
-    public String showReports(HttpSession session, Model model) {
-        return loadPage("reports", session, model);
+    public String showReports() {
+        return "reports";  // returns reports.html
     }
 
-    // ✅ Edit Profile
+    // Profile page
     @GetMapping("/profile")
-    public String showProfile(HttpSession session, Model model) {
-        return loadPage("profile", session, model);
+    public String showProfile() {
+        return "profile";  // returns profile.html
     }
 
-    // ✅ Logout
     @GetMapping("/logout")
-    public String logout(HttpSession session) {
-        session.invalidate(); // clear session
-        return "redirect:/systemUserLogin"; // back to login page
+    public String showLogout() {
+        return "systemUserLogin";  // returns profile.html
     }
 }
