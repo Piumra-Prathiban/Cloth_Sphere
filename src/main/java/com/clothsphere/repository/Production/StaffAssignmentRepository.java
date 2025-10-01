@@ -1,5 +1,6 @@
 package com.clothsphere.repository.Production;
 
+import com.clothsphere.model.HR.Employee;
 import com.clothsphere.model.Production.StaffAssignment;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -13,7 +14,11 @@ import java.util.List;
 public interface StaffAssignmentRepository extends JpaRepository<StaffAssignment, String> {
 
     // Find assignments by employee
-    List<StaffAssignment> findByEmployeeId(String employeeId);
+    List<StaffAssignment> findByEmployee(Employee employee);
+
+    // Find assignments by employee ID (convenience method)
+    @Query("SELECT sa FROM StaffAssignment sa WHERE sa.employee.id = :employeeId")
+    List<StaffAssignment> findByEmployeeId(@Param("employeeId") String employeeId);
 
     // Find assignments by schedule
     List<StaffAssignment> findByScheduleId(String scheduleId);
@@ -36,7 +41,7 @@ public interface StaffAssignmentRepository extends JpaRepository<StaffAssignment
                                                    @Param("date") LocalDate date);
 
     // Find assignments by employee and date range
-    @Query("SELECT sa FROM StaffAssignment sa WHERE sa.employeeId = :employeeId AND sa.assignmentDate BETWEEN :startDate AND :endDate")
+    @Query("SELECT sa FROM StaffAssignment sa WHERE sa.employee.id = :employeeId AND sa.assignmentDate BETWEEN :startDate AND :endDate")
     List<StaffAssignment> findByEmployeeAndDateRange(@Param("employeeId") String employeeId,
                                                      @Param("startDate") LocalDate startDate,
                                                      @Param("endDate") LocalDate endDate);
@@ -54,6 +59,6 @@ public interface StaffAssignmentRepository extends JpaRepository<StaffAssignment
     List<StaffAssignment> findTodayAssignments(@Param("today") LocalDate today);
 
     // Find active assignments for an employee
-    @Query("SELECT sa FROM StaffAssignment sa WHERE sa.employeeId = :employeeId AND sa.status IN ('ASSIGNED', 'WORKING')")
+    @Query("SELECT sa FROM StaffAssignment sa WHERE sa.employee.id = :employeeId AND sa.status IN ('ASSIGNED', 'WORKING')")
     List<StaffAssignment> findActiveAssignmentsByEmployee(@Param("employeeId") String employeeId);
 }

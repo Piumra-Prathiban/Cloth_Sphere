@@ -1,5 +1,6 @@
 package com.clothsphere.model.Production;
 
+import com.clothsphere.model.HR.Employee;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -15,11 +16,9 @@ public class StaffAssignment {
     @Column(name = "schedule_id", nullable = false, length = 10)
     private String scheduleId;
 
-    @Column(name = "employee_id", nullable = false, length = 10)
-    private String employeeId;
-
-    @Column(name = "employee_name", length = 100)
-    private String employeeName;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employee_id", referencedColumnName = "id", nullable = false)
+    private Employee employee;
 
     @Column(name = "workstation_id", nullable = false, length = 10)
     private String workstationId;
@@ -65,13 +64,12 @@ public class StaffAssignment {
     }
 
     // Parameterized constructor
-    public StaffAssignment(String assignmentId, String scheduleId, String employeeId,
-                          String employeeName, String workstationId, LocalDate assignmentDate,
+    public StaffAssignment(String assignmentId, String scheduleId, Employee employee,
+                          String workstationId, LocalDate assignmentDate,
                           String shift, String role, String status, Integer assignedQuantity) {
         this.assignmentId = assignmentId;
         this.scheduleId = scheduleId;
-        this.employeeId = employeeId;
-        this.employeeName = employeeName;
+        this.employee = employee;
         this.workstationId = workstationId;
         this.assignmentDate = assignmentDate;
         this.shift = shift;
@@ -90,11 +88,19 @@ public class StaffAssignment {
     public String getScheduleId() { return scheduleId; }
     public void setScheduleId(String scheduleId) { this.scheduleId = scheduleId; }
 
-    public String getEmployeeId() { return employeeId; }
-    public void setEmployeeId(String employeeId) { this.employeeId = employeeId; }
+    public Employee getEmployee() { return employee; }
+    public void setEmployee(Employee employee) { this.employee = employee; }
 
-    public String getEmployeeName() { return employeeName; }
-    public void setEmployeeName(String employeeName) { this.employeeName = employeeName; }
+    // Helper methods for backward compatibility
+    @Transient
+    public String getEmployeeId() {
+        return employee != null ? employee.getId() : null;
+    }
+
+    @Transient
+    public String getEmployeeName() {
+        return employee != null ? employee.getFullName() : null;
+    }
 
     public String getWorkstationId() { return workstationId; }
     public void setWorkstationId(String workstationId) { this.workstationId = workstationId; }
@@ -149,8 +155,8 @@ public class StaffAssignment {
     public String toString() {
         return "StaffAssignment{" +
                 "assignmentId='" + assignmentId + '\'' +
-                ", employeeId='" + employeeId + '\'' +
-                ", employeeName='" + employeeName + '\'' +
+                ", employeeId='" + getEmployeeId() + '\'' +
+                ", employeeName='" + getEmployeeName() + '\'' +
                 ", workstationId='" + workstationId + '\'' +
                 ", status='" + status + '\'' +
                 ", shift='" + shift + '\'' +

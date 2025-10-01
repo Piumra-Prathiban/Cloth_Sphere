@@ -1,6 +1,8 @@
 package com.clothsphere.service.Production;
 
+import com.clothsphere.model.HR.Employee;
 import com.clothsphere.model.Production.*;
+import com.clothsphere.repository.HR.EmployeeRepository;
 import com.clothsphere.repository.Production.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -26,6 +28,9 @@ public class ProductionService {
 
     @Autowired
     private PerformanceMetricsRepository metricsRepository;
+
+    @Autowired
+    private EmployeeRepository employeeRepository;
 
     // ===================== PRODUCTION ORDER MANAGEMENT =====================
 
