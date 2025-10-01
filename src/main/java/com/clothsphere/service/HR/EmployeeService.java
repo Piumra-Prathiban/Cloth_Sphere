@@ -4,6 +4,8 @@ import com.clothsphere.model.HR.Employee;
 import com.clothsphere.repository.HR.EmployeeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Optional;
@@ -14,6 +16,7 @@ public class EmployeeService {
     @Autowired
     private EmployeeRepository employeeRepository;
 
+    private static final Logger logger = LoggerFactory.getLogger(TaskAssignmentService.class);
 
     /**
      * Generate the next employee ID in format emp01, emp02, etc.
@@ -62,6 +65,19 @@ public class EmployeeService {
     public Employee getEmployeeById(String employeeId) {
         Optional<Employee> employee = employeeRepository.findById(employeeId);
         return employee.orElse(null);
+    }
+    /**
+     * Get employee by username
+     */
+    public Employee getEmployeeByUsername(String username) {
+        try {
+            // Assuming you have a method in repository to find by username
+            // If not, you might need to add: Employee findByUsername(String username);
+            return employeeRepository.findByUsername(username);
+        } catch (Exception e) {
+            logger.error("Error finding employee by username {}: {}", username, e.getMessage());
+            return null;
+        }
     }
 
     /**

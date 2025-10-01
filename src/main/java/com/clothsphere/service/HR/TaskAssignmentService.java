@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
 import java.util.*;
@@ -16,6 +18,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class TaskAssignmentService {
+
+    private static final Logger logger = LoggerFactory.getLogger(TaskAssignmentService.class);
 
     @Autowired
     private TaskAssignmentRepository taskAssignmentRepository;
@@ -353,11 +357,19 @@ public class TaskAssignmentService {
      */
     @Transactional(readOnly = true)
     public List<TaskAssignment> getAssignmentsByEmployeeUsername(String username) {
-        return taskAssignmentRepository.findAllWithDepartmentDetails().stream()
-                .filter(assignment ->
-                        assignment.getEmployee() != null &&
-                                assignment.getEmployee().getUsername().equals(username))
-                .collect(Collectors.toList());
+        try {
+            // First get employee by username
+            Employee employee = employeeService.getEmployeeByUsername(username);
+            if (employee == null) {
+                return new ArrayList<>();
+            }
+
+            // Then get assignments by employee
+            return taskAssignmentRepository.findByEmployee(employee);
+        } catch (Exception e) {
+            logger.error("Error getting assignments for username {}: {}", username, e.getMessage());
+            return new ArrayList<>();
+        }
     }
 
     /**
@@ -461,9 +473,6 @@ public class TaskAssignmentService {
         return "PENDING";
     }
 
-    /**
-     * Update assignment and automatically update task status
-     */
     @Transactional
     public TaskAssignment updateAssignmentWithTaskStatus(String assignmentId, TaskAssignment assignmentData) {
         TaskAssignment updatedAssignment = updateAssignment(assignmentId, assignmentData);
@@ -477,9 +486,6 @@ public class TaskAssignmentService {
         return updatedAssignment;
     }
 
-    /**
-     * Update assignment status with automatic completion date and actual hours
-     */
     @Transactional
     public TaskAssignment updateAssignmentStatus(String assignmentId, String newStatus, Integer actualHours) {
         Optional<TaskAssignment> optionalAssignment = taskAssignmentRepository.findById(assignmentId);

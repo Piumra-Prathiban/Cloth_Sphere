@@ -193,6 +193,7 @@
  let currentAssignmentId = null;
 
  // Load employee tasks
+ // Load employee tasks with better error handling
  function loadEmployeeTasks() {
      const loadingElement = document.getElementById('tasks-loading');
      const tableBody = document.getElementById('tasks-table-body');
@@ -202,26 +203,41 @@
      if (tableBody) tableBody.innerHTML = '';
      if (noTasksMessage) noTasksMessage.style.display = 'none';
 
-     fetch('/api/employee/tasks', {
+     fetch('/api/assignments/employee/tasks', {  // Fixed endpoint
          method: 'GET',
          headers: {
              'Content-Type': 'application/json',
-         }
+         },
+         credentials: 'include'  // Important for session cookies
      })
          .then(response => {
              if (!response.ok) {
-                 throw new Error('Failed to load tasks');
+                 if (response.status === 401) {
+                     throw new Error('Please login again');
+                 }
+                 throw new Error('Network response was not ok: ' + response.status);
              }
              return response.json();
          })
          .then(tasks => {
+             console.log('Loaded tasks:', tasks);
              currentTasks = tasks;
              displayTasks(tasks);
              updateTaskStatistics(tasks);
+
+             // Show no tasks message if empty
+             if (!tasks || tasks.length === 0) {
+                 const noTasksMessage = document.getElementById('no-tasks-message');
+                 if (noTasksMessage) noTasksMessage.style.display = 'block';
+             }
          })
          .catch(error => {
              console.error('Error loading tasks:', error);
              showMessage('Error loading tasks: ' + error.message, 'error');
+
+             // Show no tasks message on error as fallback
+             const noTasksMessage = document.getElementById('no-tasks-message');
+             if (noTasksMessage) noTasksMessage.style.display = 'block';
          })
          .finally(() => {
              if (loadingElement) loadingElement.style.display = 'none';
@@ -230,6 +246,7 @@
 
  // Display tasks in table
  // Display tasks in table - Enhanced version
+ // Display tasks in table - Enhanced version with better hours display
  function displayTasks(tasks) {
      const tableBody = document.getElementById('tasks-table-body');
      const noTasksMessage = document.getElementById('no-tasks-message');
@@ -253,6 +270,17 @@
              `<br><small class="text-success">Completed: ${formatDate(task.completionDate)}${task.actualHours ? ` (${task.actualHours}h)` : ''}</small>` :
              '';
 
+         // Calculate hours difference
+         let hoursDifference = '';
+         if (task.actualHours && task.estimatedHours) {
+             const diff = task.actualHours - task.estimatedHours;
+             if (diff > 0) {
+                 hoursDifference = `<br><small class="text-warning">+${diff.toFixed(1)}h over estimate</small>`;
+             } else if (diff < 0) {
+                 hoursDifference = `<br><small class="text-success">${Math.abs(diff).toFixed(1)}h under estimate</small>`;
+             }
+         }
+
          return `
             <tr class="${rowClass}">
                 <td>${task.assignmentId || 'N/A'}</td>
@@ -267,8 +295,15 @@
                     ${isOverdue ? '<br><small class="overdue-deadline">Overdue</small>' : ''}
                 </td>
                 <td>
-                    ${task.estimatedHours || 'N/A'} hrs
-                    ${task.actualHours ? `<br><small class="text-success">Actual: ${task.actualHours}h</small>` : ''}
+                    <div>
+                        <strong>${task.estimatedHours || 'N/A'}h</strong> estimated
+                        ${task.actualHours ? `
+                            <br><small class="text-success">
+                                <i class="fas fa-clock"></i> ${task.actualHours}h actual
+                                ${hoursDifference}
+                            </small>
+                        ` : ''}
+                    </div>
                 </td>
                 <td>
                     <span class="status-badge status-${task.status.toLowerCase().replace('_', '-')}">
@@ -294,7 +329,6 @@
 
      tableBody.innerHTML = tasksHtml;
  }
-
  // Update task statistics
  function updateTaskStatistics(tasks) {
      if (!tasks) return;
@@ -339,21 +373,31 @@
 
  // Open status update modal
  // Open status update modal - Enhanced version with actual hours input
+ // Open status update modal - Enhanced version with actual hours input
  function openStatusModal(assignmentId) {
      currentAssignmentId = assignmentId;
      const task = currentTasks.find(t => t.assignmentId === assignmentId);
 
-     if (!task) return;
+     if (!task) {
+         showMessage('Task not found', 'error');
+         return;
+     }
+
+     // Prevent body scroll
+     document.body.classList.add('modal-open');
 
      const modalHtml = `
         <div class="status-modal" id="status-modal">
             <div class="status-modal-content">
                 <div class="status-modal-header">
                     <h4>Update Task Status</h4>
+                    <button type="button" class="btn-close" onclick="closeStatusModal()" 
+                            style="background: none; border: none; font-size: 1.5rem; cursor: pointer; position: absolute; right: 15px; top: 15px;">×</button>
                 </div>
                 <div class="status-modal-body">
-                    <p><strong>Task:</strong> ${task.taskName}</p>
+                    <p><strong>Task:</strong> ${escapeHtml(task.taskName)}</p>
                     <p><strong>Current Status:</strong> ${getStatusLabel(task.status)}</p>
+                    ${task.estimatedHours ? `<p><strong>Estimated Hours:</strong> ${task.estimatedHours} hours</p>` : ''}
                     
                     <h5>Select New Status:</h5>
                     
@@ -366,19 +410,37 @@
                     
                     ${task.status === 'IN_PROGRESS' ? `
                         <div class="status-option" onclick="selectStatus('COMPLETED')">
-                            <h5>Completed</h5>
-                            <p>Mark this task as finished</p>
+                            <h5>Complete Task</h5>
+                            <p>Mark this task as finished and log your hours</p>
                         </div>
                     ` : ''}
                     
-                    <!-- Actual Hours Input (only shown when COMPLETED is selected) -->
-                    <div id="actual-hours-section" style="margin-top: 15px; display: none;">
+                    <!-- Enhanced Actual Hours Input Section -->
+                    <div id="actual-hours-section" style="margin-top: 20px; display: none;">
+                        <div class="completion-confirmation">
+                            <h6><i class="fas fa-check-circle text-success"></i> Task Completion</h6>
+                            <p>You're about to mark this task as completed. Please enter the actual hours worked.</p>
+                        </div>
+                        
                         <div class="form-group">
                             <label for="actual-hours-input"><strong>Actual Hours Worked:</strong></label>
-                            <input type="number" id="actual-hours-input" class="form-control" 
-                                   placeholder="Enter hours worked" min="1" max="24" 
-                                   value="${task.estimatedHours || 8}">
-                            <small class="form-text">Please enter the actual hours you spent on this task</small>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <input type="number" id="actual-hours-input" class="form-control" 
+                                       placeholder="Enter hours worked" min="1" max="1000" 
+                                       value="${task.estimatedHours || 8}" step="0.5" style="flex: 1;">
+                                <span style="white-space: nowrap;">hours</span>
+                            </div>
+                            <div class="actual-hours-help">
+                                <i class="fas fa-info-circle"></i>
+                                Please enter the actual time spent on this task. You can use decimals (e.g., 7.5 for 7 hours 30 minutes).
+                            </div>
+                            
+                            ${task.estimatedHours ? `
+                            <div class="actual-hours-help">
+                                <i class="fas fa-clock"></i>
+                                Estimated hours: ${task.estimatedHours} hours
+                            </div>
+                            ` : ''}
                         </div>
                     </div>
                     
@@ -389,7 +451,7 @@
                 <div class="status-modal-footer">
                     <button class="btn btn-secondary" onclick="closeStatusModal()">Cancel</button>
                     <button class="btn btn-primary" id="update-status-btn" onclick="updateTaskStatus()" disabled>
-                        Update Status
+                        <i class="fas fa-save"></i> Update Status
                     </button>
                 </div>
             </div>
@@ -403,12 +465,23 @@
      }
 
      document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+     // Add click outside to close
+     const modal = document.getElementById('status-modal');
+     modal.addEventListener('click', function(e) {
+         if (e.target === modal) {
+             closeStatusModal();
+         }
+     });
  }
+
 
 
  // Select status in modal
  let selectedStatus = null;
 
+ // Enhanced status selection with actual hours toggle
+ // Enhanced status selection with actual hours toggle
  function selectStatus(status) {
      selectedStatus = status;
 
@@ -421,23 +494,34 @@
      const selectedStatusDiv = document.getElementById('selected-status');
      const selectedStatusLabel = document.getElementById('selected-status-label');
      const updateBtn = document.getElementById('update-status-btn');
+     const actualHoursSection = document.getElementById('actual-hours-section');
 
      selectedStatusLabel.textContent = getStatusLabel(status);
      selectedStatusDiv.style.display = 'block';
      updateBtn.disabled = false;
+
+     // Show/hide actual hours input
+     if (status === 'COMPLETED') {
+         actualHoursSection.style.display = 'block';
+     } else {
+         actualHoursSection.style.display = 'none';
+     }
  }
 
  // Close status modal
+ // Close status modal - Fixed version
  function closeStatusModal() {
      const modal = document.getElementById('status-modal');
      if (modal) {
          modal.remove();
      }
      selectedStatus = null;
+     document.body.classList.remove('modal-open');
  }
 
  // Update task status - Enhanced version
  // Update task status - Enhanced version with completion date and actual hours
+ // Update task status - Enhanced version with actual hours input
  // Update task status - Enhanced version with actual hours input
  function updateTaskStatus() {
      if (!currentAssignmentId || !selectedStatus) {
@@ -449,18 +533,27 @@
      updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
      updateBtn.disabled = true;
 
-     // Get actual hours if COMPLETED status
+     // Enhanced validation for actual hours
      let actualHours = null;
      if (selectedStatus === 'COMPLETED') {
          const actualHoursInput = document.getElementById('actual-hours-input');
-         actualHours = parseInt(actualHoursInput.value);
+         const hoursValue = parseFloat(actualHoursInput.value);
 
-         if (!actualHours || actualHours < 1) {
-             showMessage('Please enter valid actual hours (minimum 1 hour)', 'error');
-             updateBtn.innerHTML = 'Update Status';
+         if (!hoursValue || hoursValue < 0.1) {
+             showMessage('Please enter valid actual hours (minimum 0.1 hour)', 'error');
+             updateBtn.innerHTML = '<i class="fas fa-save"></i> Update Status';
              updateBtn.disabled = false;
              return;
          }
+
+         if (hoursValue > 1000) {
+             showMessage('Please enter reasonable hours (maximum 1000 hours)', 'error');
+             updateBtn.innerHTML = '<i class="fas fa-save"></i> Update Status';
+             updateBtn.disabled = false;
+             return;
+         }
+
+         actualHours = hoursValue;
      }
 
      // Prepare request data
@@ -519,7 +612,7 @@
          .catch(error => {
              console.error('Error updating status:', error);
              showMessage('Error updating status: ' + error.message, 'error');
-             updateBtn.innerHTML = 'Update Status';
+             updateBtn.innerHTML = '<i class="fas fa-save"></i> Update Status';
              updateBtn.disabled = false;
          });
  }
@@ -530,29 +623,33 @@
      const task = currentTasks.find(t => t.assignmentId === assignmentId);
      if (!task) return;
 
+     // Prevent body scroll
+     document.body.classList.add('modal-open');
+
      const detailsHtml = `
         <div class="status-modal" id="task-details-modal">
             <div class="status-modal-content" style="max-width: 600px;">
                 <div class="status-modal-header">
                     <h4>Task Details</h4>
+                    <button type="button" class="btn-close" onclick="closeTaskDetails()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; position: absolute; right: 15px; top: 15px;">×</button>
                 </div>
                 <div class="status-modal-body">
                     <div class="profile-info">
                         <div class="info-group">
                             <label>Task Name</label>
-                            <div class="value">${task.taskName}</div>
+                            <div class="value">${escapeHtml(task.taskName)}</div>
                         </div>
                         <div class="info-group">
                             <label>Description</label>
-                            <div class="value">${task.description || 'No description'}</div>
+                            <div class="value">${escapeHtml(task.description || 'No description')}</div>
                         </div>
                         <div class="info-group">
                             <label>Department</label>
-                            <div class="value">${task.departmentName || 'N/A'}</div>
+                            <div class="value">${escapeHtml(task.departmentName || 'N/A')}</div>
                         </div>
                         <div class="info-group">
                             <label>Assignment ID</label>
-                            <div class="value">${task.assignmentId || 'N/A'}</div>
+                            <div class="value">${escapeHtml(task.assignmentId || 'N/A')}</div>
                         </div>
                         <div class="info-group">
                             <label>Assigned Date</label>
@@ -592,7 +689,7 @@
                         ${task.notes ? `
                         <div class="info-group">
                             <label>Notes</label>
-                            <div class="value">${task.notes}</div>
+                            <div class="value">${escapeHtml(task.notes)}</div>
                         </div>
                         ` : ''}
                     </div>
@@ -600,7 +697,7 @@
                 <div class="status-modal-footer">
                     <button class="btn btn-secondary" onclick="closeTaskDetails()">Close</button>
                     ${task.status !== 'COMPLETED' ? `
-                    <button class="btn btn-primary" onclick="closeTaskDetails(); openStatusModal('${task.assignmentId}')">
+                    <button class="btn btn-primary" onclick="closeTaskDetails(); setTimeout(() => openStatusModal('${task.assignmentId}'), 100);">
                         Update Status
                     </button>
                     ` : ''}
@@ -616,14 +713,36 @@
      }
 
      document.body.insertAdjacentHTML('beforeend', detailsHtml);
+
+     // Add click outside to close
+     const modal = document.getElementById('task-details-modal');
+     modal.addEventListener('click', function(e) {
+         if (e.target === modal) {
+             closeTaskDetails();
+         }
+     });
  }
 
+ // Close task details modal
  // Close task details modal
  function closeTaskDetails() {
      const modal = document.getElementById('task-details-modal');
      if (modal) {
          modal.remove();
      }
+     document.body.classList.remove('modal-open');
+ }
+
+ // Utility function to escape HTML (prevent XSS)
+ function escapeHtml(unsafe) {
+     if (!unsafe) return '';
+     return unsafe
+         .toString()
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
  }
 
  // Utility functions

@@ -744,3 +744,166 @@ body.zoomed-out td {
     color: #6c757d;
     margin-top: 5px;
 }
+/* Fix for Status Modal - Prevent Full Screen */
+.status-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.status-modal-content {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+/* Ensure modal doesn't exceed viewport */
+@media (max-width: 600px) {
+    .status-modal-content {
+        width: 95%;
+        padding: 20px;
+        margin: 10px;
+    }
+}
+
+/* Fix for modal backdrop */
+.status-modal::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: -1;
+}
+
+/* Prevent body scroll when modal is open */
+body.modal-open {
+    overflow: hidden;
+}
+/* Modal close button */
+.btn-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    position: absolute;
+    right: 15px;
+    top: 15px;
+    color: #6c757d;
+    transition: color 0.3s;
+}
+
+.btn-close:hover {
+    color: #dc3545;
+}
+
+/* Modal header positioning */
+.status-modal-header {
+    position: relative;
+    border-bottom: 1px solid #e9ecef;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+    padding-right: 40px; /* Space for close button */
+}
+
+/* Ensure modal content is properly centered */
+.status-modal {
+    backdrop-filter: blur(2px);
+}
+
+/* Smooth animations for modal */
+.status-modal-content {
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-50px) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+/* Enhanced Actual Hours Input */
+#actual-hours-input {
+    border: 2px solid #007bff;
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 5px;
+    width: 100%;
+}
+
+#actual-hours-input:focus {
+    border-color: #0056b3;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+}
+
+.actual-hours-help {
+    font-size: 12px;
+    color: #6c757d;
+    margin-top: 5px;
+}
+
+/* Completion confirmation */
+.completion-confirmation {
+    background: #e8f5e8;
+    border: 1px solid #28a745;
+    border-radius: 5px;
+    padding: 10px;
+    margin: 10px 0;
+}
+
+.completion-confirmation h6 {
+    color: #155724;
+    margin: 0 0 5px 0;
+}
+
+/* Status option styling */
+.status-option {
+    padding: 10px;
+    border: 2px solid #e9ecef;
+    border-radius: 5px;
+    margin: 5px 0;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.status-option:hover {
+    border-color: #007bff;
+    background-color: #f8f9fa;
+}
+
+.status-option.selected {
+    border-color: #007bff;
+    background-color: #e3f2fd;
+}
+
+.status-option h5 {
+    margin: 0 0 5px 0;
+    color: #495057;
+}
+
+.status-option p {
+    margin: 0;
+    font-size: 12px;
+    color: #6c757d;
+}
