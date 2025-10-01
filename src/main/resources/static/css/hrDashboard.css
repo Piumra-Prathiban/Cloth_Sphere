@@ -274,3 +274,46 @@ body.zoomed-out th,
 body.zoomed-out td {
     padding: 8px;
 }
+/* Progress bar styles - UPDATED */
+.progress-bar {
+    width: 100%;
+    background: #eee;
+    border-radius: 20px;
+    overflow: hidden;
+    height: 20px;
+    margin-top: 10px;
+}
+
+.progress {
+    height: 100%;
+    text-align: center;
+    color: white;
+    line-height: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.progress.finish {
+    background: #28a745; /* Green for completed */
+}
+
+.progress.in-progress {
+    background: #007bff; /* Blue for in-progress */
+}
+
+.progress.pending {
+    background: #ffc107; /* Yellow for pending */
+    color: #212529; /* Dark text for better contrast on yellow */
+}
+
+/* Optional: Add animation for in-progress bars */
+.progress.in-progress {
+    background: linear-gradient(90deg, #007bff, #0056b3, #007bff);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}

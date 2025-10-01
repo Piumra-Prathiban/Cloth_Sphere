@@ -576,4 +576,83 @@ document.addEventListener('DOMContentLoaded', function() {
     }).catch(error => {
         console.error('Error loading initial data:', error);
     });
+// Function to update progress bars with real data from API
+    async function updateWorkloadProgress() {
+        try {
+            console.log('Fetching workload statistics...');
+            const response = await fetchWithAuth('/api/assignments/statistics');
+
+            if (response.ok) {
+                const stats = await response.json();
+                console.log('Workload stats received:', stats);
+
+                // Calculate percentages safely
+                const totalAssignments = stats.totalAssignments || 0;
+
+                if (totalAssignments === 0) {
+                    // Show 0% for all if no assignments exist
+                    updateProgressBar('.progress.finish', 0);
+                    updateProgressBar('.progress.in-progress', 0);
+                    updateProgressBar('.progress.pending', 0);
+                    updateSummaryText(0, 0, 0);
+                    return;
+                }
+
+                const completedPercentage = Math.round((stats.completedTasks / totalAssignments) * 100);
+                const inProgressPercentage = Math.round((stats.inProgressTasks / totalAssignments) * 100);
+                const assignedPercentage = Math.round((stats.assignedTasks / totalAssignments) * 100);
+
+                console.log('Calculated percentages:', {
+                    completed: completedPercentage,
+                    inProgress: inProgressPercentage,
+                    assigned: assignedPercentage
+                });
+
+                // Update progress bars
+                updateProgressBar('.progress.finish', completedPercentage);
+                updateProgressBar('.progress.in-progress', inProgressPercentage);
+                updateProgressBar('.progress.pending', assignedPercentage);
+
+                // Update summary text
+                updateSummaryText(completedPercentage, inProgressPercentage, assignedPercentage);
+
+            } else {
+                console.error('Failed to fetch workload statistics:', response.status);
+            }
+        } catch (error) {
+            console.error('Error updating workload progress:', error);
+        }
+    }
+
+    // Helper function to update a single progress bar
+    function updateProgressBar(selector, percentage) {
+        const progressBar = document.querySelector(selector);
+        if (progressBar) {
+            progressBar.style.width = percentage + '%';
+            progressBar.textContent = percentage + '%';
+        }
+    }
+
+    // Helper function to update summary text
+    function updateSummaryText(completed, inProgress, pending) {
+        const summaryElement = document.querySelector('.card h3 + p + div.progress-bar + p + div.progress-bar + p + div.progress-bar + div small');
+        if (summaryElement) {
+            summaryElement.innerHTML = `<strong>Summary:</strong> ${completed}% Completed • ${inProgress}% In Progress • ${pending}% Pending`;
+        }
+    }
+
+    // Initial call when dashboard loads
+    updateWorkloadProgress();
+
+    // Refresh every 30 seconds
+    setInterval(updateWorkloadProgress, 30000);
+
+// Call this function when the dashboard loads
+    document.addEventListener('DOMContentLoaded', function() {
+        // Your existing initialization code...
+        updateWorkloadProgress();
+
+        // Optionally update progress every 30 seconds
+        setInterval(updateWorkloadProgress, 30000);
+    });
 });

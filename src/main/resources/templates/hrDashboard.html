@@ -100,12 +100,32 @@
         <h3>Employee Attendance</h3>
         <canvas id="attendanceChart"></canvas>
       </div>
+      <!-- Workload Progress Section - UPDATED -->
       <div class="card">
         <h3>Workload Progress</h3>
+
+        <!-- Finished Tasks -->
         <p>Finished Tasks</p>
-        <div class="progress-bar"><div class="progress finish" style="width: 70%;">70%</div></div>
+        <div class="progress-bar">
+          <div class="progress finish" style="width: 50%;">50%</div>
+        </div>
+
+        <!-- In Progress Tasks - NEW SECTION -->
+        <p style="margin-top:15px;">In Progress Tasks</p>
+        <div class="progress-bar">
+          <div class="progress in-progress" style="width: 30%;">30%</div>
+        </div>
+
+        <!-- Pending Tasks -->
         <p style="margin-top:15px;">Pending Tasks</p>
-        <div class="progress-bar"><div class="progress pending" style="width: 30%;">30%</div></div>
+        <div class="progress-bar">
+          <div class="progress pending" style="width: 20%;">20%</div>
+        </div>
+
+        <!-- Progress Summary -->
+        <div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+          <small><strong>Summary:</strong> 50% Completed • 30% In Progress • 20% Pending</small>
+        </div>
       </div>
       <div class="card notifications">
         <h3>Notification Center</h3>
