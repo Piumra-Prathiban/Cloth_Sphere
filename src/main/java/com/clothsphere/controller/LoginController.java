@@ -2,6 +2,7 @@ package com.clothsphere.controller;
 
 import com.clothsphere.model.SystemUser;
 import com.clothsphere.service.SystemUserService;
+import com.clothsphere.util.PasswordEncoder;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -14,7 +15,6 @@ public class LoginController {
     @Autowired
     private SystemUserService systemUserService;
 
-    // Landing page
     @GetMapping("/")
     public String index() {
         return "index";
@@ -25,15 +25,11 @@ public class LoginController {
         return "getstart";
     }
 
-    // ========================= LOGIN =========================
-
-    // Login page
     @GetMapping("/systemUserLogin")
     public String showSystemUserLoginPage() {
         return "systemUserLogin";
     }
 
-    // Process login
     @PostMapping("/systemUserLogin")
     public String processSystemUserLogin(
             @RequestParam String username,
@@ -45,24 +41,36 @@ public class LoginController {
         System.out.println("=== LOGIN ATTEMPT ===");
         System.out.println("Username: " + username);
         System.out.println("Role: " + role);
-        System.out.println("Password provided: " + (password != null && !password.trim().isEmpty()));
 
-        // Special handling for first-time employee login (no password required)
+        // Special handling for first-time employee login
         if ("employee".equalsIgnoreCase(role.trim())) {
-            // First check if user exists
             SystemUser user = systemUserService.findByUserNameAndRole(username, "employee");
 
             if (user != null) {
-                // Check if this is first-time login (logCount = 0)
+                // Check if first-time login (logCount = 0)
                 if (user.getLogCount() == 0) {
                     System.out.println("First-time employee login detected for: " + username);
 
-                    // Allow login without password validation for first-time users
-                    session.setAttribute("currentUser", user);
-                    session.setAttribute("firstLogin", true);
-                    session.setAttribute("requirePasswordChange", true);
-
-                    return "redirect:/employeeDashboard?firstLogin=true";
+                    // For first-time login, validate against default password
+                    if (password == null || password.trim().isEmpty()) {
+                        System.out.println("No password provided for first-time login - allowing access");
+                        session.setAttribute("currentUser", user);
+                        session.setAttribute("firstLogin", true);
+                        session.setAttribute("requirePasswordChange", true);
+                        return "redirect:/employeeDashboard?firstLogin=true";
+                    } else {
+                        // If password is provided, validate it against the encrypted default password
+                        if (PasswordEncoder.matches(password, user.getPassword())) {
+                            System.out.println("First-time employee password validated: " + username);
+                            session.setAttribute("currentUser", user);
+                            session.setAttribute("firstLogin", true);
+                            session.setAttribute("requirePasswordChange", true);
+                            return "redirect:/employeeDashboard?firstLogin=true";
+                        } else {
+                            System.out.println("Invalid password for first-time employee: " + username);
+                            return "redirect:/systemUserLogin?error=true";
+                        }
+                    }
                 } else {
                     // Not first-time login, require password validation
                     if (password == null || password.trim().isEmpty()) {
@@ -70,18 +78,17 @@ public class LoginController {
                         return "redirect:/systemUserLogin?error=true";
                     }
 
-                    // Validate password for returning employees
-                    if (user.getPassword().equals(password)) {
+                    // Use BCrypt to validate password
+                    if (PasswordEncoder.matches(password, user.getPassword())) {
                         System.out.println("Returning employee login successful: " + username);
 
-                        // Update log count
                         user.setLogCount(user.getLogCount() + 1);
                         systemUserService.updateLogCount(username, "employee", user.getLogCount());
 
                         session.setAttribute("currentUser", user);
                         return "redirect:/employeeDashboard";
                     } else {
-                        System.out.println("Invalid passworcd for returning employee: " + username);
+                        System.out.println("Invalid password for returning employee: " + username);
                         return "redirect:/systemUserLogin?error=true";
                     }
                 }
@@ -91,7 +98,7 @@ public class LoginController {
             }
         }
 
-        // Normal login validation for all other roles
+        // Normal login validation for all other roles using BCrypt
         if (password == null || password.trim().isEmpty()) {
             System.out.println("Password required for role: " + role);
             return "redirect:/systemUserLogin?error=true";
@@ -101,11 +108,8 @@ public class LoginController {
 
         if (user != null) {
             System.out.println("User validation successful for: " + username);
-
-            // Store user in session
             session.setAttribute("currentUser", user);
 
-            // Role-based redirection
             String lowerRole = role.toLowerCase().trim();
             System.out.println("Redirecting to dashboard for role: '" + lowerRole + "'");
 
@@ -129,7 +133,6 @@ public class LoginController {
         }
     }
 
-    // Update password (only for logged-in users)
     @PostMapping("/updatePassword")
     public String updatePassword(
             @RequestParam String currentPassword,
@@ -143,19 +146,18 @@ public class LoginController {
             return "redirect:/systemUserLogin";
         }
 
-        // Validate current password
-        if (!currentUser.getPassword().equals(currentPassword)) {
+        // Use BCrypt to validate current password
+        if (!PasswordEncoder.matches(currentPassword, currentUser.getPassword())) {
             session.setAttribute("updateMessage", "error:Current password is incorrect");
             return "redirect:/hrDashboard";
         }
 
-        // Validate new password confirmation
         if (!newPassword.equals(confirmPassword)) {
             session.setAttribute("updateMessage", "error:New passwords do not match");
             return "redirect:/hrDashboard";
         }
 
-        // Update password in database
+        // Update password (will be encrypted in service)
         boolean success = systemUserService.updatePassword(
                 currentUser.getUserName(),
                 currentUser.getRole(),
@@ -163,8 +165,12 @@ public class LoginController {
         );
 
         if (success) {
-            currentUser.setPassword(newPassword); // update session user
-            session.setAttribute("currentUser", currentUser);
+            // Update session with new encrypted password
+            SystemUser updatedUser = systemUserService.findByUserNameAndRole(
+                    currentUser.getUserName(),
+                    currentUser.getRole()
+            );
+            session.setAttribute("currentUser", updatedUser);
             session.setAttribute("updateMessage", "success:Password updated successfully");
         } else {
             session.setAttribute("updateMessage", "error:Failed to update password");
@@ -183,7 +189,6 @@ public class LoginController {
         return "redirect:/systemUserLogin";
     }
 
-    // Other role-based dashboards - Factory Manager now uses /factory/dashboard
     @GetMapping("/factoryDashboard")
     public String showFactoryDashboard(HttpSession session, Model model) {
         return "redirect:/factory/dashboard";

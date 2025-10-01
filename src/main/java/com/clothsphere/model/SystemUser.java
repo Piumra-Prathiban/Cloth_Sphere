@@ -2,6 +2,8 @@ package com.clothsphere.model;
 
 import jakarta.persistence.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "system_user_login_details")
 @IdClass(SystemUserId.class)
@@ -27,6 +29,10 @@ public class SystemUser {
     @Column(name = "log_count", nullable = false)
     private Integer logCount = 0;
 
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+
     // Default constructor
     public SystemUser() {}
 
@@ -38,6 +44,7 @@ public class SystemUser {
         this.email = email;
         this.phoneNumber = phoneNumber;
         this.logCount = 0;
+        this.createdAt = LocalDateTime.now();
     }
 
     // Getters and setters
@@ -58,6 +65,9 @@ public class SystemUser {
 
     public Integer getLogCount() { return logCount; }
     public void setLogCount(Integer logCount) { this.logCount = logCount; }
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
     @Override
     public String toString() {

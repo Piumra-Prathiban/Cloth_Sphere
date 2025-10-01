@@ -6,6 +6,7 @@ import com.clothsphere.repository.HR.DepartmentRepository;
 import com.clothsphere.repository.HR.EmployeeRepository;
 import com.clothsphere.repository.SystemUserRepository;
 import com.clothsphere.service.HR.EmployeeService;
+import com.clothsphere.util.PasswordEncoder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,23 +27,21 @@ public class SystemUserService {
     private EmployeeService employeeService;
 
     /**
-     * Validate user by username, password, and role.
+     * Validate user by username, password, and role using BCrypt.
      */
     public SystemUser validateUser(String username, String password, String role) {
         System.out.println("=== USER VALIDATION ===");
         System.out.println("Looking for user: " + username + " with role: " + role);
 
-        // Find user by username and role (composite key)
         SystemUser user = systemUserRepository.findByUserNameAndRole(username, role);
 
         if (user != null) {
             System.out.println("User found in database: " + user.getUserName());
-            System.out.println("Stored password: " + user.getPassword());
-            System.out.println("Provided password: " + password);
 
-            if (user.getPassword().equals(password)) {
+            // Use BCrypt to compare passwords
+            if (PasswordEncoder.matches(password, user.getPassword())) {
                 System.out.println("Password matches - validation successful");
-                return user; // Valid credentials
+                return user;
             } else {
                 System.out.println("Password mismatch - validation failed");
             }
@@ -50,25 +49,24 @@ public class SystemUserService {
             System.out.println("User not found in database");
         }
 
-        return null; // Invalid credentials
+        return null;
     }
 
-    /**
-     * Find user by username and role.
-     */
     public SystemUser findByUserNameAndRole(String username, String role) {
         return systemUserRepository.findByUserNameAndRole(username, role);
     }
 
     /**
-     * Update user password.
+     * Update user password with encryption.
      */
     @Transactional
     public boolean updatePassword(String username, String role, String newPassword) {
         try {
             SystemUser user = systemUserRepository.findByUserNameAndRole(username, role);
             if (user != null) {
-                user.setPassword(newPassword);
+                // Encrypt the new password before saving
+                String encryptedPassword = PasswordEncoder.encryptPassword(newPassword);
+                user.setPassword(encryptedPassword);
                 systemUserRepository.save(user);
                 System.out.println("Password updated successfully for user: " + username);
                 return true;
@@ -80,9 +78,6 @@ public class SystemUserService {
         }
     }
 
-    /**
-     * Update log count for a user.
-     */
     @Transactional
     public boolean updateLogCount(String username, String role, Integer logCount) {
         try {
@@ -108,10 +103,10 @@ public class SystemUserService {
         try {
             SystemUser user = systemUserRepository.findByUserNameAndRole(username, role);
             if (user != null) {
-                // Update password
-                user.setPassword(newPassword);
+                // Encrypt the new password
+                String encryptedPassword = PasswordEncoder.encryptPassword(newPassword);
+                user.setPassword(encryptedPassword);
 
-                // If this is an employee with logCount = 0, update it to 1
                 if ("employee".equals(role) && user.getLogCount() == 0) {
                     user.setLogCount(1);
                     System.out.println("Updated log count to 1 for first-time employee: " + username);
@@ -136,36 +131,35 @@ public class SystemUserService {
         try {
             System.out.println("=== CREATING EMPLOYEE ===");
 
-            // Generate employee ID
             employee = employeeService.createEmployeeWithId(employee);
 
-            // Check if username already exists
             SystemUser existingUser = systemUserRepository.findByUserName(employee.getUsername());
             if (existingUser != null) {
                 System.out.println("Username already exists: " + employee.getUsername());
                 return false;
             }
 
-            // Check if email already exists
             Employee existingEmployee = employeeRepository.findByEmail(employee.getEmail());
             if (existingEmployee != null) {
                 System.out.println("Email already exists: " + employee.getEmail());
                 return false;
             }
 
-            // Save employee to Employee table
             employeeRepository.save(employee);
             System.out.println("Employee saved with ID: " + employee.getId());
 
-            // Create system user credentials with default password and logCount = 0
+            // Encrypt the default password
+            String defaultPassword = "changeme123";
+            String encryptedPassword = PasswordEncoder.encryptPassword(defaultPassword);
+
             SystemUser systemUser = new SystemUser(
                     employee.getUsername(),
-                    "employee", // default role for employees
-                    "changeme123", // Default password for first login
+                    "employee",
+                    encryptedPassword,  // Store encrypted password
                     employee.getEmail(),
                     employee.getPhoneNumber()
             );
-            systemUser.setLogCount(0); // First time login
+            systemUser.setLogCount(0);
 
             systemUserRepository.save(systemUser);
 
@@ -181,16 +175,11 @@ public class SystemUserService {
         }
     }
 
-    /**
-     * Update an existing employee.
-     */
     @Transactional
     public boolean updateEmployee(Employee employee) {
         try {
-            // Update employee in Employee table
             employeeRepository.save(employee);
 
-            // Update corresponding system user if email or phone changed
             SystemUser systemUser = systemUserRepository.findByUserNameAndRole(employee.getUsername(), "employee");
             if (systemUser != null) {
                 systemUser.setEmail(employee.getEmail());
@@ -207,9 +196,6 @@ public class SystemUserService {
         }
     }
 
-    /**
-     * Delete an employee and corresponding system user.
-     */
     @Transactional
     public boolean deleteEmployee(String employeeId) {
         try {
@@ -217,10 +203,8 @@ public class SystemUserService {
             if (employee != null) {
                 String username = employee.getUsername();
 
-                // Delete employee from Employee table
                 employeeRepository.deleteById(employeeId);
 
-                // Delete corresponding system user
                 SystemUser systemUser = systemUserRepository.findByUserNameAndRole(username, "employee");
                 if (systemUser != null) {
                     systemUserRepository.delete(systemUser);
@@ -237,9 +221,6 @@ public class SystemUserService {
         }
     }
 
-    /**
-     * Delete a system user.
-     */
     @Transactional
     public boolean deleteSystemUser(SystemUser systemUser) {
         try {
@@ -252,16 +233,10 @@ public class SystemUserService {
         }
     }
 
-    /**
-     * Check if username exists.
-     */
     public boolean usernameExists(String username) {
         return systemUserRepository.findByUserName(username) != null;
     }
 
-    /**
-     * Check if email exists in employee table.
-     */
     public boolean emailExists(String email) {
         return employeeRepository.findByEmail(email) != null;
     }
