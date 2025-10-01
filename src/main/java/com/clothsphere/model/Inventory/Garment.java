@@ -21,6 +21,12 @@ public class Garment {
     @Column(nullable = false)
     private String size;
 
+    @Column(name = "low_stock_threshold")
+    private Integer lowStockThreshold = 50; // Default threshold: 50 pieces
+
+    @Column(name = "reorder_level")
+    private Integer reorderLevel = 100; // Default reorder level: 100 pieces
+
     // Constructors
     public Garment() {}
 
@@ -28,6 +34,8 @@ public class Garment {
         this.garmentId = garmentId;
         this.garmentType = garmentType;
         this.size = size;
+        this.lowStockThreshold = 50;
+        this.reorderLevel = 100;
     }
 
     // Getters and Setters
@@ -53,5 +61,21 @@ public class Garment {
 
     public void setSize(String size) {
         this.size = size;
+    }
+
+    public Integer getLowStockThreshold() {
+        return lowStockThreshold;
+    }
+
+    public void setLowStockThreshold(Integer lowStockThreshold) {
+        this.lowStockThreshold = lowStockThreshold;
+    }
+
+    public Integer getReorderLevel() {
+        return reorderLevel;
+    }
+
+    public void setReorderLevel(Integer reorderLevel) {
+        this.reorderLevel = reorderLevel;
     }
 }

@@ -153,14 +153,16 @@ public class GarmentService {
         return summary;
     }
 
-    // Get low stock alerts (< 50 pieces) - includes size, color, fabric type, garment type
+    // Get low stock alerts (dynamic threshold per garment) - includes size, color, fabric type, garment type
     public List<Map<String, Object>> getLowStockAlerts() {
         List<Garment> allGarments = garmentRepository.findAll();
         List<Map<String, Object>> lowStockItems = new ArrayList<>();
 
         for (Garment garment : allGarments) {
             int total = getCurrentTotalQuantity(garment.getGarmentId());
-            if (total < 50 && total >= 0) {
+            int threshold = garment.getLowStockThreshold() != null ? garment.getLowStockThreshold() : 50;
+
+            if (total < threshold && total >= 0) {
                 // Get the latest movement to find fabric details
                 List<GarmentMovement> movements = movementRepository.findLatestMovementByGarmentId(garment.getGarmentId());
 
@@ -187,12 +189,26 @@ public class GarmentService {
                 alert.put("fabricType", fabricType);
                 alert.put("color", color);
                 alert.put("currentQuantity", total);
-                alert.put("threshold", 50);
-                alert.put("shortage", 50 - total);
+                alert.put("threshold", threshold);
+                alert.put("shortage", threshold - total);
+                alert.put("reorderLevel", garment.getReorderLevel() != null ? garment.getReorderLevel() : 100);
+                alert.put("criticalLevel", total < (threshold * 0.5)); // Critical if below 50% of threshold
                 alert.put("description", garment.getSize() + " size " + color + " " + fabricType + " " + garment.getGarmentType());
                 lowStockItems.add(alert);
             }
         }
+
+        // Sort by criticality and shortage amount
+        lowStockItems.sort((a, b) -> {
+            boolean aCritical = (boolean) a.get("criticalLevel");
+            boolean bCritical = (boolean) b.get("criticalLevel");
+            if (aCritical != bCritical) {
+                return bCritical ? 1 : -1; // Critical items first
+            }
+            int aShortage = (int) a.get("shortage");
+            int bShortage = (int) b.get("shortage");
+            return Integer.compare(bShortage, aShortage); // Higher shortage first
+        });
 
         return lowStockItems;
     }
@@ -264,5 +280,130 @@ public class GarmentService {
         chartData.put("quantities", new ArrayList<>(typeMap.values()));
 
         return chartData;
+    }
+
+    // ========== CATEGORY OPERATIONS ==========
+
+    // Get all distinct garment types
+    public List<String> getAllGarmentTypes() {
+        return garmentRepository.findDistinctGarmentTypes();
+    }
+
+    // Get all distinct sizes
+    public List<String> getAllSizes() {
+        return garmentRepository.findDistinctSizes();
+    }
+
+    // Get garments by type with stock information
+    public List<Map<String, Object>> getGarmentsByType(String garmentType) {
+        List<Garment> garments = garmentRepository.findByGarmentType(garmentType);
+        List<Map<String, Object>> garmentsWithStock = new ArrayList<>();
+
+        for (Garment garment : garments) {
+            Map<String, Object> garmentData = new HashMap<>();
+            garmentData.put("garmentId", garment.getGarmentId());
+            garmentData.put("garmentType", garment.getGarmentType());
+            garmentData.put("size", garment.getSize());
+            int currentStock = getCurrentTotalQuantity(garment.getGarmentId());
+            garmentData.put("currentStock", currentStock);
+            garmentData.put("lowStockThreshold", garment.getLowStockThreshold());
+            garmentData.put("reorderLevel", garment.getReorderLevel());
+            garmentData.put("status", currentStock < garment.getLowStockThreshold() ? "Low" : "Normal");
+            garmentsWithStock.add(garmentData);
+        }
+
+        return garmentsWithStock;
+    }
+
+    // Get garments by size with stock information
+    public List<Map<String, Object>> getGarmentsBySize(String size) {
+        List<Garment> garments = garmentRepository.findBySize(size);
+        List<Map<String, Object>> garmentsWithStock = new ArrayList<>();
+
+        for (Garment garment : garments) {
+            Map<String, Object> garmentData = new HashMap<>();
+            garmentData.put("garmentId", garment.getGarmentId());
+            garmentData.put("garmentType", garment.getGarmentType());
+            garmentData.put("size", garment.getSize());
+            int currentStock = getCurrentTotalQuantity(garment.getGarmentId());
+            garmentData.put("currentStock", currentStock);
+            garmentData.put("lowStockThreshold", garment.getLowStockThreshold());
+            garmentData.put("reorderLevel", garment.getReorderLevel());
+            garmentData.put("status", currentStock < garment.getLowStockThreshold() ? "Low" : "Normal");
+            garmentsWithStock.add(garmentData);
+        }
+
+        return garmentsWithStock;
+    }
+
+    // Get garment category summary (grouped by type and size)
+    public Map<String, Object> getGarmentCategorySummary() {
+        List<String> types = getAllGarmentTypes();
+        List<String> sizes = getAllSizes();
+
+        Map<String, Object> summary = new HashMap<>();
+        List<Map<String, Object>> typeData = new ArrayList<>();
+        List<Map<String, Object>> sizeData = new ArrayList<>();
+
+        // Summary by type
+        for (String type : types) {
+            List<Garment> garmentsOfType = garmentRepository.findByGarmentType(type);
+
+            Map<String, Object> data = new HashMap<>();
+            data.put("garmentType", type);
+            data.put("totalCount", garmentsOfType.size());
+
+            int totalStock = 0;
+            int lowStockCount = 0;
+
+            for (Garment garment : garmentsOfType) {
+                int stock = getCurrentTotalQuantity(garment.getGarmentId());
+                totalStock += stock;
+                int threshold = garment.getLowStockThreshold() != null ? garment.getLowStockThreshold() : 50;
+                if (stock < threshold) {
+                    lowStockCount++;
+                }
+            }
+
+            data.put("totalStock", totalStock);
+            data.put("lowStockCount", lowStockCount);
+            data.put("averageStock", garmentsOfType.size() > 0 ? totalStock / garmentsOfType.size() : 0);
+
+            typeData.add(data);
+        }
+
+        // Summary by size
+        for (String size : sizes) {
+            List<Garment> garmentsOfSize = garmentRepository.findBySize(size);
+
+            Map<String, Object> data = new HashMap<>();
+            data.put("size", size);
+            data.put("totalCount", garmentsOfSize.size());
+
+            int totalStock = 0;
+            int lowStockCount = 0;
+
+            for (Garment garment : garmentsOfSize) {
+                int stock = getCurrentTotalQuantity(garment.getGarmentId());
+                totalStock += stock;
+                int threshold = garment.getLowStockThreshold() != null ? garment.getLowStockThreshold() : 50;
+                if (stock < threshold) {
+                    lowStockCount++;
+                }
+            }
+
+            data.put("totalStock", totalStock);
+            data.put("lowStockCount", lowStockCount);
+            data.put("averageStock", garmentsOfSize.size() > 0 ? totalStock / garmentsOfSize.size() : 0);
+
+            sizeData.add(data);
+        }
+
+        summary.put("byType", typeData);
+        summary.put("bySize", sizeData);
+        summary.put("totalTypes", types.size());
+        summary.put("totalSizes", sizes.size());
+
+        return summary;
     }
 }

@@ -21,7 +21,6 @@ public class FabricMovement {
     @Column(nullable = false)
     private String status;
 
-    @NotNull(message = "Movement date is required")
     @Column(nullable = false)
     private LocalDate movementDate;
 
@@ -30,7 +29,6 @@ public class FabricMovement {
     @Column(nullable = false)
     private Double quantity;
 
-    @NotNull(message = "Total quantity is required")
     @Min(value = 0, message = "Total quantity cannot be negative")
     @Column(nullable = false)
     private Double totalQuantity;

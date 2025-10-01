@@ -68,6 +68,11 @@ public class FabricService {
             throw new RuntimeException("Fabric not found: " + movement.getFabricId());
         }
 
+        // Set movement date to today if not provided
+        if (movement.getMovementDate() == null) {
+            movement.setMovementDate(LocalDate.now());
+        }
+
         // Get current total quantity
         double currentTotal = getCurrentTotalQuantity(movement.getFabricId());
 
@@ -139,24 +144,40 @@ public class FabricService {
         return summary;
     }
 
-    // Get low stock alerts (< 50 meters)
+    // Get low stock alerts (dynamic threshold per fabric)
     public List<Map<String, Object>> getLowStockAlerts() {
         List<Fabric> allFabrics = fabricRepository.findAll();
         List<Map<String, Object>> lowStockItems = new ArrayList<>();
 
         for (Fabric fabric : allFabrics) {
             double total = getCurrentTotalQuantity(fabric.getFabricId());
-            if (total < 50.0 && total >= 0) {
+            double threshold = fabric.getLowStockThreshold() != null ? fabric.getLowStockThreshold() : 50.0;
+
+            if (total < threshold && total >= 0) {
                 Map<String, Object> alert = new HashMap<>();
                 alert.put("fabricId", fabric.getFabricId());
                 alert.put("type", fabric.getFabricType());
                 alert.put("color", fabric.getColor());
                 alert.put("currentQuantity", total);
-                alert.put("threshold", 50.0);
-                alert.put("shortage", 50.0 - total);
+                alert.put("threshold", threshold);
+                alert.put("shortage", threshold - total);
+                alert.put("reorderLevel", fabric.getReorderLevel() != null ? fabric.getReorderLevel() : 100.0);
+                alert.put("criticalLevel", total < (threshold * 0.5)); // Critical if below 50% of threshold
                 lowStockItems.add(alert);
             }
         }
+
+        // Sort by criticality and shortage amount
+        lowStockItems.sort((a, b) -> {
+            boolean aCritical = (boolean) a.get("criticalLevel");
+            boolean bCritical = (boolean) b.get("criticalLevel");
+            if (aCritical != bCritical) {
+                return bCritical ? 1 : -1; // Critical items first
+            }
+            double aShortage = (double) a.get("shortage");
+            double bShortage = (double) b.get("shortage");
+            return Double.compare(bShortage, aShortage); // Higher shortage first
+        });
 
         return lowStockItems;
     }
@@ -210,5 +231,71 @@ public class FabricService {
         chartData.put("quantities", quantities);
 
         return chartData;
+    }
+
+    // ========== CATEGORY OPERATIONS ==========
+
+    // Get all distinct fabric types
+    public List<String> getAllFabricTypes() {
+        return fabricRepository.findDistinctFabricTypes();
+    }
+
+    // Get fabrics by type with stock information
+    public List<Map<String, Object>> getFabricsByType(String fabricType) {
+        List<Fabric> fabrics = fabricRepository.findByFabricType(fabricType);
+        List<Map<String, Object>> fabricsWithStock = new ArrayList<>();
+
+        for (Fabric fabric : fabrics) {
+            Map<String, Object> fabricData = new HashMap<>();
+            fabricData.put("fabricId", fabric.getFabricId());
+            fabricData.put("fabricType", fabric.getFabricType());
+            fabricData.put("color", fabric.getColor());
+            double currentStock = getCurrentTotalQuantity(fabric.getFabricId());
+            fabricData.put("currentStock", currentStock);
+            fabricData.put("lowStockThreshold", fabric.getLowStockThreshold());
+            fabricData.put("reorderLevel", fabric.getReorderLevel());
+            fabricData.put("status", currentStock < fabric.getLowStockThreshold() ? "Low" : "Normal");
+            fabricsWithStock.add(fabricData);
+        }
+
+        return fabricsWithStock;
+    }
+
+    // Get fabric category summary (grouped by type)
+    public Map<String, Object> getFabricCategorySummary() {
+        List<String> types = getAllFabricTypes();
+        Map<String, Object> summary = new HashMap<>();
+        List<Map<String, Object>> categoryData = new ArrayList<>();
+
+        for (String type : types) {
+            List<Fabric> fabricsOfType = fabricRepository.findByFabricType(type);
+
+            Map<String, Object> typeData = new HashMap<>();
+            typeData.put("fabricType", type);
+            typeData.put("totalCount", fabricsOfType.size());
+
+            double totalStock = 0;
+            int lowStockCount = 0;
+
+            for (Fabric fabric : fabricsOfType) {
+                double stock = getCurrentTotalQuantity(fabric.getFabricId());
+                totalStock += stock;
+                double threshold = fabric.getLowStockThreshold() != null ? fabric.getLowStockThreshold() : 50.0;
+                if (stock < threshold) {
+                    lowStockCount++;
+                }
+            }
+
+            typeData.put("totalStock", totalStock);
+            typeData.put("lowStockCount", lowStockCount);
+            typeData.put("averageStock", fabricsOfType.size() > 0 ? totalStock / fabricsOfType.size() : 0);
+
+            categoryData.add(typeData);
+        }
+
+        summary.put("categories", categoryData);
+        summary.put("totalCategories", types.size());
+
+        return summary;
     }
 }

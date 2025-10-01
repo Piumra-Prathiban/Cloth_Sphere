@@ -88,6 +88,31 @@ public class FabricController {
         }
     }
 
+    @PutMapping("/fabrics/{fabricId}/thresholds")
+    public ResponseEntity<Map<String, Object>> updateFabricThresholds(
+            @PathVariable String fabricId,
+            @RequestBody Map<String, Double> thresholds) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            Fabric fabric = fabricService.getFabricById(fabricId);
+            if (thresholds.containsKey("lowStockThreshold")) {
+                fabric.setLowStockThreshold(thresholds.get("lowStockThreshold"));
+            }
+            if (thresholds.containsKey("reorderLevel")) {
+                fabric.setReorderLevel(thresholds.get("reorderLevel"));
+            }
+            Fabric updated = fabricService.updateFabric(fabricId, fabric);
+            response.put("success", true);
+            response.put("message", "Thresholds updated successfully");
+            response.put("data", updated);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
     @DeleteMapping("/fabrics/{fabricId}")
     public ResponseEntity<Map<String, Object>> deleteFabric(@PathVariable String fabricId) {
         Map<String, Object> response = new HashMap<>();
@@ -226,6 +251,38 @@ public class FabricController {
     public ResponseEntity<Map<String, Object>> getStockSummary() {
         try {
             Map<String, Object> summary = fabricService.getFabricStockSummary();
+            return ResponseEntity.ok(summary);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    // ========== CATEGORY MANAGEMENT ==========
+
+    @GetMapping("/categories/types")
+    public ResponseEntity<List<String>> getAllFabricTypes() {
+        try {
+            List<String> types = fabricService.getAllFabricTypes();
+            return ResponseEntity.ok(types);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    @GetMapping("/categories/by-type/{fabricType}")
+    public ResponseEntity<List<Map<String, Object>>> getFabricsByType(@PathVariable String fabricType) {
+        try {
+            List<Map<String, Object>> fabrics = fabricService.getFabricsByType(fabricType);
+            return ResponseEntity.ok(fabrics);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    @GetMapping("/categories/summary")
+    public ResponseEntity<Map<String, Object>> getCategorySummary() {
+        try {
+            Map<String, Object> summary = fabricService.getFabricCategorySummary();
             return ResponseEntity.ok(summary);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);

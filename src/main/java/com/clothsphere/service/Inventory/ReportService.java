@@ -91,13 +91,17 @@ public class ReportService {
 
         for (Fabric fabric : allFabrics) {
             double currentStock = fabricService.getCurrentTotalQuantity(fabric.getFabricId());
+            double threshold = fabric.getLowStockThreshold() != null ? fabric.getLowStockThreshold() : 50.0;
+            double reorderLevel = fabric.getReorderLevel() != null ? fabric.getReorderLevel() : 100.0;
 
             Map<String, Object> data = new HashMap<>();
             data.put("fabricId", fabric.getFabricId());
             data.put("type", fabric.getFabricType());
             data.put("color", fabric.getColor());
             data.put("currentStock", currentStock);
-            data.put("status", currentStock < 50 ? "Low Stock" : currentStock > 200 ? "Overstocked" : "Normal");
+            data.put("threshold", threshold);
+            data.put("reorderLevel", reorderLevel);
+            data.put("status", currentStock < threshold ? "Low Stock" : currentStock > (reorderLevel * 2) ? "Overstocked" : "Normal");
             data.put("lastUpdated", getLastMovementDate(fabric.getFabricId(), "fabric"));
 
             availabilityData.add(data);
@@ -175,6 +179,8 @@ public class ReportService {
 
         for (Garment garment : allGarments) {
             int currentStock = garmentService.getCurrentTotalQuantity(garment.getGarmentId());
+            int threshold = garment.getLowStockThreshold() != null ? garment.getLowStockThreshold() : 50;
+            int reorderLevel = garment.getReorderLevel() != null ? garment.getReorderLevel() : 100;
 
             // Get fabric details from latest movement
             List<GarmentMovement> movements = garmentMovementRepository
@@ -204,7 +210,9 @@ public class ReportService {
             data.put("fabricType", fabricType);
             data.put("color", color);
             data.put("currentStock", currentStock);
-            data.put("status", currentStock < 50 ? "Low Stock" : currentStock > 200 ? "Overstocked" : "Normal");
+            data.put("threshold", threshold);
+            data.put("reorderLevel", reorderLevel);
+            data.put("status", currentStock < threshold ? "Low Stock" : currentStock > (reorderLevel * 2) ? "Overstocked" : "Normal");
             data.put("lastUpdated", getLastMovementDate(garment.getGarmentId(), "garment"));
 
             availabilityData.add(data);

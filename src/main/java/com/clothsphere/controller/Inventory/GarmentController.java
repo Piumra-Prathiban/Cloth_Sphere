@@ -87,6 +87,31 @@ public class GarmentController {
         }
     }
 
+    @PutMapping("/garments/{garmentId}/thresholds")
+    public ResponseEntity<Map<String, Object>> updateGarmentThresholds(
+            @PathVariable String garmentId,
+            @RequestBody Map<String, Integer> thresholds) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            Garment garment = garmentService.getGarmentById(garmentId);
+            if (thresholds.containsKey("lowStockThreshold")) {
+                garment.setLowStockThreshold(thresholds.get("lowStockThreshold"));
+            }
+            if (thresholds.containsKey("reorderLevel")) {
+                garment.setReorderLevel(thresholds.get("reorderLevel"));
+            }
+            Garment updated = garmentService.updateGarment(garmentId, garment);
+            response.put("success", true);
+            response.put("message", "Thresholds updated successfully");
+            response.put("data", updated);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
     @DeleteMapping("/garments/{garmentId}")
     public ResponseEntity<Map<String, Object>> deleteGarment(@PathVariable String garmentId) {
         Map<String, Object> response = new HashMap<>();
@@ -236,6 +261,58 @@ public class GarmentController {
     public ResponseEntity<Map<String, Object>> getStockSummary() {
         try {
             Map<String, Object> summary = garmentService.getGarmentStockSummary();
+            return ResponseEntity.ok(summary);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    // ========== CATEGORY MANAGEMENT ==========
+
+    @GetMapping("/garments/categories/types")
+    public ResponseEntity<List<String>> getAllGarmentTypes() {
+        try {
+            List<String> types = garmentService.getAllGarmentTypes();
+            return ResponseEntity.ok(types);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    @GetMapping("/garments/categories/sizes")
+    public ResponseEntity<List<String>> getAllSizes() {
+        try {
+            List<String> sizes = garmentService.getAllSizes();
+            return ResponseEntity.ok(sizes);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    @GetMapping("/garments/categories/by-type/{garmentType}")
+    public ResponseEntity<List<Map<String, Object>>> getGarmentsByType(@PathVariable String garmentType) {
+        try {
+            List<Map<String, Object>> garments = garmentService.getGarmentsByType(garmentType);
+            return ResponseEntity.ok(garments);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    @GetMapping("/garments/categories/by-size/{size}")
+    public ResponseEntity<List<Map<String, Object>>> getGarmentsBySize(@PathVariable String size) {
+        try {
+            List<Map<String, Object>> garments = garmentService.getGarmentsBySize(size);
+            return ResponseEntity.ok(garments);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    @GetMapping("/garments/categories/summary")
+    public ResponseEntity<Map<String, Object>> getCategorySummary() {
+        try {
+            Map<String, Object> summary = garmentService.getGarmentCategorySummary();
             return ResponseEntity.ok(summary);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);

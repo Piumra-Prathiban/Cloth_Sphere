@@ -149,6 +149,18 @@
                     <option value="XL">XL</option>
                 </select>
             </div>
+            <div class="form-group">
+                <label for="initialStock">Initial Stock (pieces) - Optional</label>
+                <input type="number" id="initialStock" name="initialStock" placeholder="Enter initial stock quantity" min="0" step="1">
+                <small class="form-help">Leave empty if no initial stock, or enter quantity to add initial stock</small>
+            </div>
+            <div class="form-group" id="initialFabricGroup" style="display: none;">
+                <label for="initialFabricSelect">Select Fabric for Initial Stock</label>
+                <select id="initialFabricSelect" name="initialFabricId">
+                    <option value="">Choose Fabric</option>
+                </select>
+                <small class="form-help">Required if initial stock is provided</small>
+            </div>
             <div class="form-buttons">
                 <button type="button" class="btn btn-cancel" id="cancelGarmentBtn">Cancel</button>
                 <button type="submit" class="btn add">Add Garment</button>
@@ -253,6 +265,22 @@
 
         // Garment selection change
         document.getElementById('garmentSelect')?.addEventListener('change', updateGarmentDetails);
+
+        // Show/hide fabric dropdown based on initial stock
+        document.getElementById('initialStock')?.addEventListener('input', (e) => {
+            const fabricGroup = document.getElementById('initialFabricGroup');
+            const initialFabricSelect = document.getElementById('initialFabricSelect');
+            const stockValue = parseFloat(e.target.value);
+
+            if (stockValue && stockValue > 0) {
+                fabricGroup.style.display = 'block';
+                initialFabricSelect.required = true;
+            } else {
+                fabricGroup.style.display = 'none';
+                initialFabricSelect.required = false;
+                initialFabricSelect.value = '';
+            }
+        });
 
         // Close modals on outside click
         window.addEventListener('click', (e) => {
@@ -383,12 +411,23 @@
     function handleGarmentSubmit(e) {
         e.preventDefault();
         const form = e.target;
+        const garmentId = form.garmentId.value.trim().toUpperCase();
+        const initialStock = parseInt(form.initialStock.value);
+        const initialFabricId = form.initialFabricId?.value;
+
+        // Validate: if initial stock is provided, fabric must be selected
+        if (initialStock && initialStock > 0 && !initialFabricId) {
+            showNotification('Please select a fabric for initial stock', 'error');
+            return;
+        }
+
         const data = {
-            garmentId: form.garmentId.value.trim().toUpperCase(),
+            garmentId: garmentId,
             garmentType: form.garmentType.value.trim(),
             size: form.size.value
         };
 
+        // First, add the garment
         fetch('/api/garments/new', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -397,16 +436,59 @@
             .then(res => res.json())
             .then(resp => {
                 if (resp.success) {
-                    showNotification('Garment type added successfully!', 'success');
-                    closeGarmentModalFn();
-                    loadGarments();
+                    // If initial stock is provided, create an initial movement
+                    if (initialStock && initialStock > 0 && initialFabricId) {
+                        return addInitialGarmentStock(garmentId, initialFabricId, initialStock);
+                    } else {
+                        showNotification('Garment type added successfully!', 'success');
+                        closeGarmentModalFn();
+                        loadGarments();
+                        return Promise.resolve();
+                    }
                 } else {
                     showNotification(resp.message || 'Error adding garment', 'error');
+                    return Promise.reject(resp.message);
                 }
             })
             .catch(err => {
                 console.error(err);
                 showNotification('Server error!', 'error');
+            });
+    }
+
+    // Add initial garment stock movement
+    function addInitialGarmentStock(garmentId, fabricId, quantity) {
+        const movementId = 'GMI' + String(Math.floor(Math.random() * 1000)).padStart(3, '0');
+
+        const movementData = {
+            movementId: movementId,
+            garmentId: garmentId,
+            fabricId: fabricId,
+            status: 'In',
+            quantity: quantity
+        };
+
+        return fetch('/api/garment-movements', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(movementData)
+        })
+            .then(res => res.json())
+            .then(resp => {
+                if (resp.success) {
+                    showNotification(`Garment added with initial stock of ${quantity} pieces!`, 'success');
+                } else {
+                    showNotification('Garment added but initial stock failed: ' + resp.message, 'warning');
+                }
+                closeGarmentModalFn();
+                loadGarments();
+                loadMovements();
+            })
+            .catch(err => {
+                console.error(err);
+                showNotification('Garment added but initial stock failed!', 'warning');
+                closeGarmentModalFn();
+                loadGarments();
             });
     }
 
@@ -512,14 +594,24 @@
             .then(res => res.json())
             .then(data => {
                 const select = document.getElementById('fabricSelect');
+                const initialSelect = document.getElementById('initialFabricSelect');
+
                 select.innerHTML = '<option value="">Choose Fabric</option>';
+                initialSelect.innerHTML = '<option value="">Choose Fabric</option>';
 
                 if (data && data.length > 0) {
                     data.forEach(f => {
+                        // For movement modal
                         const option = document.createElement('option');
                         option.value = f.fabricId;
                         option.textContent = `${f.fabricId} - ${f.fabricType} (${f.color}) - ${f.currentStock}m`;
                         select.appendChild(option);
+
+                        // For garment add modal (initial stock)
+                        const option2 = document.createElement('option');
+                        option2.value = f.fabricId;
+                        option2.textContent = `${f.fabricId} - ${f.fabricType} (${f.color}) - ${f.currentStock}m`;
+                        initialSelect.appendChild(option2);
                     });
                 }
             })

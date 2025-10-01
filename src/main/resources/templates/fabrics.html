@@ -131,6 +131,11 @@
                 <input type="text" id="newFabricColor" name="color" placeholder="Enter color (e.g., Blue, Red)" required>
                 <small class="form-help">Enter any color</small>
             </div>
+            <div class="form-group">
+                <label for="initialStock">Initial Stock (meters) - Optional</label>
+                <input type="number" id="initialStock" name="initialStock" placeholder="Enter initial stock quantity" min="0" step="0.01">
+                <small class="form-help">Leave empty if no initial stock, or enter quantity to add initial stock</small>
+            </div>
             <div class="form-buttons">
                 <button type="button" class="btn btn-cancel" id="cancelFabricBtn">Cancel</button>
                 <button type="submit" class="btn add">Add Fabric</button>
@@ -366,12 +371,16 @@
     function handleFabricSubmit(e) {
         e.preventDefault();
         const form = e.target;
+        const fabricId = form.fabricId.value.trim().toUpperCase();
+        const initialStock = parseFloat(form.initialStock.value);
+
         const data = {
-            fabricId: form.fabricId.value.trim().toUpperCase(),
+            fabricId: fabricId,
             fabricType: form.fabricType.value.trim(),
             color: form.color.value.trim()
         };
 
+        // First, add the fabric
         fetch('/api/fabrics/new', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -380,16 +389,58 @@
             .then(res => res.json())
             .then(resp => {
                 if (resp.success) {
-                    showNotification('Fabric type added successfully!', 'success');
-                    closeFabricModalFn();
-                    loadFabrics();
+                    // If initial stock is provided, create an initial movement
+                    if (initialStock && initialStock > 0) {
+                        return addInitialStock(fabricId, initialStock);
+                    } else {
+                        showNotification('Fabric type added successfully!', 'success');
+                        closeFabricModalFn();
+                        loadFabrics();
+                        return Promise.resolve();
+                    }
                 } else {
                     showNotification(resp.message || 'Error adding fabric', 'error');
+                    return Promise.reject(resp.message);
                 }
             })
             .catch(err => {
                 console.error(err);
                 showNotification('Server error!', 'error');
+            });
+    }
+
+    // Add initial stock movement
+    function addInitialStock(fabricId, quantity) {
+        const movementId = 'FMI' + String(Math.floor(Math.random() * 1000)).padStart(3, '0');
+
+        const movementData = {
+            movementId: movementId,
+            fabricId: fabricId,
+            status: 'In',
+            quantity: quantity
+        };
+
+        return fetch('/api/movements', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(movementData)
+        })
+            .then(res => res.json())
+            .then(resp => {
+                if (resp.success) {
+                    showNotification(`Fabric added with initial stock of ${quantity}m!`, 'success');
+                } else {
+                    showNotification('Fabric added but initial stock failed: ' + resp.message, 'warning');
+                }
+                closeFabricModalFn();
+                loadFabrics();
+                loadMovements();
+            })
+            .catch(err => {
+                console.error(err);
+                showNotification('Fabric added but initial stock failed!', 'warning');
+                closeFabricModalFn();
+                loadFabrics();
             });
     }
 

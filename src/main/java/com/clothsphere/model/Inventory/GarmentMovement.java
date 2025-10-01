@@ -35,7 +35,6 @@ public class GarmentMovement {
     @Column(nullable = false)
     private Integer quantity;
 
-    @NotNull(message = "Total quantity is required")
     @Min(value = 0, message = "Total quantity cannot be negative")
     @Column(nullable = false)
     private Integer totalQuantity;
