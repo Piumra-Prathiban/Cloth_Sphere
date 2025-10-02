@@ -10,10 +10,11 @@ import java.util.List;
 @Service
 public class ProductsService {
 
-    @Autowired
+    @Autowired //inject dependencies automatically
     private ProductRepository productsRepository;
 
     // ✅ Save or Update product
+
     public Products saveOrUpdate(Products product) {
         if (product.getId() != null) {
             // Check if product exists in DB
@@ -26,12 +27,14 @@ public class ProductsService {
                 existing.setDescription(product.getDescription());
                 existing.setPrice(product.getPrice());
                 existing.setStock(product.getStock());
+                existing.setImage(product.getImage());
                 return productsRepository.save(existing);
             }
         }
         // If new product or no existing found
         return productsRepository.save(product);
     }
+
 
     // ✅ Get all products
     public List<Products> getAll() {

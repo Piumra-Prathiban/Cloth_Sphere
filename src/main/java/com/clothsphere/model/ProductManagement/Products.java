@@ -4,10 +4,10 @@ import jakarta.persistence.*;
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "products")
+@Table(name = "products")   //set table name for entity
 public class Products {
 
-    @Id
+    @Id //primary key for entity
     @GeneratedValue(strategy = GenerationType.IDENTITY) // Auto-increment ID
     private Long id;
 
@@ -27,16 +27,20 @@ public class Products {
 
     private Integer stock;
 
+    @Column(length = 255) // store image path
+    private String image;
+
     // ---- Constructors ----
     public Products() {}
 
-    public Products(String name, String code, String category, String description, BigDecimal price, Integer stock) {
+    public Products(String name, String code, String category, String description, BigDecimal price, Integer stock, String image) {
         this.name = name;
         this.code = code;
         this.category = category;
         this.description = description;
         this.price = price;
         this.stock = stock;
+        this.image = image;
     }
 
     // ---- Getters & Setters ----
@@ -80,7 +84,7 @@ public class Products {
         this.description = description;
     }
 
-    public BigDecimal getPrice() {   // ✅ return BigDecimal, not Double
+    public BigDecimal getPrice() {
         return price;
     }
 
@@ -94,5 +98,14 @@ public class Products {
 
     public void setStock(Integer stock) {
         this.stock = stock;
+    }
+
+    // ---- Image Getter & Setter ----
+    public String getImage() {
+        return image;
+    }
+
+    public void setImage(String image) {
+        this.image = image;
     }
 }

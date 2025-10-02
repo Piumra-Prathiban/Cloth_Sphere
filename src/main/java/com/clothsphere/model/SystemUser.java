@@ -8,11 +8,11 @@ import jakarta.persistence.*;
 public class SystemUser {
 
     @Id
-    @Column(name = "user_name", length = 15, nullable = false)
+    @Column(name = "user_name", length = 100, nullable = false)
     private String userName;
 
     @Id
-    @Column(name = "role", length = 15, nullable = false)
+    @Column(name = "role", length = 100, nullable = false)
     private String role;
 
     @Column(name = "password", length = 100, nullable = false)
