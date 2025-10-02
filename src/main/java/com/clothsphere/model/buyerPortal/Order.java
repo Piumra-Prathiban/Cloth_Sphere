@@ -16,11 +16,11 @@ public class Order {
     @Column(name = "order_number", unique = true)
     private String orderNumber;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "buyer_id", nullable = false)
     private Buyer buyer;
 
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<OrderItem> orderItems = new ArrayList<>();
 
     @Column(name = "order_date")
@@ -62,6 +62,9 @@ public class Order {
     @Column(name = "payment_status")
     private String paymentStatus; // PENDING, PAID, FAILED
 
+    @Column(name = "delivery_deadline")
+    private LocalDateTime deliveryDeadline;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -78,6 +81,9 @@ public class Order {
         }
         if (paymentStatus == null) {
             paymentStatus = "PENDING";
+        }
+        if (deliveryDeadline == null) {
+            deliveryDeadline = LocalDateTime.now().plusDays(14); // Default 14 days deadline
         }
     }
 
@@ -154,6 +160,9 @@ public class Order {
 
     public String getPaymentStatus() { return paymentStatus; }
     public void setPaymentStatus(String paymentStatus) { this.paymentStatus = paymentStatus; }
+
+    public LocalDateTime getDeliveryDeadline() { return deliveryDeadline; }
+    public void setDeliveryDeadline(LocalDateTime deliveryDeadline) { this.deliveryDeadline = deliveryDeadline; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

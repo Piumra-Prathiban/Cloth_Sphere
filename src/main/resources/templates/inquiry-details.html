@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Inquiry Details - ClothSphere</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0px 10px 30px rgba(0,0,0,0.2);
+        }
+
+        h2 {
+            color: #667eea;
+            margin-bottom: 30px;
+        }
+
+        .inquiry-header {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+        }
+
+        .inquiry-header p {
+            margin: 8px 0;
+            color: #555;
+        }
+
+        .inquiry-header strong {
+            color: #333;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .status-OPEN { background: #ffc107; color: white; }
+        .status-IN_PROGRESS { background: #17a2b8; color: white; }
+        .status-RESOLVED { background: #28a745; color: white; }
+        .status-CLOSED { background: #6c757d; color: white; }
+
+        .message-box {
+            background: #f0f0f0;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+        }
+
+        .message-box h3 {
+            margin-top: 0;
+            color: #667eea;
+        }
+
+        .response-box {
+            background: #e8f5e9;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #28a745;
+        }
+
+        .response-box h3 {
+            margin-top: 0;
+            color: #28a745;
+        }
+
+        .btn-back {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: 0.3s;
+        }
+
+        .btn-back:hover {
+            background: #764ba2;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>📝 Inquiry Details</h2>
+
+    <div class="inquiry-header">
+        <p><strong>Inquiry ID:</strong> #<span th:text="${inquiry.id}">1</span></p>
+        <p><strong>Type:</strong> <span th:text="${inquiry.inquiryType}">PRODUCT</span></p>
+        <p><strong>Status:</strong>
+            <span th:class="'status-badge status-' + ${inquiry.status}" th:text="${inquiry.status}">OPEN</span>
+        </p>
+        <p><strong>Created:</strong> <span th:text="${#temporals.format(inquiry.createdAt, 'yyyy-MM-dd HH:mm')}">2025-10-01</span></p>
+        <p th:if="${inquiry.relatedOrderId}"><strong>Related Order ID:</strong> <span th:text="${inquiry.relatedOrderId}">N/A</span></p>
+    </div>
+
+    <div class="message-box">
+        <h3>Subject</h3>
+        <p th:text="${inquiry.subject}">Subject text</p>
+        <h3>Your Message</h3>
+        <p th:text="${inquiry.message}">Message text</p>
+    </div>
+
+    <div th:if="${inquiry.response}" class="response-box">
+        <h3>Response from ClothSphere Team</h3>
+        <p th:text="${inquiry.response}">Response text</p>
+        <p style="margin-top: 15px; font-size: 0.9rem; color: #666;">
+            <strong>Responded by:</strong> <span th:text="${inquiry.respondedBy}">Admin</span><br/>
+            <strong>Responded at:</strong> <span th:text="${#temporals.format(inquiry.respondedAt, 'yyyy-MM-dd HH:mm')}">2025-10-01</span>
+        </p>
+    </div>
+
+    <div th:if="${!inquiry.response}" style="padding: 20px; background: #fff3cd; border-radius: 10px; margin: 20px 0;">
+        <p style="margin: 0; color: #856404;">⏳ Your inquiry is being reviewed. We'll respond as soon as possible!</p>
+    </div>
+
+    <a href="/inquiries/my" class="btn-back">⬅ Back to My Inquiries</a>
+</div>
+</body>
+</html>

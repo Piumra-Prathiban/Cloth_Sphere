@@ -9,7 +9,9 @@ import java.util.List;
 
 @Repository
 public interface InquiryRepository extends JpaRepository<Inquiry, Long> {
+    List<Inquiry> findByBuyer(Buyer buyer);
     List<Inquiry> findByBuyerOrderByCreatedAtDesc(Buyer buyer);
+    List<Inquiry> findByStatus(String status);
     List<Inquiry> findByStatusOrderByCreatedAtDesc(String status);
     List<Inquiry> findByBuyerAndStatusOrderByCreatedAtDesc(Buyer buyer, String status);
 }

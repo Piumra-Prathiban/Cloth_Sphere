@@ -58,11 +58,23 @@ public class BuyerController {
             // Store buyer info in session
             session.setAttribute("buyerId", buyer.getId());
             session.setAttribute("buyerName", buyer.getName());
-            return "dashboard";
+            return "redirect:/buyer/dashboard";
         } else {
             model.addAttribute("error", true);
             return "login";
         }
+    }
+
+    // Buyer Dashboard
+    @GetMapping("/buyer/dashboard")
+    public String buyerDashboard(HttpSession session, Model model) {
+        Long buyerId = (Long) session.getAttribute("buyerId");
+        if (buyerId == null) {
+            return "redirect:/login";
+        }
+        String buyerName = (String) session.getAttribute("buyerName");
+        model.addAttribute("buyerName", buyerName);
+        return "buyerDashboard";
     }
 
 

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Submit Inquiry - ClothSphere</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 50px auto;
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0px 10px 30px rgba(0,0,0,0.2);
+        }
+
+        h2 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+
+        .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn-submit:hover {
+            opacity: 0.9;
+            transform: scale(1.02);
+        }
+
+        .btn-back {
+            display: inline-block;
+            margin-top: 15px;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .btn-back:hover {
+            color: #764ba2;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>📝 Submit an Inquiry</h2>
+
+    <form th:action="@{/inquiries/submit}" method="post">
+        <div class="form-group">
+            <label for="inquiryType">Inquiry Type:</label>
+            <select id="inquiryType" name="inquiryType" required>
+                <option value="">Select Type</option>
+                <option value="PRODUCT">Product Question</option>
+                <option value="ORDER">Order Issue</option>
+                <option value="DELIVERY">Delivery Question</option>
+                <option value="GENERAL">General Inquiry</option>
+                <option value="COMPLAINT">Complaint</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="subject">Subject:</label>
+            <input type="text" id="subject" name="subject" required maxlength="200"
+                   placeholder="Brief subject of your inquiry">
+        </div>
+
+        <div class="form-group">
+            <label for="message">Message:</label>
+            <textarea id="message" name="message" required maxlength="2000"
+                      placeholder="Describe your inquiry in detail..."></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="relatedOrderId">Related Order ID (Optional):</label>
+            <input type="number" id="relatedOrderId" name="relatedOrderId"
+                   placeholder="Enter order ID if this inquiry is related to an order">
+        </div>
+
+        <button type="submit" class="btn-submit">Submit Inquiry</button>
+    </form>
+
+    <a href="/inquiries/my" class="btn-back">⬅ Back to My Inquiries</a>
+</div>
+</body>
+</html>

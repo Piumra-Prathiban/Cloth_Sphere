@@ -4,28 +4,107 @@
     <meta charset="UTF-8">
     <title>Product Catalog - ClothSphere</title>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #f2f2f2; margin: 0; padding: 0; }
-        .container { max-width: 1200px; margin: auto; padding: 20px; }
-        h1 { text-align: center; color: #ff4d94; margin-bottom: 40px; }
-        .products { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
-        .product-card { background: white; border-radius: 10px; width: 250px; padding: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); text-align: center; }
-        .product-card img { width: 100%; height: 200px; object-fit: cover; border-radius: 10px; }
-        .product-card h3 { color: #ff4d94; margin: 15px 0 10px; }
-        .product-card p { color: #555; font-size: 0.95rem; }
-        .product-card .price { font-weight: bold; margin-top: 10px; color: #333; }
+        body { font-family: Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); margin: 0; padding: 0; min-height: 100vh; }
+        .header { background: rgba(255,255,255,0.95); padding: 15px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header-content { max-width: 1200px; margin: auto; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; }
+        .nav-links a { margin: 0 15px; text-decoration: none; color: #667eea; font-weight: 500; }
+        .nav-links a:hover { color: #764ba2; }
+        .container { max-width: 1200px; margin: 30px auto; padding: 20px; }
+        h1 { text-align: center; color: white; margin-bottom: 40px; font-size: 2.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
+        .filter-bar { background: white; padding: 20px; border-radius: 10px; margin-bottom: 30px; display: flex; gap: 15px; flex-wrap: wrap; align-items: center; }
+        .filter-bar input, .filter-bar select { padding: 10px; border: 1px solid #ddd; border-radius: 5px; flex: 1; min-width: 150px; }
+        .products { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; }
+        .product-card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.15); transition: transform 0.3s, box-shadow 0.3s; }
+        .product-card:hover { transform: translateY(-5px); box-shadow: 0 12px 30px rgba(0,0,0,0.25); }
+        .product-card img { width: 100%; height: 220px; object-fit: cover; border-radius: 10px; margin-bottom: 15px; }
+        .product-card h3 { color: #667eea; margin: 10px 0; font-size: 1.3rem; }
+        .product-card p { color: #666; font-size: 0.9rem; margin: 8px 0; }
+        .product-info { display: flex; justify-content: space-between; align-items: center; margin: 10px 0; }
+        .product-info span { background: #f0f0f0; padding: 5px 10px; border-radius: 5px; font-size: 0.85rem; }
+        .price { font-weight: bold; font-size: 1.4rem; color: #764ba2; margin: 15px 0; }
+        .order-form { margin-top: 15px; }
+        .order-form input { width: 60px; padding: 8px; border: 1px solid #ddd; border-radius: 5px; margin-right: 10px; }
+        .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.3s; }
+        .btn-order { background: linear-gradient(135deg, #667eea, #764ba2); color: white; width: 100%; margin-top: 10px; }
+        .btn-order:hover { opacity: 0.9; transform: scale(1.02); }
     </style>
 </head>
 <body>
-<div class="container">
-    <h1>Product Catalog</h1>
-    <div class="products">
-        <div class="product-card" th:each="product : ${products}">
-            <img th:src="${product.imageUrl}" alt="Product Image"/>
-            <h3 th:text="${product.name}">Product Name</h3>
-            <p th:text="${product.description}">Product description goes here.</p>
-            <p class="price" th:text="'$' + ${product.price}">Price</p>
+<div class="header">
+    <div class="header-content">
+        <h2 style="margin: 0; color: #667eea;">🛍️ ClothSphere</h2>
+        <div class="nav-links">
+            <a href="/buyer/dashboard">Dashboard</a>
+            <a href="/products">Products</a>
+            <a href="/orders/my">My Orders</a>
+            <a href="/inquiries/my">My Inquiries</a>
+            <a href="/profile">Profile</a>
         </div>
     </div>
 </div>
+
+<div class="container">
+    <h1>📦 Product Catalog</h1>
+
+    <div class="filter-bar">
+        <input type="text" id="searchInput" placeholder="Search products..." onkeyup="filterProducts()">
+        <select id="typeFilter" onchange="filterProducts()">
+            <option value="">All Types</option>
+            <option value="Shirt">Shirt</option>
+            <option value="Saree">Saree</option>
+            <option value="Pants">Pants</option>
+            <option value="T-Shirt">T-Shirt</option>
+        </select>
+        <select id="materialFilter" onchange="filterProducts()">
+            <option value="">All Materials</option>
+            <option value="Cotton">Cotton</option>
+            <option value="Silk">Silk</option>
+            <option value="Denim">Denim</option>
+            <option value="Polyester">Polyester</option>
+        </select>
+    </div>
+
+    <div class="products" id="productGrid">
+        <div class="product-card" th:each="product : ${products}"
+             th:attr="data-name=${product.name}, data-type=${product.type}, data-material=${product.material}">
+            <img th:src="${product.imageUrl}" alt="Product Image"/>
+            <h3 th:text="${product.name}">Product Name</h3>
+            <p th:text="${product.description}">Product description</p>
+            <div class="product-info">
+                <span th:text="${product.type}">Type</span>
+                <span th:text="${product.material}">Material</span>
+                <span th:text="${product.size}">Size</span>
+            </div>
+            <div class="price" th:text="'$' + ${product.price}">Price</div>
+
+            <form th:action="@{/orders/place}" method="post" class="order-form">
+                <input type="hidden" name="productId" th:value="${product.id}"/>
+                <input type="number" name="quantity" value="1" min="1" max="100" required/>
+                <button type="submit" class="btn btn-order">🛒 Order Now</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function filterProducts() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const typeFilter = document.getElementById('typeFilter').value.toLowerCase();
+    const materialFilter = document.getElementById('materialFilter').value.toLowerCase();
+    const cards = document.getElementsByClassName('product-card');
+
+    for (let card of cards) {
+        const name = card.getAttribute('data-name').toLowerCase();
+        const type = card.getAttribute('data-type').toLowerCase();
+        const material = card.getAttribute('data-material').toLowerCase();
+
+        const matchSearch = name.includes(search);
+        const matchType = !typeFilter || type === typeFilter;
+        const matchMaterial = !materialFilter || material === materialFilter;
+
+        card.style.display = (matchSearch && matchType && matchMaterial) ? '' : 'none';
+    }
+}
+</script>
 </body>
 </html>

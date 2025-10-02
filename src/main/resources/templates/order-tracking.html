@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Order Tracking - ClothSphere</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #74ebd5, #9face6);
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      width: 90%;
+      max-width: 800px;
+      margin: 50px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0px 6px 20px rgba(0,0,0,0.2);
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    .order-info {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+
+    .order-info p {
+      margin: 8px 0;
+      color: #555;
+    }
+
+    .order-info strong {
+      color: #333;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 5px 15px;
+      border-radius: 20px;
+      color: white;
+      font-weight: bold;
+    }
+
+    .status-PENDING { background: #ffc107; }
+    .status-CONFIRMED { background: #17a2b8; }
+    .status-PROCESSING { background: #007bff; }
+    .status-SHIPPED { background: #28a745; }
+    .status-DELIVERED { background: #6c757d; }
+    .status-CANCELLED { background: #dc3545; }
+
+    .tracking-timeline {
+      margin: 30px 0;
+      position: relative;
+      padding-left: 30px;
+    }
+
+    .tracking-timeline::before {
+      content: '';
+      position: absolute;
+      left: 10px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: #ddd;
+    }
+
+    .timeline-item {
+      position: relative;
+      padding: 15px 0;
+    }
+
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -26px;
+      top: 20px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #6a11cb;
+    }
+
+    .items-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    .items-table th,
+    .items-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .items-table th {
+      background: #6a11cb;
+      color: white;
+    }
+
+    .btn-back {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 10px 18px;
+      background: #2575fc;
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      transition: 0.3s;
+    }
+
+    .btn-back:hover {
+      background: #6a11cb;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h2>📍 Order Tracking</h2>
+
+  <div class="order-info">
+    <p><strong>Order Number:</strong> <span th:text="${order.orderNumber}">ORD-001</span></p>
+    <p><strong>Order Date:</strong> <span th:text="${#temporals.format(order.orderDate, 'yyyy-MM-dd HH:mm')}">2025-10-01</span></p>
+    <p><strong>Status:</strong>
+      <span th:class="'status-badge status-' + ${order.status}" th:text="${order.status}">PENDING</span>
+    </p>
+    <p><strong>Total Amount:</strong> $<span th:text="${order.totalAmount}">0.00</span></p>
+    <p th:if="${order.trackingNumber}"><strong>Tracking Number:</strong> <span th:text="${order.trackingNumber}">N/A</span></p>
+  </div>
+
+  <h3>Order Items</h3>
+  <table class="items-table">
+    <thead>
+    <tr>
+      <th>Product</th>
+      <th>Material</th>
+      <th>Size</th>
+      <th>Quantity</th>
+      <th>Price</th>
+      <th>Subtotal</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="item : ${order.orderItems}">
+      <td th:text="${item.productName}">Product</td>
+      <td th:text="${item.productMaterial}">Material</td>
+      <td th:text="${item.productSize}">Size</td>
+      <td th:text="${item.quantity}">1</td>
+      <td th:text="${'$' + item.price}">$0.00</td>
+      <td th:text="${'$' + (item.price * item.quantity)}">$0.00</td>
+    </tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin-top: 30px;">Delivery Information</h3>
+  <div class="order-info">
+    <p><strong>Address:</strong> <span th:text="${order.deliveryAddress}">N/A</span></p>
+    <p th:if="${order.deliveryCity}"><strong>City:</strong> <span th:text="${order.deliveryCity}">N/A</span></p>
+    <p th:if="${order.deliveryPostalCode}"><strong>Postal Code:</strong> <span th:text="${order.deliveryPostalCode}">N/A</span></p>
+    <p th:if="${order.deliveryCountry}"><strong>Country:</strong> <span th:text="${order.deliveryCountry}">N/A</span></p>
+    <p th:if="${order.deliveryPhone}"><strong>Phone:</strong> <span th:text="${order.deliveryPhone}">N/A</span></p>
+    <p th:if="${order.deliveryDeadline}"><strong>Delivery Deadline:</strong> <span th:text="${#temporals.format(order.deliveryDeadline, 'yyyy-MM-dd')}">N/A</span></p>
+    <p th:if="${order.estimatedDeliveryDate}"><strong>Estimated Delivery:</strong> <span th:text="${#temporals.format(order.estimatedDeliveryDate, 'yyyy-MM-dd')}">N/A</span></p>
+    <p th:if="${order.actualDeliveryDate}"><strong>Actual Delivery:</strong> <span th:text="${#temporals.format(order.actualDeliveryDate, 'yyyy-MM-dd')}">N/A</span></p>
+  </div>
+
+  <div style="text-align: center;">
+    <a th:href="@{/orders/my}" class="btn-back">⬅ Back to My Orders</a>
+  </div>
+</div>
+</body>
+</html>
