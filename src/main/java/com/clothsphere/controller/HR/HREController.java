@@ -407,9 +407,9 @@ public class HREController {
         return loadDashboard("inventoryDashboard", session, model);
     }
 
-    @GetMapping("/customerDashboard")
+    @GetMapping("/customer_support_Dashboard")
     public String showCustomerDashboard(HttpSession session, Model model) {
-        return loadDashboard("customerDashboard", session, model);
+        return loadDashboard("customer_support_Dashboard", session, model);
     }
 
     @GetMapping("/salesDashboard")

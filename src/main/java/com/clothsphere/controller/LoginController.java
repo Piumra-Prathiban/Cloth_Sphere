@@ -55,7 +55,7 @@ public class LoginController {
                 case "inventory-manager":
                     return "redirect:/inventoryDashboard";
                 case "customer-officer":
-                    return "redirect:/customerDashboard";
+                    return "redirect:/customer_support_Dashboard";
                 case "sales-executive":
                     return "redirect:/salesDashboard";
                 case "employee":
