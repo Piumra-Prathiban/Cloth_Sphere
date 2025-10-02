@@ -42,7 +42,7 @@ public class CalendarNoteController {
         }
     }
 
-    // Get notes for a date range (for calendar rendering)
+    // Get notes for a date range
     @GetMapping("/range/{startDate}/{endDate}")
     public ResponseEntity<List<CalendarNote>> getNotesForDateRange(
             @PathVariable String startDate,
@@ -146,7 +146,7 @@ public class CalendarNoteController {
         }
     }
 
-    // Get all user notes (optional - for debugging)
+    // Get all user notes
     @GetMapping("/user/all")
     public ResponseEntity<List<CalendarNote>> getAllUserNotes(HttpSession session) {
 

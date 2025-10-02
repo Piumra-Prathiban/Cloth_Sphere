@@ -18,7 +18,6 @@ public class CalendarNote {
     @Column(name = "note_date", nullable = false)
     private LocalDate noteDate;
 
-    // FIXED: Changed from TEXT to VARCHAR to avoid SQL Server comparison issues
     @Column(name = "note_text", nullable = false, length = 2000)
     private String noteText;
 

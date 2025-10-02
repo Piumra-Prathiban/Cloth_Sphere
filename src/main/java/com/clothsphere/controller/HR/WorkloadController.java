@@ -174,8 +174,6 @@ public class WorkloadController {
         }
     }
 
-    // ... (rest of the WorkloadController methods remain the same) ...
-
     /**
      * Update existing production task
      */

@@ -29,7 +29,7 @@ public class TaskAssignmentController {
     private productionTaskService productionTaskService;
 
     /**
-     * Get all task assignments - SIMPLIFIED VERSION
+     * Get all task assignments
      */
     @GetMapping
     public ResponseEntity<List<TaskAssignment>> getAllAssignments(HttpSession session) {
@@ -178,7 +178,7 @@ public class TaskAssignmentController {
     }
 
     /**
-     * Update assignment - UPDATED VERSION with automatic task status update
+     * Update assignment
      */
     @PutMapping("/{assignmentId}")
     public ResponseEntity<Map<String, Object>> updateAssignment(
@@ -402,7 +402,7 @@ public class TaskAssignmentController {
     @PutMapping("/employee/{assignmentId}/status")
     public ResponseEntity<Map<String, Object>> updateEmployeeAssignmentStatus(
             @PathVariable String assignmentId,
-            @RequestBody Map<String, Object> statusData,  // Changed to Object to accept numbers
+            @RequestBody Map<String, Object> statusData,
             HttpSession session) {
 
         SystemUser currentUser = (SystemUser) session.getAttribute("currentUser");

@@ -40,7 +40,7 @@ public class HREController {
 
     // ========================= EMPLOYEE MANAGEMENT API =========================
 
-    // Get all employees (REST API)
+    // Get all employees
     @GetMapping("/api/employees")
     @ResponseBody
     public ResponseEntity<List<Employee>> getAllEmployees(HttpSession session) {
@@ -58,7 +58,7 @@ public class HREController {
         }
     }
 
-    // Get single employee (REST API)
+    // Get single employee
     @GetMapping("/api/employees/{id}")
     @ResponseBody
     public ResponseEntity<Employee> getEmployee(@PathVariable String id, HttpSession session) {
@@ -80,8 +80,7 @@ public class HREController {
         }
     }
 
-    // Add new employee (REST API)
-    // Add new employee (REST API) - FIXED VERSION
+    // Add new employee
     @PostMapping("/api/employees")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> addEmployeeAPI(
@@ -155,7 +154,7 @@ public class HREController {
         }
     }
 
-    // Update employee (REST API)
+    // Update employee
     @PutMapping("/api/employees/{id}")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> updateEmployeeAPI(
@@ -211,7 +210,7 @@ public class HREController {
         }
     }
 
-    // Delete employee (REST API)
+    // Delete employee
     @DeleteMapping("/api/employees/{id}")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> deleteEmployeeAPI(
@@ -256,7 +255,7 @@ public class HREController {
 
     // ========================= LEGACY EMPLOYEE CREATION =========================
 
-    // Legacy employee creation - FIXED VERSION
+    // Legacy employee creation
     @PostMapping("/addEmployee")
     public String addEmployee(
             @RequestParam String fullName,
@@ -326,6 +325,7 @@ public class HREController {
         return "redirect:/hrDashboard";
     }
 
+    //Random password Genarator
     private String generateRandomPassword() {
         // Generate an 8-character random password
         String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -390,10 +390,9 @@ public class HREController {
         }
     }
 
-// Add this updated method to your HREController.java
-// Add these debug lines to your showEmployeeDashboard method in HREController
-@GetMapping("/employeeDashboard")
-public String showEmployeeDashboard(HttpSession session, Model model,
+
+    @GetMapping("/employeeDashboard")
+    public String showEmployeeDashboard(HttpSession session, Model model,
                                     @RequestParam(value = "firstLogin", required = false) String firstLogin,
                                     @RequestParam(value = "passwordChanged", required = false) String passwordChanged) {
     System.out.println("=== EMPLOYEE DASHBOARD DEBUG ===");
@@ -455,8 +454,6 @@ public String showEmployeeDashboard(HttpSession session, Model model,
     return "redirect:/systemUserLogin";
 }
 
-    // Helper method for session check
-
     // Manager management page
     @GetMapping("/manageManagers")
     public String showManageManagersPage(HttpSession session, Model model) {
@@ -478,7 +475,6 @@ public String showEmployeeDashboard(HttpSession session, Model model,
         }
         return "redirect:/systemUserLogin";
     }
-    // Add this method to your existing HREController.java class
 
     /**
      * Load workload assignment data when switching to workload section
@@ -497,7 +493,6 @@ public String showEmployeeDashboard(HttpSession session, Model model,
             e.printStackTrace();
         }
     }
-// Update/Replace this method in your HREController.java
 
     @PostMapping("/updateEmployeePassword")
     @ResponseBody

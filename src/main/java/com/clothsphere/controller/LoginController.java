@@ -15,6 +15,8 @@ public class LoginController {
     @Autowired
     private SystemUserService systemUserService;
 
+    // ========================= Landing page =========================
+
     @GetMapping("/")
     public String index() {
         return "index";

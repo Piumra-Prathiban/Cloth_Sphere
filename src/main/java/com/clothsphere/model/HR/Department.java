@@ -1,7 +1,7 @@
 package com.clothsphere.model.HR;
 
 import jakarta.persistence.*;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnore; // Prevent infinite recursion during JSON serialization
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,14 +26,13 @@ public class Department {
     private String managerId;
 
     @OneToMany(mappedBy = "department", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonIgnore // Prevent infinite recursion during JSON serialization
+    @JsonIgnore
     private List<Employee> employees = new ArrayList<>();
 
     @OneToMany(mappedBy = "department", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonIgnore // Prevent infinite recursion during JSON serialization
+    @JsonIgnore
     private List<ProductionTask> productionTasks = new ArrayList<>();
 
-    // Transient fields for counts (not persisted in database)
     @Transient
     private Integer employeeCount;
 
@@ -73,7 +72,7 @@ public class Department {
     public List<ProductionTask> getProductionTasks() { return productionTasks; }
     public void setProductionTasks(List<ProductionTask> productionTasks) { this.productionTasks = productionTasks; }
 
-    // Get employee count - calculate dynamically
+    // Get employee count
     public Integer getEmployeeCount() {
         if (employeeCount != null) {
             return employeeCount;
@@ -81,12 +80,12 @@ public class Department {
         return employees != null ? employees.size() : 0;
     }
 
-    // Set employee count (for JSON serialization)
+    // Set employee count
     public void setEmployeeCount(Integer employeeCount) {
         this.employeeCount = employeeCount;
     }
 
-    // Get task count - calculate dynamically
+    // Get task count
     public Integer getTaskCount() {
         if (taskCount != null) {
             return taskCount;
@@ -94,7 +93,7 @@ public class Department {
         return productionTasks != null ? productionTasks.size() : 0;
     }
 
-    // Set task count (for JSON serialization)
+    // Set task count
     public void setTaskCount(Integer taskCount) {
         this.taskCount = taskCount;
     }

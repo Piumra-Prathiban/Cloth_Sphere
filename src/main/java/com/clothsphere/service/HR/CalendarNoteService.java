@@ -1,4 +1,3 @@
-// CalendarNoteService.java - COMPLETE FIXED VERSION
 package com.clothsphere.service.HR;
 
 import com.clothsphere.model.HR.CalendarNote;
