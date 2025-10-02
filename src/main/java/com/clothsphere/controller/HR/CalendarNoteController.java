@@ -66,6 +66,7 @@ public class CalendarNoteController {
     }
 
     // Add a new note
+    // In CalendarNoteController.java - Update the addNote method
     @PostMapping
     public ResponseEntity<Map<String, Object>> addNote(
             @RequestBody Map<String, String> noteData,
@@ -82,6 +83,11 @@ public class CalendarNoteController {
             String dateStr = noteData.get("noteDate");
             String noteText = noteData.get("noteText");
 
+            System.out.println("=== ADDING CALENDAR NOTE ===");
+            System.out.println("User: " + currentUser.getUserName());
+            System.out.println("Date: " + dateStr);
+            System.out.println("Note Text: " + noteText);
+
             if (dateStr == null || noteText == null || noteText.trim().isEmpty()) {
                 response.put("success", false);
                 response.put("message", "Date and note text are required");
@@ -89,14 +95,18 @@ public class CalendarNoteController {
             }
 
             LocalDate noteDate = LocalDate.parse(dateStr);
+
+            // Use the manual query method
             CalendarNote savedNote = calendarNoteService.addNote(currentUser.getUserName(), noteDate, noteText.trim());
 
             if (savedNote != null) {
+                System.out.println("Note added successfully with ID: " + savedNote.getId());
                 response.put("success", true);
                 response.put("message", "Note added successfully");
                 response.put("note", savedNote);
                 return new ResponseEntity<>(response, HttpStatus.OK);
             } else {
+                System.out.println("Note already exists or insertion failed");
                 response.put("success", false);
                 response.put("message", "Note already exists");
                 return new ResponseEntity<>(response, HttpStatus.CONFLICT);
@@ -104,6 +114,7 @@ public class CalendarNoteController {
 
         } catch (Exception e) {
             System.out.println("Error adding note: " + e.getMessage());
+            e.printStackTrace(); // Add detailed error logging
             response.put("success", false);
             response.put("message", "Error adding note: " + e.getMessage());
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -126,6 +137,8 @@ public class CalendarNoteController {
 
         try {
             LocalDate noteDate = LocalDate.parse(date);
+
+            // Use the manual query method
             boolean success = calendarNoteService.deleteNote(currentUser.getUserName(), noteDate, noteText);
 
             if (success) {

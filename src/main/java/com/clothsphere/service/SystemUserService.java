@@ -10,6 +10,9 @@ import com.clothsphere.util.PasswordEncoder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
+
+import java.time.LocalDateTime;
 
 @Service
 public class SystemUserService {
@@ -139,45 +142,48 @@ public class SystemUserService {
     }
 
     /**
-     * Create a new employee and corresponding system user.
+     * Create a new employee and corresponding system user with proper transaction management.
      */
     @Transactional
     public boolean createEmployee(Employee employee) {
         try {
             System.out.println("=== CREATING EMPLOYEE ===");
 
-            employee = employeeService.createEmployeeWithId(employee);
+            // Use the new manual query method
+            boolean employeeCreated = employeeService.createEmployeeWithId(employee);
+
+            if (!employeeCreated) {
+                System.out.println("Failed to create employee record");
+                return false;
+            }
 
             SystemUser existingUser = systemUserRepository.findByUserName(employee.getUsername());
             if (existingUser != null) {
                 System.out.println("Username already exists: " + employee.getUsername());
-                return false;
+                // Manually rollback since we're in the same transaction
+                throw new RuntimeException("Username already exists: " + employee.getUsername());
             }
-
-            Employee existingEmployee = employeeRepository.findByEmail(employee.getEmail());
-            if (existingEmployee != null) {
-                System.out.println("Email already exists: " + employee.getEmail());
-                return false;
-            }
-
-            employeeRepository.save(employee);
-            System.out.println("Employee saved with ID: " + employee.getId());
 
             // Encrypt the default password
             String defaultPassword = "changeme123";
             String encryptedPassword = PasswordEncoder.encryptPassword(defaultPassword);
 
-            SystemUser systemUser = new SystemUser(
+            // Use manual query for system user creation
+            int result = systemUserRepository.insertSystemUser(
                     employee.getUsername(),
-                    encryptedPassword,  // Store encrypted password
+                    encryptedPassword,
                     employee.getEmail(),
                     employee.getPhoneNumber(),
-                    "employee"  // Set role directly
+                    "employee",
+                    0,
+                    LocalDateTime.now()
             );
-            systemUser.setLogCount(0);
 
-            // Use JPA save for creation (this is fine for new entities)
-            systemUserRepository.save(systemUser);
+            if (result <= 0) {
+                System.out.println("Failed to create system user for: " + employee.getUsername());
+                // This will trigger rollback of the entire transaction
+                throw new RuntimeException("Failed to create system user");
+            }
 
             System.out.println("Employee created successfully: " + employee.getUsername() +
                     " with ID: " + employee.getId() +
@@ -187,6 +193,8 @@ public class SystemUserService {
         } catch (Exception e) {
             System.out.println("Error creating employee: " + e.getMessage());
             e.printStackTrace();
+            // Mark transaction for rollback
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             return false;
         }
     }
@@ -194,14 +202,29 @@ public class SystemUserService {
     @Transactional
     public boolean updateEmployee(Employee employee) {
         try {
-            employeeRepository.save(employee);
+            // Use the new manual query method
+            boolean employeeUpdated = employeeService.updateEmployee(employee);
+
+            if (!employeeUpdated) {
+                System.out.println("Failed to update employee record");
+                return false;
+            }
 
             SystemUser systemUser = systemUserRepository.findByUserName(employee.getUsername());
             if (systemUser != null) {
-                // For updates, we need to use individual setters and save
-                systemUser.setEmail(employee.getEmail());
-                systemUser.setPhoneNumber(employee.getPhoneNumber());
-                systemUserRepository.save(systemUser);
+                // Use manual query to update system user details
+                int updateResult = systemUserRepository.updateSystemUserDetails(
+                        employee.getUsername(),
+                        employee.getEmail(),
+                        employee.getPhoneNumber()
+                );
+
+                if (updateResult > 0) {
+                    System.out.println("System user details updated successfully for: " + employee.getUsername());
+                } else {
+                    System.out.println("Failed to update system user details for: " + employee.getUsername());
+                    return false;
+                }
             }
 
             System.out.println("Employee updated successfully: " + employee.getUsername());
@@ -216,19 +239,23 @@ public class SystemUserService {
     @Transactional
     public boolean deleteEmployee(String employeeId) {
         try {
-            Employee employee = employeeRepository.findById(employeeId).orElse(null);
+            Employee employee = employeeService.getEmployeeById(employeeId);
             if (employee != null) {
                 String username = employee.getUsername();
 
-                employeeRepository.deleteById(employeeId);
-
+                // Delete system user first
                 SystemUser systemUser = systemUserRepository.findByUserName(username);
                 if (systemUser != null) {
                     systemUserRepository.delete(systemUser);
                 }
 
-                System.out.println("Employee deleted successfully: " + username);
-                return true;
+                // Then delete employee using manual query
+                boolean employeeDeleted = employeeService.deleteEmployee(employeeId);
+
+                if (employeeDeleted) {
+                    System.out.println("Employee deleted successfully: " + username);
+                    return true;
+                }
             }
             return false;
 

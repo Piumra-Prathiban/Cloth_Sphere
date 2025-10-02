@@ -68,7 +68,8 @@ public class productionTaskService {
         if (task.getStatus() == null || task.getStatus().isEmpty()) {
             task.setStatus("PENDING");
         }
-        return productionTaskRepository.save(task);
+        productionTaskRepository.insertTask(task);
+        return task;
     }
 
     /**
@@ -108,7 +109,8 @@ public class productionTaskService {
                 existingTask.setStatus(taskData.getStatus());
             }
 
-            return productionTaskRepository.save(existingTask);
+            productionTaskRepository.updateTask(existingTask);
+            return existingTask;
         }
         return null;
     }
@@ -120,7 +122,7 @@ public class productionTaskService {
     public boolean deleteTask(String taskId) {
         try {
             if (productionTaskRepository.existsById(taskId)) {
-                productionTaskRepository.deleteById(taskId);
+                productionTaskRepository.deleteByTaskId(taskId);
                 return true;
             }
             return false;
@@ -178,7 +180,7 @@ public class productionTaskService {
         Map<String, Object> stats = new HashMap<>();
 
         // Count by status
-        stats.put("totalTasks", productionTaskRepository.count());
+        stats.put("totalTasks", productionTaskRepository.countAllTasks());
         stats.put("pendingTasks", productionTaskRepository.countByStatus("PENDING"));
         stats.put("inProgressTasks", productionTaskRepository.countByStatus("IN_PROGRESS"));
         stats.put("completedTasks", productionTaskRepository.countByStatus("COMPLETED"));

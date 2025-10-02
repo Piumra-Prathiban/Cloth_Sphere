@@ -50,4 +50,39 @@ public interface SystemUserRepository extends JpaRepository<SystemUser, String> 
     int updatePasswordAndLogCount(@Param("userName") String userName,
                                   @Param("password") String password,
                                   @Param("logCount") Integer logCount);
+
+    // Manual INSERT query
+    @Modifying
+    @Transactional
+    @Query(value = "INSERT INTO system_user_login_details (user_name, password, email, phone_number, role, log_count, created_at) " +
+            "VALUES (:userName, :password, :email, :phoneNumber, :role, :logCount, :createdAt)",
+            nativeQuery = true)
+    int insertSystemUser(@Param("userName") String userName,
+                         @Param("password") String password,
+                         @Param("email") String email,
+                         @Param("phoneNumber") String phoneNumber,
+                         @Param("role") String role,
+                         @Param("logCount") Integer logCount,
+                         @Param("createdAt") java.time.LocalDateTime createdAt);
+
+    // NEW: Manual UPDATE query for email and phone number
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE system_user_login_details SET email = :email, phone_number = :phoneNumber WHERE user_name = :userName",
+            nativeQuery = true)
+    int updateSystemUserDetails(@Param("userName") String userName,
+                                @Param("email") String email,
+                                @Param("phoneNumber") String phoneNumber);
+
+    // NEW: Manual UPDATE query for all fields
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE system_user_login_details SET password = :password, email = :email, phone_number = :phoneNumber, role = :role, log_count = :logCount WHERE user_name = :userName",
+            nativeQuery = true)
+    int updateSystemUser(@Param("userName") String userName,
+                         @Param("password") String password,
+                         @Param("email") String email,
+                         @Param("phoneNumber") String phoneNumber,
+                         @Param("role") String role,
+                         @Param("logCount") Integer logCount);
 }

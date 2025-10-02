@@ -15,7 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
 @Service
 public class DepartmentService {
 
@@ -24,7 +23,6 @@ public class DepartmentService {
 
     @Autowired
     private EmployeeRepository employeeRepository;
-
 
     /**
      * Generate the next department ID in format dept01, dept02, etc.
@@ -55,11 +53,27 @@ public class DepartmentService {
      */
     @Transactional
     public Department createDepartment(Department department) {
-        department.setId(generateNextDepartmentId());
-        Department savedDepartment = departmentRepository.save(department);
-        // Set initial employee count to 0 for new departments
-        savedDepartment.setEmployeeCount(0);
-        return savedDepartment;
+        String newId = generateNextDepartmentId();
+
+        // Use manual INSERT query
+        int result = departmentRepository.insertDepartment(
+                newId,
+                department.getDepartmentName(),
+                department.getDescription(),
+                department.getSalaryBudget(),
+                department.getManagerId()
+        );
+
+        if (result > 0) {
+            // Retrieve the saved department to return
+            Optional<Department> savedDepartment = departmentRepository.findDepartmentById(newId);
+            if (savedDepartment.isPresent()) {
+                Department dept = savedDepartment.get();
+                dept.setEmployeeCount(0); // Set initial employee count to 0
+                return dept;
+            }
+        }
+        throw new RuntimeException("Failed to create department");
     }
 
     /**
@@ -67,20 +81,32 @@ public class DepartmentService {
      */
     @Transactional
     public Department updateDepartment(String id, Department departmentData) {
-        Optional<Department> optionalDepartment = departmentRepository.findById(id);
-        if (optionalDepartment.isPresent()) {
-            Department department = optionalDepartment.get();
-            department.setDepartmentName(departmentData.getDepartmentName());
-            department.setDescription(departmentData.getDescription());
-            department.setSalaryBudget(departmentData.getSalaryBudget());
-            department.setManagerId(departmentData.getManagerId());
-            Department savedDepartment = departmentRepository.save(department);
+        // Check if department exists
+        if (!departmentRepository.existsDepartmentById(id)) {
+            return null;
+        }
 
-            // Calculate and set employee count
-            Long count = employeeRepository.countByDepartment(department);
-            savedDepartment.setEmployeeCount(count != null ? count.intValue() : 0);
+        // Use manual UPDATE query
+        int result = departmentRepository.updateDepartment(
+                id,
+                departmentData.getDepartmentName(),
+                departmentData.getDescription(),
+                departmentData.getSalaryBudget(),
+                departmentData.getManagerId()
+        );
 
-            return savedDepartment;
+        if (result > 0) {
+            // Retrieve the updated department
+            Optional<Department> updatedDepartment = departmentRepository.findDepartmentById(id);
+            if (updatedDepartment.isPresent()) {
+                Department dept = updatedDepartment.get();
+
+                // Calculate and set employee count
+                Long count = employeeRepository.countByDepartment(dept);
+                dept.setEmployeeCount(count != null ? count.intValue() : 0);
+
+                return dept;
+            }
         }
         return null;
     }
@@ -91,6 +117,8 @@ public class DepartmentService {
     @Transactional(readOnly = true)
     public List<Department> getAllDepartments() {
         System.out.println("=== LOADING ALL DEPARTMENTS ===");
+
+        // Use manual query to get all departments ordered by name
         List<Department> departments = departmentRepository.findAllOrderedByName();
         System.out.println("Found " + departments.size() + " departments in database");
 
@@ -117,7 +145,8 @@ public class DepartmentService {
      */
     @Transactional(readOnly = true)
     public Optional<Department> getDepartmentById(String id) {
-        Optional<Department> departmentOpt = departmentRepository.findById(id);
+        // Use manual query to find department by ID
+        Optional<Department> departmentOpt = departmentRepository.findDepartmentById(id);
         if (departmentOpt.isPresent()) {
             Department dept = departmentOpt.get();
             // Clear employees to prevent serialization issues
@@ -133,6 +162,7 @@ public class DepartmentService {
      */
     @Transactional(readOnly = true)
     public Department getDepartmentByName(String departmentName) {
+        // Use manual query to find department by name
         Department department = departmentRepository.findByDepartmentName(departmentName);
         if (department != null) {
             // Clear employees to prevent serialization issues
@@ -149,9 +179,11 @@ public class DepartmentService {
     @Transactional
     public boolean deleteDepartment(String id) {
         try {
-            if (departmentRepository.existsById(id)) {
-                departmentRepository.deleteById(id);
-                return true;
+            // Use manual query to check if department exists
+            if (departmentRepository.existsDepartmentById(id)) {
+                // Use manual DELETE query
+                int result = departmentRepository.deleteDepartmentById(id);
+                return result > 0;
             }
             return false;
         } catch (Exception e) {
@@ -164,15 +196,16 @@ public class DepartmentService {
      * Check if department name already exists
      */
     public boolean departmentNameExists(String departmentName) {
-        return departmentRepository.findByDepartmentName(departmentName) != null;
+        // Use manual query to check if department name exists
+        return departmentRepository.existsByDepartmentName(departmentName);
     }
 
     /**
      * Check if department name exists excluding current department
      */
     public boolean departmentNameExistsExcluding(String departmentName, String excludeId) {
-        Department existing = departmentRepository.findByDepartmentName(departmentName);
-        return existing != null && !existing.getId().equals(excludeId);
+        // Use manual query to check if department name exists excluding specific ID
+        return departmentRepository.existsByDepartmentNameExcludingId(departmentName, excludeId);
     }
 
     /**
@@ -180,7 +213,8 @@ public class DepartmentService {
      */
     @Transactional
     public void refreshDepartmentEmployeeCounts() {
-        List<Department> departments = departmentRepository.findAll();
+        // Use manual query to get all departments
+        List<Department> departments = departmentRepository.findAllDepartments();
         for (Department dept : departments) {
             // Clear employees to prevent serialization issues
             dept.setEmployees(null);
@@ -188,5 +222,4 @@ public class DepartmentService {
             dept.setEmployeeCount(count != null ? count.intValue() : 0);
         }
     }
-
 }

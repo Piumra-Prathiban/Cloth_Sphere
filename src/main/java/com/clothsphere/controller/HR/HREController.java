@@ -69,7 +69,7 @@ public class HREController {
         }
 
         try {
-            Employee employee = employeeRepository.findById(id).orElse(null);
+            Employee employee = employeeRepository.findEmployeeById(id).orElse(null);
             if (employee != null) {
                 return new ResponseEntity<>(employee, HttpStatus.OK);
             } else {
@@ -100,7 +100,7 @@ public class HREController {
             String email = employeeData.get("email");
             String username = email.split("@")[0];
 
-            // Use default password for first-time login (not random password)
+            // Use default password for first-time login
             String defaultPassword = "changeme123";
 
             // Parse date of birth
@@ -132,6 +132,7 @@ public class HREController {
 
             // Save employee
             boolean success = systemUserService.createEmployee(employee);
+
 
             if (success) {
                 response.put("success", true);
@@ -171,7 +172,7 @@ public class HREController {
         Map<String, Object> response = new HashMap<>();
 
         try {
-            Employee existingEmployee = employeeRepository.findById(id).orElse(null);
+            Employee existingEmployee = employeeRepository.findEmployeeById(id).orElse(null);
             if (existingEmployee == null) {
                 response.put("success", false);
                 response.put("message", "Employee not found");
@@ -197,7 +198,7 @@ public class HREController {
             existingEmployee.setQualification3(employeeData.get("qualification3"));
 
             // Save updated employee
-            employeeRepository.save(existingEmployee);
+            boolean success = employeeService.updateEmployee(existingEmployee);
 
             response.put("success", true);
             response.put("message", "Employee updated successfully!");
@@ -226,7 +227,7 @@ public class HREController {
         Map<String, Object> response = new HashMap<>();
 
         try {
-            Employee employee = employeeRepository.findById(id).orElse(null);
+            Employee employee = employeeRepository.findEmployeeById(id).orElse(null);
             if (employee == null) {
                 response.put("success", false);
                 response.put("message", "Employee not found");
@@ -552,7 +553,7 @@ public class HREController {
 
             // Update password and log count in database using the CORRECT method signature
             boolean success = systemUserService.updatePasswordAndLogCount(
-                    currentUser.getUserName(), // Only 2 parameters now
+                    currentUser.getUserName(),
                     newPassword
             );
 

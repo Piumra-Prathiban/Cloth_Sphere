@@ -61,18 +61,28 @@ public class TaskAssignmentService {
     }
 
     /**
-     * Create a new task assignment
+     * Create a new task assignment - FIXED VERSION
      */
     @Transactional
     public TaskAssignment createAssignment(TaskAssignment assignment) {
-        assignment.setAssignmentId(generateNextAssignmentId());
-        assignment.setAssignedDate(LocalDate.now());
+        try {
+            assignment.setAssignmentId(generateNextAssignmentId());
+            assignment.setAssignedDate(LocalDate.now());
 
-        if (assignment.getStatus() == null || assignment.getStatus().isEmpty()) {
-            assignment.setStatus("ASSIGNED");
+            if (assignment.getStatus() == null || assignment.getStatus().isEmpty()) {
+                assignment.setStatus("ASSIGNED");
+            }
+
+            int result = taskAssignmentRepository.insertAssignment(assignment);
+            if (result > 0) {
+                return assignment;
+            } else {
+                throw new RuntimeException("Failed to insert assignment into database");
+            }
+        } catch (Exception e) {
+            logger.error("Error creating assignment: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to create assignment: " + e.getMessage(), e);
         }
-
-        return taskAssignmentRepository.save(assignment);
     }
 
     /**
@@ -116,7 +126,8 @@ public class TaskAssignmentService {
                 existingAssignment.setNotes(assignmentData.getNotes());
             }
 
-            return taskAssignmentRepository.save(existingAssignment);
+            taskAssignmentRepository.updateAssignment(existingAssignment);
+            return existingAssignment;
         }
         return null;
     }
@@ -128,7 +139,7 @@ public class TaskAssignmentService {
     public boolean deleteAssignment(String assignmentId) {
         try {
             if (taskAssignmentRepository.existsById(assignmentId)) {
-                taskAssignmentRepository.deleteById(assignmentId);
+                taskAssignmentRepository.deleteByAssignmentId(assignmentId);
                 return true;
             }
             return false;
@@ -233,7 +244,7 @@ public class TaskAssignmentService {
         Map<String, Object> stats = new HashMap<>();
 
         // Count by status
-        stats.put("totalAssignments", taskAssignmentRepository.count());
+        stats.put("totalAssignments", taskAssignmentRepository.countAllAssignments());
         stats.put("assignedTasks", taskAssignmentRepository.findByStatus("ASSIGNED").size());
         stats.put("inProgressTasks", taskAssignmentRepository.findByStatus("IN_PROGRESS").size());
         stats.put("completedTasks", taskAssignmentRepository.findByStatus("COMPLETED").size());
@@ -253,12 +264,16 @@ public class TaskAssignmentService {
     /**
      * Assign task to multiple employees
      */
+    /**
+     * Assign task to multiple employees - FIXED VERSION
+     */
     @Transactional
     public Map<String, Object> assignTaskToEmployees(String taskId, List<String> employeeIds, Integer estimatedHours, String notes) {
         Map<String, Object> result = new HashMap<>();
         int successCount = 0;
-        StringBuilder messages = new StringBuilder();
+        List<String> errorMessages = new ArrayList<>();
 
+        // Validate task exists first
         Optional<ProductionTask> taskOpt = productionTaskService.getTaskById(taskId);
         if (!taskOpt.isPresent()) {
             result.put("success", false);
@@ -268,28 +283,48 @@ public class TaskAssignmentService {
 
         ProductionTask task = taskOpt.get();
 
+        // Validate all employees exist before starting assignments
+        List<Employee> validEmployees = new ArrayList<>();
         for (String employeeId : employeeIds) {
             try {
                 Employee employee = employeeService.getEmployeeById(employeeId);
                 if (employee == null) {
-                    messages.append("Employee ").append(employeeId).append(" not found. ");
+                    errorMessages.add("Employee " + employeeId + " not found");
                     continue;
                 }
 
+                // Check if already assigned
                 List<TaskAssignment> existingAssignments = getActiveAssignmentsByEmployeeId(employeeId);
                 boolean alreadyAssigned = existingAssignments.stream()
                         .anyMatch(assignment -> assignment.getTask().getTaskId().equals(taskId));
 
                 if (alreadyAssigned) {
-                    messages.append("Employee ").append(employee.getFullName())
-                            .append(" already has this task assigned. ");
+                    errorMessages.add("Employee " + employee.getFullName() + " already has this task assigned");
                     continue;
                 }
 
+                validEmployees.add(employee);
+            } catch (Exception e) {
+                errorMessages.add("Error validating employee " + employeeId + ": " + e.getMessage());
+            }
+        }
+
+        // If no valid employees, return early
+        if (validEmployees.isEmpty()) {
+            result.put("success", false);
+            result.put("message", "No valid employees found: " + String.join(", ", errorMessages));
+            result.put("assignedCount", 0);
+            result.put("totalCount", employeeIds.size());
+            return result;
+        }
+
+        // Create assignments for valid employees
+        for (Employee employee : validEmployees) {
+            try {
                 TaskAssignment assignment = new TaskAssignment();
                 assignment.setEmployee(employee);
                 assignment.setTask(task);
-                assignment.setDepartment(task.getDepartment()); // Set department from task
+                assignment.setDepartment(task.getDepartment());
                 assignment.setEstimatedHours(estimatedHours);
                 assignment.setNotes(notes);
                 assignment.setStatus("ASSIGNED");
@@ -297,17 +332,32 @@ public class TaskAssignmentService {
                 TaskAssignment savedAssignment = createAssignment(assignment);
                 if (savedAssignment != null) {
                     successCount++;
+                    logger.info("Successfully assigned task {} to employee {}", taskId, employee.getId());
                 }
             } catch (Exception e) {
-                messages.append("Error assigning task to employee ").append(employeeId).append(": ").append(e.getMessage()).append(". ");
+                String errorMsg = "Error assigning task to employee " + employee.getId() + ": " + e.getMessage();
+                errorMessages.add(errorMsg);
+                logger.error(errorMsg, e);
+                // Continue with other employees instead of failing the entire batch
             }
         }
 
+        // Build result
         result.put("success", successCount > 0);
         result.put("assignedCount", successCount);
         result.put("totalCount", employeeIds.size());
-        result.put("message", "Assigned to " + successCount + " out of " + employeeIds.size() + " employees. " + messages.toString());
 
+        String message;
+        if (successCount == employeeIds.size()) {
+            message = "Successfully assigned task to all " + successCount + " employees";
+        } else if (successCount > 0) {
+            message = "Assigned to " + successCount + " out of " + employeeIds.size() + " employees. " +
+                    String.join(" ", errorMessages);
+        } else {
+            message = "Failed to assign task to any employees: " + String.join(" ", errorMessages);
+        }
+
+        result.put("message", message);
         return result;
     }
 
@@ -495,38 +545,28 @@ public class TaskAssignmentService {
 
         TaskAssignment assignment = optionalAssignment.get();
         String oldStatus = assignment.getStatus();
-        assignment.setStatus(newStatus);
 
-        // If status changed to COMPLETED and wasn't completed before
+        // Set completion date if status changed to COMPLETED
+        java.time.LocalDate completionDate = assignment.getCompletionDate();
         if ("COMPLETED".equals(newStatus) && !"COMPLETED".equals(oldStatus)) {
-            // Set completion date to current date
-            assignment.setCompletionDate(LocalDate.now());
-
-            // Set actual hours if provided, otherwise keep existing or null
-            if (actualHours != null) {
-                assignment.setActualHours(actualHours);
-            }
-            // Don't set automatic hours - let employee input them
-
-            System.out.println("Assignment " + assignmentId + " marked as completed. " +
-                    "Completion date: " + assignment.getCompletionDate() + ", " +
-                    "Actual hours: " + assignment.getActualHours());
+            completionDate = java.time.LocalDate.now();
+        } else if (!"COMPLETED".equals(newStatus) && "COMPLETED".equals(oldStatus)) {
+            completionDate = null;
         }
 
-        // If status changed from COMPLETED to something else, clear completion date
-        if (!"COMPLETED".equals(newStatus) && "COMPLETED".equals(oldStatus)) {
-            assignment.setCompletionDate(null);
-            // Keep actual hours as they might represent historical data
-        }
+        // Use the custom update method
+        taskAssignmentRepository.updateAssignmentStatus(assignmentId, newStatus, completionDate, actualHours);
 
-        TaskAssignment updatedAssignment = taskAssignmentRepository.save(assignment);
+        // Reload the assignment to return updated entity
+        Optional<TaskAssignment> updatedAssignment = taskAssignmentRepository.findById(assignmentId);
 
         // Update the task status based on all assignments
-        if (updatedAssignment != null && assignment.getTask() != null) {
-            updateTaskStatusBasedOnAssignments(assignment.getTask().getTaskId());
+        if (updatedAssignment.isPresent() && updatedAssignment.get().getTask() != null) {
+            updateTaskStatusBasedOnAssignments(updatedAssignment.get().getTask().getTaskId());
+            return updatedAssignment.get();
         }
 
-        return updatedAssignment;
+        return null;
     }
 
 }

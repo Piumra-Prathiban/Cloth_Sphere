@@ -31,3 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
+/src/main/resources/static/res/videos/background.mp4
+src/main/resources/static/res/images/LoginPage.jpg
+src/main/resources/static/res/images/Logo.png
+src/main/resources/static/res/Logo.jpg
+src/main/resources/static/res/videos/background2.mp4

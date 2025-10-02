@@ -833,6 +833,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+// In hrDashboard.js - Update the addNote function
     async function addNote() {
         console.log('=== ADD NOTE FUNCTION CALLED ===');
 
@@ -866,22 +867,24 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             console.log('Response status:', response.status);
+            console.log('Response headers:', response.headers);
 
-            if (response.ok) {
-                const result = await response.json();
-                console.log('Result:', result);
+            const result = await response.json();
+            console.log('Server response:', result);
 
-                if (result.success) {
-                    noteInput.value = '';
-                    await renderNotes(dateStr);
-                    await loadNotesForMonth(currentDate.getFullYear(), currentDate.getMonth());
-                    renderCalendar();
-                    showAlert('Note added successfully!', 'success');
-                } else {
-                    showAlert(result.message || 'Failed to add note', 'error');
-                }
+            if (response.ok && result.success) {
+                console.log('Note added successfully');
+                noteInput.value = '';
+
+                // Refresh the notes list and calendar
+                await renderNotes(dateStr);
+                await loadNotesForMonth(currentDate.getFullYear(), currentDate.getMonth());
+                renderCalendar();
+
+                showAlert('Note added successfully!', 'success');
             } else {
-                showAlert('Failed to add note', 'error');
+                console.error('Failed to add note:', result.message);
+                showAlert(result.message || 'Failed to add note', 'error');
             }
         } catch (error) {
             console.error('Error adding note:', error);
