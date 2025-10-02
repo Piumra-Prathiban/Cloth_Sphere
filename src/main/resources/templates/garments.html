@@ -3,10 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finished Garments - Cloth Sphere</title>
+    <title>Garment Management - Cloth Sphere</title>
     <link rel="stylesheet" href="/css/styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        .charts-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .chart-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            height: 300px;
+        }
+
+        .chart-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #4B0082;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .charts-container {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-card {
+                height: 250px;
+            }
+        }
+    </style>
 </head>
 <body>
 
@@ -43,15 +80,64 @@
 
     <main class="main-content">
         <div class="page-header">
-            <h2 class="page-title"><i class="fas fa-boxes"></i> Finished Garments</h2>
+            <h2 class="page-title"><i class="fas fa-boxes"></i> Garment Management</h2>
         </div>
 
         <div class="welcome-text">
             Manage finished garments inventory, track production output, and monitor stock levels.
         </div>
 
+        <!-- Garment Inventory Stats -->
+        <h3 class="section-title" style="margin: 20px 0 15px 0;"><i class="fas fa-boxes"></i> Garment Inventory Overview</h3>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon purple"><i class="fas fa-boxes"></i></div>
+                <div class="stat-info">
+                    <h3 id="totalGarmentTypes">0</h3>
+                    <p>Garment Types</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon blue"><i class="fas fa-tshirt"></i></div>
+                <div class="stat-info">
+                    <h3 id="totalPieces">0</h3>
+                    <p>Total Pieces</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green"><i class="fas fa-arrow-up"></i></div>
+                <div class="stat-info">
+                    <h3 id="producedToday">0</h3>
+                    <p>Produced Today</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon orange"><i class="fas fa-shipping-fast"></i></div>
+                <div class="stat-info">
+                    <h3 id="shippedToday">0</h3>
+                    <p>Shipped Today</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Garment Charts -->
+        <div class="charts-container">
+            <div class="chart-card">
+                <div class="chart-title">
+                    <i class="fas fa-chart-bar"></i> Garment Stock Levels
+                </div>
+                <canvas id="garmentChart"></canvas>
+            </div>
+            <div class="chart-card">
+                <div class="chart-title">
+                    <i class="fas fa-chart-pie"></i> Garment Distribution by Type
+                </div>
+                <canvas id="garmentTypeChart"></canvas>
+            </div>
+        </div>
+
         <!-- Quick Actions -->
-        <div class="actions-header" style="display: flex; justify-content: flex-end; gap: 15px; margin-bottom: 25px;">
+        <div class="actions-header" style="display: flex; justify-content: flex-end; gap: 15px; margin: 30px 0 25px 0;">
             <button class="btn add" id="addNewGarmentBtn"><i class="fas fa-plus-circle"></i> Add New Garment Type</button>
             <button class="btn add" id="addMovementBtn"><i class="fas fa-exchange-alt"></i> Record Movement</button>
         </div>
@@ -83,18 +169,6 @@
                     <select id="filterSelect" class="filter-dropdown">
                         <option value="">All Types</option>
                     </select>
-                    <select id="sizeFilter" class="filter-dropdown">
-                        <option value="">All Sizes</option>
-                        <option value="S">S</option>
-                        <option value="M">M</option>
-                        <option value="L">L</option>
-                        <option value="XL">XL</option>
-                    </select>
-                    <select id="statusFilter" class="filter-dropdown">
-                        <option value="">All Status</option>
-                        <option value="In">Stock In</option>
-                        <option value="Shipped">Shipped</option>
-                    </select>
                 </div>
             </div>
 
@@ -108,8 +182,8 @@
                     <th>Fabric ID</th>
                     <th>Status</th>
                     <th>Date</th>
-                    <th>Quantity</th>
-                    <th>Total Stock</th>
+                    <th>Quantity (pcs)</th>
+                    <th>Total Stock (pcs)</th>
                     <th>Actions</th>
                 </tr>
                 </thead>
@@ -121,7 +195,7 @@
     </main>
 </div>
 
-<!-- Add New Garment Type Modal -->
+<!-- Add New Garment Modal -->
 <div id="addGarmentModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
@@ -164,6 +238,36 @@
             <div class="form-buttons">
                 <button type="button" class="btn btn-cancel" id="cancelGarmentBtn">Cancel</button>
                 <button type="submit" class="btn add">Add Garment</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Garment Modal -->
+<div id="editGarmentModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title"><i class="fas fa-edit"></i> Edit Garment Type</h3>
+            <span class="close" id="closeEditGarmentModal">&times;</span>
+        </div>
+        <form id="editGarmentForm">
+            <input type="hidden" id="editGarmentId" name="garmentId">
+            <div class="form-group">
+                <label for="editGarmentType">Garment Type</label>
+                <input type="text" id="editGarmentType" name="garmentType" required>
+            </div>
+            <div class="form-group">
+                <label for="editGarmentSize">Size</label>
+                <select id="editGarmentSize" name="size" required>
+                    <option value="S">S</option>
+                    <option value="M">M</option>
+                    <option value="L">L</option>
+                    <option value="XL">XL</option>
+                </select>
+            </div>
+            <div class="form-buttons">
+                <button type="button" class="btn btn-cancel" id="cancelEditGarmentBtn">Cancel</button>
+                <button type="submit" class="btn edit">Update Garment</button>
             </div>
         </form>
     </div>
@@ -219,6 +323,7 @@
 <script>
     let garmentsList = [];
     let movementsList = [];
+    let garmentChart, garmentTypeChart;
 
     document.addEventListener('DOMContentLoaded', function() {
         initializeGarmentManagement();
@@ -226,9 +331,11 @@
 
     function initializeGarmentManagement() {
         setupEventListeners();
+        initializeCharts();
+        loadFabricsForDropdown();
         loadGarments();
         loadMovements();
-        loadFabricsForDropdown();
+        loadStats();
     }
 
     function setupEventListeners() {
@@ -247,13 +354,18 @@
             overlay.classList.remove('show');
         });
 
-        // Garment modal
+        // Add Garment modal
         document.getElementById('addNewGarmentBtn')?.addEventListener('click', () =>
             document.getElementById('addGarmentModal').style.display = 'block'
         );
         document.getElementById('closeGarmentModal')?.addEventListener('click', closeGarmentModalFn);
         document.getElementById('cancelGarmentBtn')?.addEventListener('click', closeGarmentModalFn);
         document.getElementById('addGarmentForm')?.addEventListener('submit', handleGarmentSubmit);
+
+        // Edit Garment modal
+        document.getElementById('closeEditGarmentModal')?.addEventListener('click', closeEditGarmentModalFn);
+        document.getElementById('cancelEditGarmentBtn')?.addEventListener('click', closeEditGarmentModalFn);
+        document.getElementById('editGarmentForm')?.addEventListener('submit', handleEditGarmentSubmit);
 
         // Movement modal
         document.getElementById('addMovementBtn')?.addEventListener('click', () =>
@@ -285,21 +397,93 @@
         // Close modals on outside click
         window.addEventListener('click', (e) => {
             if (e.target === document.getElementById('addGarmentModal')) closeGarmentModalFn();
+            if (e.target === document.getElementById('editGarmentModal')) closeEditGarmentModalFn();
             if (e.target === document.getElementById('addMovementModal')) closeMovementModalFn();
         });
 
-        // Filters
-        document.getElementById('filterSelect')?.addEventListener('change', applyFilters);
-        document.getElementById('sizeFilter')?.addEventListener('change', applyFilters);
-        document.getElementById('statusFilter')?.addEventListener('change', applyFilters);
+        // Filter
+        document.getElementById('filterSelect')?.addEventListener('change', handleFilter);
 
-        // Delete buttons
-        document.addEventListener('click', handleDeleteActions);
+        // Action buttons
+        document.addEventListener('click', handleActions);
+    }
+
+    function initializeCharts() {
+        const garmentCtx = document.getElementById('garmentChart').getContext('2d');
+        garmentChart = new Chart(garmentCtx, {
+            type: 'bar',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Stock Level (pieces)',
+                    data: [],
+                    backgroundColor: 'rgba(52, 152, 219, 0.8)',
+                    borderColor: 'rgba(52, 152, 219, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.1)' } },
+                    x: { grid: { color: 'rgba(0,0,0,0.1)' } }
+                }
+            }
+        });
+
+        const typeCtx = document.getElementById('garmentTypeChart').getContext('2d');
+        garmentTypeChart = new Chart(typeCtx, {
+            type: 'doughnut',
+            data: {
+                labels: [],
+                datasets: [{
+                    data: [],
+                    backgroundColor: [
+                        'rgba(52, 152, 219, 0.8)', 'rgba(39, 174, 96, 0.8)',
+                        'rgba(243, 156, 18, 0.8)', 'rgba(231, 76, 60, 0.8)',
+                        'rgba(155, 89, 182, 0.8)', 'rgba(52, 73, 94, 0.8)',
+                        'rgba(241, 196, 15, 0.8)'
+                    ],
+                    borderColor: '#fff',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { padding: 15, usePointStyle: true }
+                    }
+                }
+            }
+        });
+    }
+
+    function loadStats() {
+        fetch('/api/garments/dashboard/stats')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('totalGarmentTypes').textContent = data.totalGarmentTypes || 0;
+                document.getElementById('totalPieces').textContent = data.totalPieces || 0;
+                document.getElementById('producedToday').textContent = data.stockInToday || 0;
+                document.getElementById('shippedToday').textContent = data.shippedToday || 0;
+            })
+            .catch(err => console.error('Error loading stats:', err));
     }
 
     function closeGarmentModalFn() {
         document.getElementById('addGarmentModal').style.display = 'none';
         document.getElementById('addGarmentForm').reset();
+        document.getElementById('initialFabricGroup').style.display = 'none';
+    }
+
+    function closeEditGarmentModalFn() {
+        document.getElementById('editGarmentModal').style.display = 'none';
+        document.getElementById('editGarmentForm').reset();
     }
 
     function closeMovementModalFn() {
@@ -308,15 +492,16 @@
         document.getElementById('garmentDetails').innerHTML = 'Select a garment to see details';
     }
 
-    // Load all garments
     function loadGarments() {
         fetch('/api/garments/all')
             .then(res => res.json())
             .then(data => {
+                console.log('Garments loaded:', data); // Debug log
                 garmentsList = data || [];
                 displayGarments();
                 updateGarmentDropdown();
                 updateFilterDropdown();
+                updateCharts();
             })
             .catch(err => {
                 console.error('Error loading garments:', err);
@@ -325,7 +510,6 @@
             });
     }
 
-    // Display garments in table
     function displayGarments() {
         const tbody = document.getElementById('garmentTableBody');
         tbody.innerHTML = '';
@@ -338,7 +522,10 @@
                     <td>${g.garmentType}</td>
                     <td>${g.size}</td>
                     <td>${g.currentStock || 0}</td>
-                    <td>
+                    <td class="action-buttons-table">
+                        <button class="btn edit btn-edit-garment" data-id="${g.garmentId}" data-type="${g.garmentType}" data-size="${g.size}">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
                         <button class="btn delete btn-delete-garment" data-id="${g.garmentId}">
                             <i class="fas fa-trash"></i> Delete
                         </button>
@@ -351,7 +538,35 @@
         }
     }
 
-    // Update garment dropdown in movement form
+    function updateCharts() {
+        if (garmentsList.length > 0) {
+            const labels = garmentsList.map(g => `${g.garmentType} - ${g.size}`);
+            const stocks = garmentsList.map(g => g.currentStock || 0);
+
+            garmentChart.data.labels = labels;
+            garmentChart.data.datasets[0].data = stocks;
+            garmentChart.update();
+
+            const typeData = calculateTypeDistribution(labels, stocks);
+            garmentTypeChart.data.labels = typeData.labels;
+            garmentTypeChart.data.datasets[0].data = typeData.values;
+            garmentTypeChart.update();
+        }
+    }
+
+    function calculateTypeDistribution(labels, quantities) {
+        const typeMap = {};
+        labels.forEach((label, index) => {
+            const type = label.split(' - ')[0];
+            if (!typeMap[type]) typeMap[type] = 0;
+            typeMap[type] += quantities[index];
+        });
+        return {
+            labels: Object.keys(typeMap),
+            values: Object.values(typeMap)
+        };
+    }
+
     function updateGarmentDropdown() {
         const select = document.getElementById('garmentSelect');
         select.innerHTML = '<option value="">Choose Garment</option>';
@@ -367,7 +582,6 @@
         });
     }
 
-    // Update filter dropdown
     function updateFilterDropdown() {
         const select = document.getElementById('filterSelect');
         const currentValue = select.value;
@@ -385,38 +599,31 @@
         select.value = currentValue;
     }
 
-    // Update garment details display
     function updateGarmentDetails() {
         const select = document.getElementById('garmentSelect');
         const selectedOption = select.options[select.selectedIndex];
         const detailsDiv = document.getElementById('garmentDetails');
 
         if (select.value) {
-            const type = selectedOption.dataset.type;
-            const size = selectedOption.dataset.size;
-            const stock = selectedOption.dataset.stock;
-
             detailsDiv.innerHTML = `
                 <strong>Garment ID:</strong> ${select.value}<br>
-                <strong>Type:</strong> ${type}<br>
-                <strong>Size:</strong> ${size}<br>
-                <strong>Current Stock:</strong> ${stock} pieces
+                <strong>Type:</strong> ${selectedOption.dataset.type}<br>
+                <strong>Size:</strong> ${selectedOption.dataset.size}<br>
+                <strong>Current Stock:</strong> ${selectedOption.dataset.stock} pieces
             `;
         } else {
             detailsDiv.innerHTML = 'Select a garment to see details';
         }
     }
 
-    // Add new garment
     function handleGarmentSubmit(e) {
         e.preventDefault();
         const form = e.target;
         const garmentId = form.garmentId.value.trim().toUpperCase();
-        const initialStock = parseInt(form.initialStock.value);
+        const initialStock = parseInt(form.initialStock.value) || 0;
         const initialFabricId = form.initialFabricId?.value;
 
-        // Validate: if initial stock is provided, fabric must be selected
-        if (initialStock && initialStock > 0 && !initialFabricId) {
+        if (initialStock > 0 && !initialFabricId) {
             showNotification('Please select a fabric for initial stock', 'error');
             return;
         }
@@ -424,10 +631,11 @@
         const data = {
             garmentId: garmentId,
             garmentType: form.garmentType.value.trim(),
-            size: form.size.value
+            size: form.size.value,
+            lowStockThreshold: 50,
+            reorderLevel: 100
         };
 
-        // First, add the garment
         fetch('/api/garments/new', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -436,13 +644,13 @@
             .then(res => res.json())
             .then(resp => {
                 if (resp.success) {
-                    // If initial stock is provided, create an initial movement
-                    if (initialStock && initialStock > 0 && initialFabricId) {
-                        return addInitialGarmentStock(garmentId, initialFabricId, initialStock);
+                    if (initialStock > 0 && initialFabricId) {
+                        return addInitialStock(garmentId, initialFabricId, initialStock);
                     } else {
                         showNotification('Garment type added successfully!', 'success');
                         closeGarmentModalFn();
                         loadGarments();
+                        loadStats();
                         return Promise.resolve();
                     }
                 } else {
@@ -456,9 +664,8 @@
             });
     }
 
-    // Add initial garment stock movement
-    function addInitialGarmentStock(garmentId, fabricId, quantity) {
-        const movementId = 'GMI' + String(Math.floor(Math.random() * 1000)).padStart(3, '0');
+    function addInitialStock(garmentId, fabricId, quantity) {
+        const movementId = 'GMI' + String(Math.floor(Math.random() * 10000)).padStart(3, '0');
 
         const movementData = {
             movementId: movementId,
@@ -476,64 +683,49 @@
             .then(res => res.json())
             .then(resp => {
                 if (resp.success) {
-                    showNotification(`Garment added with initial stock of ${quantity} pieces!`, 'success');
+                    showNotification(`Garment added with initial stock of ${quantity}pcs!`, 'success');
                 } else {
                     showNotification('Garment added but initial stock failed: ' + resp.message, 'warning');
                 }
                 closeGarmentModalFn();
                 loadGarments();
                 loadMovements();
+                loadStats();
             })
             .catch(err => {
                 console.error(err);
                 showNotification('Garment added but initial stock failed!', 'warning');
                 closeGarmentModalFn();
                 loadGarments();
+                loadStats();
             });
     }
 
-    // Generate next movement ID
-    function generateMovementId() {
-        if (movementsList.length === 0) return 'GMI001';
-
-        const lastId = movementsList
-            .map(m => m.movementId)
-            .sort()
-            .pop();
-
-        const num = parseInt(lastId.substring(3)) + 1;
-        return 'GMI' + String(num).padStart(3, '0');
-    }
-
-    // Add movement
-    function handleMovementSubmit(e) {
+    function handleEditGarmentSubmit(e) {
         e.preventDefault();
         const form = e.target;
-
-        const movementId = generateMovementId();
+        const garmentId = form.garmentId.value;
 
         const data = {
-            movementId: movementId,
-            garmentId: form.garmentId.value,
-            fabricId: form.fabricId.value,
-            status: form.status.value,
-            quantity: parseInt(form.quantity.value)
+            garmentType: form.garmentType.value.trim(),
+            size: form.size.value,
+            lowStockThreshold: 50,
+            reorderLevel: 100
         };
 
-        fetch('/api/garment-movements', {
-            method: 'POST',
+        fetch(`/api/garments/${garmentId}`, {
+            method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         })
             .then(res => res.json())
             .then(resp => {
                 if (resp.success) {
-                    showNotification(`Movement ${movementId} recorded successfully!`, 'success');
-                    closeMovementModalFn();
-                    loadMovements();
+                    showNotification('Garment updated successfully!', 'success');
+                    closeEditGarmentModalFn();
                     loadGarments();
                 } else {
-                    showNotification(resp.message || 'Error recording movement', 'error');
+                    showNotification(resp.message || 'Error updating garment', 'error');
                 }
             })
             .catch(err => {
@@ -542,7 +734,58 @@
             });
     }
 
-    // Load movements
+    function generateMovementId() {
+        if (movementsList.length === 0) return 'GMI001';
+        const lastId = movementsList.map(m => m.movementId).sort().pop();
+        const num = parseInt(lastId.substring(3)) + 1;
+        return 'GMI' + String(num).padStart(3, '0');
+    }
+
+    function handleMovementSubmit(e) {
+        e.preventDefault();
+        const form = e.target;
+
+        const movementId = generateMovementId();
+
+        // Get current date in YYYY-MM-DD format
+        const today = new Date();
+        const movementDate = today.toISOString().split('T')[0];
+
+        const data = {
+            movementId: movementId,
+            garmentId: form.garmentId.value,
+            fabricId: form.fabricId.value,
+            status: form.status.value,
+            movementDate: movementDate,  // Add the movement date
+            quantity: parseInt(form.quantity.value)
+        };
+
+        console.log('Submitting garment movement:', data); // Debug log
+
+        fetch('/api/garment-movements', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+            .then(res => res.json())
+            .then(resp => {
+                console.log('Response:', resp); // Debug log
+                if (resp.success) {
+                    showNotification(`Movement ${movementId} recorded successfully!`, 'success');
+                    closeMovementModalFn();
+                    loadMovements();
+                    loadGarments();
+                    loadStats();
+                } else {
+                    showNotification(resp.message || 'Error recording movement', 'error');
+                }
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                showNotification('Server error!', 'error');
+            });
+    }
+
     function loadMovements() {
         fetch('/api/garment-movements')
             .then(res => res.json())
@@ -557,7 +800,6 @@
             });
     }
 
-    // Display movements
     function displayMovements() {
         const tbody = document.getElementById('movementTableBody');
         tbody.innerHTML = '';
@@ -575,7 +817,7 @@
                     <td>${m.movementDate}</td>
                     <td>${m.quantity}</td>
                     <td>${m.totalQuantity}</td>
-                    <td>
+                    <td class="action-buttons-table">
                         <button class="btn delete btn-delete-movement" data-id="${m.movementId}">
                             <i class="fas fa-trash"></i> Delete
                         </button>
@@ -588,7 +830,6 @@
         }
     }
 
-    // Load fabrics for dropdown
     function loadFabricsForDropdown() {
         fetch('/api/fabrics/all')
             .then(res => res.json())
@@ -601,13 +842,11 @@
 
                 if (data && data.length > 0) {
                     data.forEach(f => {
-                        // For movement modal
                         const option = document.createElement('option');
                         option.value = f.fabricId;
                         option.textContent = `${f.fabricId} - ${f.fabricType} (${f.color}) - ${f.currentStock}m`;
                         select.appendChild(option);
 
-                        // For garment add modal (initial stock)
                         const option2 = document.createElement('option');
                         option2.value = f.fabricId;
                         option2.textContent = `${f.fabricId} - ${f.fabricType} (${f.color}) - ${f.currentStock}m`;
@@ -618,13 +857,24 @@
             .catch(err => console.error('Error loading fabrics:', err));
     }
 
-    // Handle delete actions
-    function handleDeleteActions(e) {
-        const garmentBtn = e.target.closest('.btn-delete-garment');
-        const movementBtn = e.target.closest('.btn-delete-movement');
+    function handleActions(e) {
+        const editBtn = e.target.closest('.btn-edit-garment');
+        const deleteGarmentBtn = e.target.closest('.btn-delete-garment');
+        const deleteMovementBtn = e.target.closest('.btn-delete-movement');
 
-        if (garmentBtn) {
-            const id = garmentBtn.dataset.id;
+        if (editBtn) {
+            const id = editBtn.dataset.id;
+            const type = editBtn.dataset.type;
+            const size = editBtn.dataset.size;
+
+            document.getElementById('editGarmentId').value = id;
+            document.getElementById('editGarmentType').value = type;
+            document.getElementById('editGarmentSize').value = size;
+            document.getElementById('editGarmentModal').style.display = 'block';
+        }
+
+        if (deleteGarmentBtn) {
+            const id = deleteGarmentBtn.dataset.id;
             if (confirm('Delete this garment? This will also delete all its movements.')) {
                 fetch(`/api/garments/${id}`, { method: 'DELETE' })
                     .then(res => res.json())
@@ -633,6 +883,7 @@
                             showNotification('Garment deleted', 'success');
                             loadGarments();
                             loadMovements();
+                            loadStats();
                         } else {
                             showNotification(resp.message, 'error');
                         }
@@ -644,8 +895,8 @@
             }
         }
 
-        if (movementBtn) {
-            const id = movementBtn.dataset.id;
+        if (deleteMovementBtn) {
+            const id = deleteMovementBtn.dataset.id;
             if (confirm('Delete this movement? This will affect stock calculations.')) {
                 fetch(`/api/garment-movements/${id}`, { method: 'DELETE' })
                     .then(res => res.json())
@@ -654,6 +905,7 @@
                             showNotification('Movement deleted', 'success');
                             loadMovements();
                             loadGarments();
+                            loadStats();
                         } else {
                             showNotification(resp.message, 'error');
                         }
@@ -666,28 +918,16 @@
         }
     }
 
-    // Filters
-    function applyFilters() {
-        const typeFilter = document.getElementById('filterSelect').value;
-        const sizeFilterValue = document.getElementById('sizeFilter').value;
-        const statusFilterValue = document.getElementById('statusFilter').value;
-
+    function handleFilter() {
+        const filter = document.getElementById('filterSelect').value;
         document.querySelectorAll('#movementTableBody tr').forEach(row => {
             if (row.cells.length > 1) {
                 const type = row.cells[2].textContent;
-                const size = row.cells[3].textContent;
-                const status = row.cells[5].textContent.includes('In') ? 'In' : 'Shipped';
-
-                const typeMatch = !typeFilter || type === typeFilter;
-                const sizeMatch = !sizeFilterValue || size === sizeFilterValue;
-                const statusMatch = !statusFilterValue || status === statusFilterValue;
-
-                row.style.display = (typeMatch && sizeMatch && statusMatch) ? '' : 'none';
+                row.style.display = (filter === '' || type === filter) ? '' : 'none';
             }
         });
     }
 
-    // Notification
     function showNotification(msg, type = 'info') {
         document.querySelector('.notification')?.remove();
         const n = document.createElement('div');

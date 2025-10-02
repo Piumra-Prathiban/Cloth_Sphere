@@ -9,16 +9,16 @@ import java.util.List;
 @Repository
 public interface FabricRepository extends JpaRepository<Fabric, String> {
 
-    // Find fabric by type
+    // Find fabrics by type
     List<Fabric> findByFabricType(String fabricType);
 
-    // Find fabric by color
+    // Find fabrics by color
     List<Fabric> findByColor(String color);
 
-    // Find fabric by type and color
-    Fabric findByFabricTypeAndColor(String fabricType, String color);
+    // Find fabrics by type and color (returns LIST now, not single item)
+    List<Fabric> findByFabricTypeAndColor(String fabricType, String color);
 
-    // Check if fabric exists
+    // Check if fabric ID exists
     boolean existsByFabricId(String fabricId);
 
     // Get all distinct fabric types

@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 public class FabricService {
@@ -23,12 +22,17 @@ public class FabricService {
 
     // ========== FABRIC OPERATIONS ==========
 
-    // Add new fabric type
+    // Add new fabric type - ONLY CHECK FABRIC ID, NOT TYPE/COLOR COMBINATION
     @Transactional
     public Fabric addFabric(Fabric fabric) {
+        // Only check if Fabric ID already exists
         if (fabricRepository.existsByFabricId(fabric.getFabricId())) {
             throw new RuntimeException("Fabric ID already exists: " + fabric.getFabricId());
         }
+
+        // REMOVED: duplicate type/color check
+        // We allow FAB001 Blue Cotton and FAB002 Blue Cotton
+
         return fabricRepository.save(fabric);
     }
 
@@ -49,6 +53,12 @@ public class FabricService {
         Fabric existing = getFabricById(fabricId);
         existing.setFabricType(fabric.getFabricType());
         existing.setColor(fabric.getColor());
+        if (fabric.getLowStockThreshold() != null) {
+            existing.setLowStockThreshold(fabric.getLowStockThreshold());
+        }
+        if (fabric.getReorderLevel() != null) {
+            existing.setReorderLevel(fabric.getReorderLevel());
+        }
         return fabricRepository.save(existing);
     }
 
@@ -144,7 +154,8 @@ public class FabricService {
         return summary;
     }
 
-    // Get low stock alerts (dynamic threshold per fabric)
+    // Get low stock alerts - ONLY for fabrics with existing movements
+    // NOT for newly added fabrics with 0 stock
     public List<Map<String, Object>> getLowStockAlerts() {
         List<Fabric> allFabrics = fabricRepository.findAll();
         List<Map<String, Object>> lowStockItems = new ArrayList<>();
@@ -153,7 +164,11 @@ public class FabricService {
             double total = getCurrentTotalQuantity(fabric.getFabricId());
             double threshold = fabric.getLowStockThreshold() != null ? fabric.getLowStockThreshold() : 50.0;
 
-            if (total < threshold && total >= 0) {
+            // ONLY alert if fabric has movements AND is below threshold
+            // Skip newly added fabrics with 0 stock (no movements)
+            boolean hasMovements = !movementRepository.findByFabricIdOrderByMovementDateDesc(fabric.getFabricId()).isEmpty();
+
+            if (hasMovements && total > 0 && total < threshold) {
                 Map<String, Object> alert = new HashMap<>();
                 alert.put("fabricId", fabric.getFabricId());
                 alert.put("type", fabric.getFabricType());
@@ -162,7 +177,7 @@ public class FabricService {
                 alert.put("threshold", threshold);
                 alert.put("shortage", threshold - total);
                 alert.put("reorderLevel", fabric.getReorderLevel() != null ? fabric.getReorderLevel() : 100.0);
-                alert.put("criticalLevel", total < (threshold * 0.5)); // Critical if below 50% of threshold
+                alert.put("criticalLevel", total < (threshold * 0.5));
                 lowStockItems.add(alert);
             }
         }
@@ -172,11 +187,11 @@ public class FabricService {
             boolean aCritical = (boolean) a.get("criticalLevel");
             boolean bCritical = (boolean) b.get("criticalLevel");
             if (aCritical != bCritical) {
-                return bCritical ? 1 : -1; // Critical items first
+                return bCritical ? 1 : -1;
             }
             double aShortage = (double) a.get("shortage");
             double bShortage = (double) b.get("shortage");
-            return Double.compare(bShortage, aShortage); // Higher shortage first
+            return Double.compare(bShortage, aShortage);
         });
 
         return lowStockItems;
@@ -188,25 +203,25 @@ public class FabricService {
         LocalDate today = LocalDate.now();
 
         // Total fabric types
-        stats.put("totalFabricTypes", fabricRepository.findDistinctFabricTypes().size());
+        stats.put("totalFabricTypes", fabricRepository.count());
 
         // Total meters (sum all current totals)
         double totalMeters = fabricRepository.findAll().stream()
                 .mapToDouble(f -> getCurrentTotalQuantity(f.getFabricId()))
                 .sum();
-        stats.put("totalMeters", totalMeters);
+        stats.put("totalMeters", Math.round(totalMeters * 100.0) / 100.0);
 
         // Stock in today
         double stockInToday = movementRepository.findStockInToday(today).stream()
                 .mapToDouble(FabricMovement::getQuantity)
                 .sum();
-        stats.put("stockInToday", stockInToday);
+        stats.put("stockInToday", Math.round(stockInToday * 100.0) / 100.0);
 
         // Stock out today
         double stockOutToday = movementRepository.findStockOutToday(today).stream()
                 .mapToDouble(FabricMovement::getQuantity)
                 .sum();
-        stats.put("stockOutToday", stockOutToday);
+        stats.put("stockOutToday", Math.round(stockOutToday * 100.0) / 100.0);
 
         // Low stock count
         stats.put("lowStockCount", getLowStockAlerts().size());
@@ -223,7 +238,7 @@ public class FabricService {
         List<Double> quantities = new ArrayList<>();
 
         for (Fabric fabric : allFabrics) {
-            labels.add(fabric.getFabricType() + " - " + fabric.getColor());
+            labels.add(fabric.getFabricId() + " - " + fabric.getFabricType() + " (" + fabric.getColor() + ")");
             quantities.add(getCurrentTotalQuantity(fabric.getFabricId()));
         }
 
@@ -281,7 +296,7 @@ public class FabricService {
                 double stock = getCurrentTotalQuantity(fabric.getFabricId());
                 totalStock += stock;
                 double threshold = fabric.getLowStockThreshold() != null ? fabric.getLowStockThreshold() : 50.0;
-                if (stock < threshold) {
+                if (stock < threshold && stock > 0) {
                     lowStockCount++;
                 }
             }

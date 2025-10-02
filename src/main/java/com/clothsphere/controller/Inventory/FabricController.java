@@ -2,34 +2,39 @@ package com.clothsphere.controller.Inventory;
 
 import com.clothsphere.model.Inventory.Fabric;
 import com.clothsphere.service.Inventory.FabricService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
 import com.clothsphere.model.Inventory.FabricMovement;
 
-
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+
 import jakarta.validation.Valid;
 import java.util.*;
 
-@RestController
-@RequestMapping("/api")
+//Fabric and FabricMovement classes are models.
+// Their properties (like fabricId, color, quantity)
+// are encapsulated inside objects.
+//Encapsulation hides the internal details (like SQL queries) and only exposes controlled methods.
+
+//The controller doesn’t know how data is stored or calculated.
+// It only calls fabricService.getCurrentTotalQuantity(fabricId).- Abstraction
+
+@RestController  //returns data to the frontend
+@RequestMapping("/api") //sets the base URL path
 @CrossOrigin(origins = "*")
 public class FabricController {
 
     @Autowired
-    private FabricService fabricService;
-
-    // ========== FABRIC ENDPOINTS ==========
+    private FabricService fabricService; //fabricService = new FabricService();
 
     @PostMapping("/fabrics/new")
-    public ResponseEntity<Map<String, Object>> addFabric(@Valid @RequestBody Fabric fabric) {
+    public ResponseEntity<Map<String, Object>> addFabric(@Valid @RequestBody Fabric fabric) { //ensures validation rules
         Map<String, Object> response = new HashMap<>();
         try {
             Fabric savedFabric = fabricService.addFabric(fabric);
-            response.put("success", true);
-            response.put("message", "Fabric added successfully");
+            response.put("success", true); //depends on validation result in service.
+            response.put("message", "Fabric added successfully"); //Human-readable feedback for the user.
             response.put("data", savedFabric);
             return ResponseEntity.ok(response);
         } catch (Exception e) {

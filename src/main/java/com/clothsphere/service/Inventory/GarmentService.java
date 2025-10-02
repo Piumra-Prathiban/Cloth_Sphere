@@ -35,6 +35,7 @@ public class GarmentService {
         if (garmentRepository.existsByGarmentId(garment.getGarmentId())) {
             throw new RuntimeException("Garment ID already exists: " + garment.getGarmentId());
         }
+        // REMOVED: Check for duplicate type+size combination - Allow different IDs with same type+size
         return garmentRepository.save(garment);
     }
 
@@ -55,6 +56,8 @@ public class GarmentService {
         Garment existing = getGarmentById(garmentId);
         existing.setGarmentType(garment.getGarmentType());
         existing.setSize(garment.getSize());
+        existing.setLowStockThreshold(garment.getLowStockThreshold());
+        existing.setReorderLevel(garment.getReorderLevel());
         return garmentRepository.save(existing);
     }
 
@@ -153,20 +156,25 @@ public class GarmentService {
         return summary;
     }
 
-    // Get low stock alerts (dynamic threshold per garment) - includes size, color, fabric type, garment type
+    // Get low stock alerts (dynamic threshold per garment) - FIXED: Exclude garments with movements
     public List<Map<String, Object>> getLowStockAlerts() {
         List<Garment> allGarments = garmentRepository.findAll();
         List<Map<String, Object>> lowStockItems = new ArrayList<>();
 
         for (Garment garment : allGarments) {
+            // Check if garment has any movements
+            List<GarmentMovement> movements = movementRepository.findLatestMovementByGarmentId(garment.getGarmentId());
+
+            // Skip garments with no movements (newly created)
+            if (movements.isEmpty()) {
+                continue;
+            }
+
             int total = getCurrentTotalQuantity(garment.getGarmentId());
             int threshold = garment.getLowStockThreshold() != null ? garment.getLowStockThreshold() : 50;
 
             if (total < threshold && total >= 0) {
-                // Get the latest movement to find fabric details
-                List<GarmentMovement> movements = movementRepository.findLatestMovementByGarmentId(garment.getGarmentId());
-
-                String fabricId = movements.isEmpty() ? "N/A" : movements.get(0).getFabricId();
+                String fabricId = movements.get(0).getFabricId();
                 String fabricType = "N/A";
                 String color = "N/A";
 
@@ -192,7 +200,7 @@ public class GarmentService {
                 alert.put("threshold", threshold);
                 alert.put("shortage", threshold - total);
                 alert.put("reorderLevel", garment.getReorderLevel() != null ? garment.getReorderLevel() : 100);
-                alert.put("criticalLevel", total < (threshold * 0.5)); // Critical if below 50% of threshold
+                alert.put("criticalLevel", total < (threshold * 0.5));
                 alert.put("description", garment.getSize() + " size " + color + " " + fabricType + " " + garment.getGarmentType());
                 lowStockItems.add(alert);
             }
@@ -203,11 +211,11 @@ public class GarmentService {
             boolean aCritical = (boolean) a.get("criticalLevel");
             boolean bCritical = (boolean) b.get("criticalLevel");
             if (aCritical != bCritical) {
-                return bCritical ? 1 : -1; // Critical items first
+                return bCritical ? 1 : -1;
             }
             int aShortage = (int) a.get("shortage");
             int bShortage = (int) b.get("shortage");
-            return Integer.compare(bShortage, aShortage); // Higher shortage first
+            return Integer.compare(bShortage, aShortage);
         });
 
         return lowStockItems;

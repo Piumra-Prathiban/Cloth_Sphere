@@ -22,10 +22,10 @@ public class Fabric {
     private String color;
 
     @Column(name = "low_stock_threshold")
-    private Double lowStockThreshold = 50.0; // Default threshold: 50 meters
+    private Double lowStockThreshold = 50.0;
 
     @Column(name = "reorder_level")
-    private Double reorderLevel = 100.0; // Default reorder level: 100 meters
+    private Double reorderLevel = 100.0;
 
     // Constructors
     public Fabric() {}
