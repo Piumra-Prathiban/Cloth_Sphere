@@ -110,7 +110,7 @@ public class LeaveController {
 
     // API to cancel leave request
     @DeleteMapping("/cancel/{leaveId}")
-    public ResponseEntity<?> cancelLeaveRequest(@PathVariable Long leaveId,
+    public ResponseEntity<?> cancelLeaveRequest(@PathVariable String leaveId,
                                                 HttpSession session) {
         try {
             String employeeId = getEmployeeIdFromSession(session);

@@ -40,7 +40,7 @@ public class HRLeaveController {
 
     // Update leave status (Approve/Reject)
     @PutMapping("/{leaveId}/status")
-    public ResponseEntity<?> updateLeaveStatus(@PathVariable Long leaveId,
+    public ResponseEntity<?> updateLeaveStatus(@PathVariable String leaveId,
                                                @RequestParam String status,
                                                @RequestParam(required = false) String comments) {
         try {

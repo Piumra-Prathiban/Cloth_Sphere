@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
-public interface LeaveRepository extends JpaRepository<Leave, Long> {
+public interface LeaveRepository extends JpaRepository<Leave, String> {
 
     // Find all leave requests by employee
     List<Leave> findByEmployeeOrderByRequestDateDesc(Employee employee);
@@ -50,12 +50,13 @@ public interface LeaveRepository extends JpaRepository<Leave, Long> {
 
     // MANUAL QUERY METHODS
 
-    // Manual INSERT query
+    // Updated manual INSERT query to include leave_id
     @Modifying
-    @Query(value = "INSERT INTO leave_requests (reason, start_date, end_date, status, request_date, employee_id, comments) " +
-            "VALUES (:reason, :startDate, :endDate, :status, :requestDate, :employeeId, :comments)",
+    @Query(value = "INSERT INTO leave_requests (leave_id, reason, start_date, end_date, status, request_date, employee_id, comments) " +
+            "VALUES (:leaveId, :reason, :startDate, :endDate, :status, :requestDate, :employeeId, :comments)",
             nativeQuery = true)
-    int insertLeave(@Param("reason") String reason,
+    int insertLeave(@Param("leaveId") String leaveId,
+                    @Param("reason") String reason,
                     @Param("startDate") LocalDate startDate,
                     @Param("endDate") LocalDate endDate,
                     @Param("status") String status,
@@ -63,10 +64,16 @@ public interface LeaveRepository extends JpaRepository<Leave, Long> {
                     @Param("employeeId") String employeeId,
                     @Param("comments") String comments);
 
+    // Add method to get next leave ID
+    @Query(value = "SELECT COALESCE(MAX(CAST(SUBSTRING(leave_id, 4, LEN(leave_id)) AS INT)), 0) + 1 FROM leave_requests WHERE leave_id LIKE 'lev%'",
+            nativeQuery = true)
+    Long getNextLeaveIdNumber();
+
+
     // Manual UPDATE query for status and comments
     @Modifying
     @Query("UPDATE Leave l SET l.status = :status, l.comments = :comments, l.actionDate = :actionDate WHERE l.leaveId = :leaveId")
-    int updateLeaveStatus(@Param("leaveId") Long leaveId,
+    int updateLeaveStatus(@Param("leaveId") String  leaveId,
                           @Param("status") String status,
                           @Param("comments") String comments,
                           @Param("actionDate") LocalDateTime actionDate);
@@ -75,7 +82,7 @@ public interface LeaveRepository extends JpaRepository<Leave, Long> {
     @Modifying
     @Query("UPDATE Leave l SET l.reason = :reason, l.startDate = :startDate, l.endDate = :endDate, " +
             "l.status = :status, l.comments = :comments WHERE l.leaveId = :leaveId")
-    int updateLeave(@Param("leaveId") Long leaveId,
+    int updateLeave(@Param("leaveId") String  leaveId,
                     @Param("reason") String reason,
                     @Param("startDate") LocalDate startDate,
                     @Param("endDate") LocalDate endDate,
@@ -85,7 +92,7 @@ public interface LeaveRepository extends JpaRepository<Leave, Long> {
     // Manual DELETE query by ID
     @Modifying
     @Query("DELETE FROM Leave l WHERE l.leaveId = :leaveId")
-    int deleteLeaveById(@Param("leaveId") Long leaveId);
+    int deleteLeaveById(@Param("leaveId") String  leaveId);
 
     // Manual DELETE query by employee ID and status
     @Modifying
@@ -101,6 +108,6 @@ public interface LeaveRepository extends JpaRepository<Leave, Long> {
     // Manual query to update action date
     @Modifying
     @Query("UPDATE Leave l SET l.actionDate = :actionDate WHERE l.leaveId = :leaveId")
-    int updateActionDate(@Param("leaveId") Long leaveId,
+    int updateActionDate(@Param("leaveId") String  leaveId,
                          @Param("actionDate") LocalDateTime actionDate);
 }

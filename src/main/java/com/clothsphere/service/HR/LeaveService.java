@@ -48,8 +48,13 @@ public class LeaveService {
             throw new RuntimeException("You already have a leave request for the selected dates");
         }
 
-        // Using manual INSERT query
+        // Generate leave ID manually
+        Long nextIdNumber = leaveRepository.getNextLeaveIdNumber();
+        String leaveId = "lev" + nextIdNumber;
+
+        // Using updated manual INSERT query with leave_id
         int result = leaveRepository.insertLeave(
+                leaveId,
                 leave.getReason(),
                 leave.getStartDate(),
                 leave.getEndDate(),
@@ -60,9 +65,12 @@ public class LeaveService {
         );
 
         if (result > 0) {
-            // To get the saved entity, we need to find the latest leave for this employee
-            List<Leave> recentLeaves = leaveRepository.findByEmployeeOrderByRequestDateDesc(employee);
-            return recentLeaves.isEmpty() ? leave : recentLeaves.get(0);
+            // Set the generated ID and return the leave object
+            leave.setLeaveId(leaveId);
+            leave.setEmployee(employee);
+            leave.setStatus("PENDING");
+            leave.setRequestDate(LocalDateTime.now());
+            return leave;
         } else {
             throw new RuntimeException("Failed to save leave request");
         }
@@ -75,13 +83,13 @@ public class LeaveService {
     }
 
     // Get leave by ID
-    public Optional<Leave> getLeaveById(Long leaveId) {
+    public Optional<Leave> getLeaveById(String leaveId) {
         return leaveRepository.findById(leaveId);
     }
 
     // Cancel leave request using manual DELETE query
     @Transactional
-    public boolean cancelLeaveRequest(Long leaveId, String employeeId) {
+    public boolean cancelLeaveRequest(String leaveId, String employeeId) {
         Optional<Leave> leaveOpt = leaveRepository.findById(leaveId);
         if (leaveOpt.isPresent()) {
             Leave leave = leaveOpt.get();
@@ -134,7 +142,7 @@ public class LeaveService {
 
     // Update leave status using manual UPDATE query
     @Transactional
-    public boolean updateLeaveStatus(Long leaveId, String status, String comments) {
+    public boolean updateLeaveStatus(String leaveId, String status, String comments) {
         Optional<Leave> leaveOpt = leaveRepository.findById(leaveId);
         if (leaveOpt.isPresent()) {
             Leave leave = leaveOpt.get();

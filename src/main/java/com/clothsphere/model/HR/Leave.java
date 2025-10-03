@@ -2,15 +2,20 @@ package com.clothsphere.model.HR;
 
 import com.clothsphere.model.HR.Employee;
 import jakarta.persistence.*;
+import org.hibernate.annotations.GenericGenerator;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "leave_requests")
 public class Leave {
+
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long leaveId;
+    @GeneratedValue(generator = "leave_id_generator")
+    @GenericGenerator(name = "leave_id_generator",
+            type = com.clothsphere.util.LeaveIdGenerator.class)
+    private String leaveId;
 
     @Column(nullable = false)
     private String reason;
@@ -48,8 +53,8 @@ public class Leave {
     }
 
     // Getters and Setters
-    public Long getLeaveId() { return leaveId; }
-    public void setLeaveId(Long leaveId) { this.leaveId = leaveId; }
+    public String getLeaveId() { return leaveId; } // Changed return type
+    public void setLeaveId(String leaveId) { this.leaveId = leaveId; } // Changed parameter type
 
     public String getReason() { return reason; }
     public void setReason(String reason) { this.reason = reason; }

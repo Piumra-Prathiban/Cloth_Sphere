@@ -1041,6 +1041,7 @@ function filterLeaves() {
 }
 
 // Refresh leave table - SINGLE VERSION
+// Refresh leave table - FIXED VERSION
 function refreshLeaveTable() {
     const tbody = document.querySelector('#leaveTable tbody');
     tbody.innerHTML = '';
@@ -1073,14 +1074,14 @@ function refreshLeaveTable() {
             <td>
                 <div class="action-buttons">
                     ${cleanStatus === 'PENDING' ? `
-                        <button class="btn btn-success btn-sm" onclick="approveLeave(${leave.leaveId})" title="Approve Leave">
+                        <button class="btn btn-success btn-sm" onclick="approveLeave('${leave.leaveId}')" title="Approve Leave">
                             <i class="fas fa-check"></i> Approve
                         </button>
-                        <button class="btn btn-danger btn-sm" onclick="rejectLeave(${leave.leaveId})" title="Reject Leave">
+                        <button class="btn btn-danger btn-sm" onclick="rejectLeave('${leave.leaveId}')" title="Reject Leave">
                             <i class="fas fa-times"></i> Reject
                         </button>
                     ` : `
-                        <button class="btn btn-info btn-sm" onclick="viewLeaveDetails(${leave.leaveId})" title="View Details">
+                        <button class="btn btn-info btn-sm" onclick="viewLeaveDetails('${leave.leaveId}')" title="View Details">
                             <i class="fas fa-eye"></i> View
                         </button>
                     `}
@@ -1233,6 +1234,7 @@ async function updateLeaveStatus(leaveId, status, comments = '') {
 }
 
 // View leave details in modal
+// View leave details in modal - FIXED
 async function viewLeaveDetails(leaveId) {
     const leave = allLeaves.find(l => l.leaveId === leaveId);
 
