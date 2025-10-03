@@ -35,4 +35,15 @@ public interface LeaveRepository extends JpaRepository<Leave, Long> {
     // Find leaves within a date range for an employee
     List<Leave> findByEmployeeAndStartDateBetweenOrEndDateBetweenOrderByStartDate(
             Employee employee, LocalDate start1, LocalDate end1, LocalDate start2, LocalDate end2);
+    // Add these methods to your existing LeaveRepository interface
+
+    // Find all leaves ordered by request date
+    List<Leave> findAllByOrderByRequestDateDesc();
+
+    // Count leaves by status
+    long countByStatus(String status);
+
+    // Find leaves by employee ID (using join)
+    @Query("SELECT l FROM Leave l WHERE l.employee.id = :employeeId ORDER BY l.requestDate DESC")
+    List<Leave> findByEmployeeId(@Param("employeeId") String employeeId);
 }

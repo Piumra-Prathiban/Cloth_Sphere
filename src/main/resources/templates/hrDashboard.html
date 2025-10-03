@@ -25,8 +25,9 @@
       <i class="fas fa-building"></i> Departments</a></li>
     <li><a href="#" onclick="showSection('attendance')" class="nav-link">
       <i class="fas fa-calendar-check"></i> Track Attendance</a></li>
-    <li><a href="#" onclick="showSection('leaves')" class="nav-link">
-      <i class="fas fa-clipboard-check"></i> Leave Approval</a></li>
+    <li><a href="#" onclick="showSection('leaveManagement')" class="nav-link">
+      <i class="fas fa-clipboard-check"></i> Leave Management
+    </a></li>
     <li>
       <a href="/workload" class="nav-link" onclick="navigateToWorkload(event)"> <i class="fas fa-user-tie"></i> Workload Assignment
       </a>
@@ -239,10 +240,44 @@
     </div>
   </div>
 
-  <div id="leaves" class="content-section">
+  <!-- Add this content section -->
+  <div id="leaveManagement" class="content-section">
     <div class="card">
-      <h3>Leave Approval</h3>
-      <p>Leave approval functionality will be implemented here.</p>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3>Leave Request Management</h3>
+        <div class="filters">
+          <select id="statusFilter" onchange="filterLeaves()">
+            <option value="ALL">All Status</option>
+            <option value="PENDING">Pending</option>
+            <option value="APPROVED">Approved</option>
+            <option value="REJECTED">Rejected</option>
+          </select>
+          <input type="text" id="employeeFilter" placeholder="Filter by Employee ID" onkeyup="filterLeaves()">
+        </div>
+      </div>
+
+      <!-- Leave Requests Table -->
+      <div class="table-container">
+        <table id="leaveTable">
+          <thead>
+          <tr>
+            <th>Leave ID</th>
+            <th>Employee ID</th>
+            <th>Employee Name</th>
+            <th>Reason</th>
+            <th>Start Date</th>
+            <th>End Date</th>
+            <th>Total Days</th>
+            <th>Status</th>
+            <th>Request Date</th>
+            <th>Actions</th>
+          </tr>
+          </thead>
+          <tbody>
+          <!-- Leave data will be loaded dynamically -->
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 

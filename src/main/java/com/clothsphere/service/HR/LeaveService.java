@@ -8,7 +8,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -108,5 +110,57 @@ public class LeaveService {
         public long getPending() { return pending; }
         public long getApproved() { return approved; }
         public long getRejected() { return rejected; }
+    }
+    // Add these methods to your existing LeaveService class
+
+    // Get all leave requests for HR
+    public List<Leave> getAllLeaveRequests() {
+        return leaveRepository.findAllByOrderByRequestDateDesc();
+    }
+
+    // Update leave status
+    public boolean updateLeaveStatus(Long leaveId, String status, String comments) {
+        Optional<Leave> leaveOpt = leaveRepository.findById(leaveId);
+        if (leaveOpt.isPresent()) {
+            Leave leave = leaveOpt.get();
+
+            // Validate status
+            if (!List.of("APPROVED", "REJECTED", "PENDING").contains(status)) {
+                throw new RuntimeException("Invalid status: " + status);
+            }
+
+            leave.setStatus(status);
+            leave.setActionDate(LocalDateTime.now());
+
+            if (comments != null && !comments.trim().isEmpty()) {
+                leave.setComments(comments);
+            }
+
+            leaveRepository.save(leave);
+            return true;
+        }
+        return false;
+    }
+
+    // Get HR dashboard statistics
+    public Map<String, Long> getHRLeaveStatistics() {
+        Map<String, Long> stats = new HashMap<>();
+
+        long totalLeaves = leaveRepository.count();
+        long pendingLeaves = leaveRepository.countByStatus("PENDING");
+        long approvedLeaves = leaveRepository.countByStatus("APPROVED");
+        long rejectedLeaves = leaveRepository.countByStatus("REJECTED");
+
+        stats.put("total", totalLeaves);
+        stats.put("pending", pendingLeaves);
+        stats.put("approved", approvedLeaves);
+        stats.put("rejected", rejectedLeaves);
+
+        return stats;
+    }
+
+    // Get leaves by status
+    public List<Leave> getLeavesByStatus(String status) {
+        return leaveRepository.findByStatusOrderByRequestDateDesc(status);
     }
 }

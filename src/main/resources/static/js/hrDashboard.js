@@ -978,3 +978,222 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 1000);
 
 });
+
+// Leave Management Variables
+let allLeaves = [];
+let filteredLeaves = [];
+
+// Load all leave requests
+async function loadLeaveRequests() {
+    try {
+        console.log('Loading leave requests...');
+        const response = await fetchWithAuth('/hr/leave/requests');
+
+        if (response.ok) {
+            const result = await response.json();
+            allLeaves = result.leaves || [];
+            console.log('Leave requests loaded:', allLeaves.length);
+
+            // Apply current filters
+            filterLeaves();
+        } else {
+            console.error('Failed to load leave requests');
+            showAlert('Failed to load leave requests', 'error');
+        }
+    } catch (error) {
+        console.error('Error loading leave requests:', error);
+        showAlert('Error loading leave requests: ' + error.message, 'error');
+    }
+}
+
+// Filter leaves based on status and employee ID
+function filterLeaves() {
+    const statusFilter = document.getElementById('statusFilter').value;
+    const employeeFilter = document.getElementById('employeeFilter').value.toLowerCase();
+
+    filteredLeaves = allLeaves.filter(leave => {
+        const statusMatch = statusFilter === 'ALL' || leave.status === statusFilter;
+        const employeeMatch = !employeeFilter ||
+            (leave.employee &&
+                (leave.employee.id.toLowerCase().includes(employeeFilter) ||
+                    (leave.employee.fullName && leave.employee.fullName.toLowerCase().includes(employeeFilter))));
+
+        return statusMatch && employeeMatch;
+    });
+
+    refreshLeaveTable();
+}
+
+// Refresh leave table
+function refreshLeaveTable() {
+    const tbody = document.querySelector('#leaveTable tbody');
+    tbody.innerHTML = '';
+
+    if (filteredLeaves.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align: center;">No leave requests found</td></tr>';
+        return;
+    }
+
+    filteredLeaves.forEach(leave => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${leave.leaveId || 'N/A'}</td>
+            <td>${leave.employee ? leave.employee.id : 'N/A'}</td>
+            <td>${leave.employee ? leave.employee.fullName : 'N/A'}</td>
+            <td>${leave.reason || 'N/A'}</td>
+            <td>${leave.startDate || 'N/A'}</td>
+            <td>${leave.endDate || 'N/A'}</td>
+            <td>${calculateTotalDays(leave.startDate, leave.endDate)}</td>
+            <td>
+                <span class="status-badge status-${leave.status.toLowerCase()}">
+                    ${leave.status}
+                </span>
+            </td>
+            <td>${formatDate(leave.requestDate)}</td>
+            <td>
+                ${leave.status === 'PENDING' ? `
+                    <button class="btn btn-success btn-sm" onclick="approveLeave(${leave.leaveId})">
+                        <i class="fas fa-check"></i> Approve
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="rejectLeave(${leave.leaveId})">
+                        <i class="fas fa-times"></i> Reject
+                    </button>
+                ` : `
+                    <button class="btn btn-info btn-sm" onclick="viewLeaveDetails(${leave.leaveId})">
+                        <i class="fas fa-eye"></i> View
+                    </button>
+                `}
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// Calculate total days between start and end date
+function calculateTotalDays(startDate, endDate) {
+    if (!startDate || !endDate) return 'N/A';
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = Math.abs(end - start);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    return diffDays;
+}
+
+// Format date for display
+function formatDate(dateString) {
+    if (!dateString) return 'N/A';
+
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+    });
+}
+
+// Approve leave request
+async function approveLeave(leaveId) {
+    if (confirm('Are you sure you want to approve this leave request?')) {
+        await updateLeaveStatus(leaveId, 'APPROVED');
+    }
+}
+
+// Reject leave request
+async function rejectLeave(leaveId) {
+    const comments = prompt('Please enter reason for rejection (optional):');
+    await updateLeaveStatus(leaveId, 'REJECTED', comments);
+}
+
+// Update leave status
+async function updateLeaveStatus(leaveId, status, comments = '') {
+    try {
+        const url = `/hr/leave/${leaveId}/status?status=${status}` +
+            (comments ? `&comments=${encodeURIComponent(comments)}` : '');
+
+        const response = await fetchWithAuth(url, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showAlert(result.message, 'success');
+            await loadLeaveRequests(); // Refresh the list
+        } else {
+            showAlert(result.message, 'error');
+        }
+    } catch (error) {
+        console.error('Error updating leave status:', error);
+        showAlert('Error updating leave status: ' + error.message, 'error');
+    }
+}
+
+// View leave details
+async function viewLeaveDetails(leaveId) {
+    // Find the leave in our data
+    const leave = allLeaves.find(l => l.leaveId === leaveId);
+
+    if (leave) {
+        let details = `Leave ID: ${leave.leaveId}\n`;
+        details += `Employee: ${leave.employee ? leave.employee.fullName : 'N/A'} (${leave.employee ? leave.employee.id : 'N/A'})\n`;
+        details += `Reason: ${leave.reason}\n`;
+        details += `Period: ${leave.startDate} to ${leave.endDate}\n`;
+        details += `Total Days: ${calculateTotalDays(leave.startDate, leave.endDate)}\n`;
+        details += `Status: ${leave.status}\n`;
+        details += `Request Date: ${formatDate(leave.requestDate)}\n`;
+
+        if (leave.actionDate) {
+            details += `Action Date: ${formatDate(leave.actionDate)}\n`;
+        }
+
+        if (leave.comments) {
+            details += `Comments: ${leave.comments}\n`;
+        }
+
+        alert(details);
+    }
+}
+
+// Update the showSection function to load leaves when section is shown
+function showSection(sectionId) {
+    document.querySelectorAll('.content-section').forEach(section => {
+        section.classList.remove('active');
+    });
+    document.getElementById(sectionId).classList.add('active');
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+    });
+    event.target.classList.add('active');
+
+    // Refresh data when switching to specific sections
+    if (sectionId === 'departments') {
+        console.log('Switching to departments section, refreshing data...');
+        loadDepartments();
+    } else if (sectionId === 'employees') {
+        console.log('Switching to employees section, refreshing data...');
+        loadEmployees();
+    } else if (sectionId === 'leaveManagement') {
+        console.log('Switching to leave management section, loading leaves...');
+        loadLeaveRequests();
+    } else if (sectionId === 'workload') {
+        console.log('Switching to workload section, loading tasks...');
+        loadProductionTasks();
+    }
+}
+// Add this function to show leave statistics
+async function updateLeaveStatistics() {
+    try {
+        const response = await fetchWithAuth('/hr/leave/statistics');
+        if (response.ok) {
+            const result = await response.json();
+            const stats = result.statistics;
+
+            // You can display this in a new card or update existing elements
+            console.log('Leave Statistics:', stats);
+        }
+    } catch (error) {
+        console.error('Error loading leave statistics:', error);
+    }
+}
