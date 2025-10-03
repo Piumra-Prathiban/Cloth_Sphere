@@ -982,6 +982,8 @@ document.addEventListener('DOMContentLoaded', function() {
 // Leave Management Variables
 let allLeaves = [];
 let filteredLeaves = [];
+let currentRejectLeaveId = null;
+let currentApproveLeaveId = null;
 
 // Load all leave requests
 async function loadLeaveRequests() {
@@ -992,6 +994,20 @@ async function loadLeaveRequests() {
         if (response.ok) {
             const result = await response.json();
             allLeaves = result.leaves || [];
+
+            // Clean up status data
+            allLeaves.forEach(leave => {
+                if (leave.status) {
+                    // Clean the status string - remove any special characters
+                    leave.status = leave.status.replace(/[^a-zA-Z]/g, '').toUpperCase();
+                    if (!['PENDING', 'APPROVED', 'REJECTED'].includes(leave.status)) {
+                        leave.status = 'PENDING';
+                    }
+                } else {
+                    leave.status = 'PENDING';
+                }
+            });
+
             console.log('Leave requests loaded:', allLeaves.length);
 
             // Apply current filters
@@ -1024,7 +1040,7 @@ function filterLeaves() {
     refreshLeaveTable();
 }
 
-// Refresh leave table
+// Refresh leave table - SINGLE VERSION
 function refreshLeaveTable() {
     const tbody = document.querySelector('#leaveTable tbody');
     tbody.innerHTML = '';
@@ -1035,79 +1051,162 @@ function refreshLeaveTable() {
     }
 
     filteredLeaves.forEach(leave => {
+        // Ensure status is clean
+        const cleanStatus = leave.status || 'PENDING';
+        const statusClass = `status-${cleanStatus.toLowerCase()}`;
+
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${leave.leaveId || 'N/A'}</td>
             <td>${leave.employee ? leave.employee.id : 'N/A'}</td>
             <td>${leave.employee ? leave.employee.fullName : 'N/A'}</td>
-            <td>${leave.reason || 'N/A'}</td>
+            <td title="${leave.reason || 'N/A'}">${truncateText(leave.reason || 'N/A', 30)}</td>
             <td>${leave.startDate || 'N/A'}</td>
             <td>${leave.endDate || 'N/A'}</td>
-            <td>${calculateTotalDays(leave.startDate, leave.endDate)}</td>
-            <td>
-                <span class="status-badge status-${leave.status.toLowerCase()}">
-                    ${leave.status}
+            <td style="text-align: center;">${calculateTotalDays(leave.startDate, leave.endDate)}</td>
+            <td style="text-align: center;">
+                <span class="status-badge ${statusClass}">
+                    ${cleanStatus}
                 </span>
             </td>
             <td>${formatDate(leave.requestDate)}</td>
             <td>
-                ${leave.status === 'PENDING' ? `
-                    <button class="btn btn-success btn-sm" onclick="approveLeave(${leave.leaveId})">
-                        <i class="fas fa-check"></i> Approve
-                    </button>
-                    <button class="btn btn-danger btn-sm" onclick="rejectLeave(${leave.leaveId})">
-                        <i class="fas fa-times"></i> Reject
-                    </button>
-                ` : `
-                    <button class="btn btn-info btn-sm" onclick="viewLeaveDetails(${leave.leaveId})">
-                        <i class="fas fa-eye"></i> View
-                    </button>
-                `}
+                <div class="action-buttons">
+                    ${cleanStatus === 'PENDING' ? `
+                        <button class="btn btn-success btn-sm" onclick="approveLeave(${leave.leaveId})" title="Approve Leave">
+                            <i class="fas fa-check"></i> Approve
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="rejectLeave(${leave.leaveId})" title="Reject Leave">
+                            <i class="fas fa-times"></i> Reject
+                        </button>
+                    ` : `
+                        <button class="btn btn-info btn-sm" onclick="viewLeaveDetails(${leave.leaveId})" title="View Details">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                    `}
+                </div>
             </td>
         `;
         tbody.appendChild(row);
     });
 }
 
+// Helper function to truncate long text
+function truncateText(text, maxLength) {
+    if (!text) return 'N/A';
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
+}
+
 // Calculate total days between start and end date
 function calculateTotalDays(startDate, endDate) {
     if (!startDate || !endDate) return 'N/A';
 
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const diffTime = Math.abs(end - start);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    return diffDays;
+    try {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const diffTime = Math.abs(end - start);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        return diffDays;
+    } catch (error) {
+        return 'N/A';
+    }
 }
 
 // Format date for display
 function formatDate(dateString) {
     if (!dateString) return 'N/A';
 
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-    });
-}
-
-// Approve leave request
-async function approveLeave(leaveId) {
-    if (confirm('Are you sure you want to approve this leave request?')) {
-        await updateLeaveStatus(leaveId, 'APPROVED');
+    try {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    } catch (error) {
+        return 'N/A';
     }
 }
 
-// Reject leave request
+// Approve leave request
+// Approve leave request - opens modal (REPLACE the existing approveLeave function)
+async function approveLeave(leaveId) {
+    currentApproveLeaveId = leaveId;
+
+    // Get leave details
+    const leave = allLeaves.find(l => l.leaveId === leaveId);
+    if (leave) {
+        // Populate leave details in approve modal
+        const detailsContainer = document.getElementById('approveLeaveDetails');
+        detailsContainer.innerHTML = `
+            <div style="font-size: 14px;">
+                <strong>Leave Request Details:</strong><br>
+                <div style="margin-top: 8px;">
+                    <strong>Employee:</strong> ${leave.employee ? leave.employee.fullName : 'N/A'} (${leave.employee ? leave.employee.id : 'N/A'})<br>
+                    <strong>Period:</strong> ${leave.startDate} to ${leave.endDate}<br>
+                    <strong>Total Days:</strong> ${calculateTotalDays(leave.startDate, leave.endDate)}<br>
+                    <strong>Reason:</strong> ${leave.reason || 'N/A'}
+                </div>
+            </div>
+        `;
+
+        document.getElementById('approveLeaveModal').style.display = 'block';
+    }
+}
+
+// Submit approve leave form
+document.getElementById('approveLeaveForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    if (!currentApproveLeaveId) {
+        showAlert('No leave selected for approval', 'error');
+        return;
+    }
+
+    await updateLeaveStatus(currentApproveLeaveId, 'APPROVED');
+    closeApproveLeaveModal();
+});
+
+// Modal management functions for approve modal
+function closeApproveLeaveModal() {
+    document.getElementById('approveLeaveModal').style.display = 'none';
+    currentApproveLeaveId = null;
+}
+
+
+// Reject leave request - opens modal
 async function rejectLeave(leaveId) {
-    const comments = prompt('Please enter reason for rejection (optional):');
-    await updateLeaveStatus(leaveId, 'REJECTED', comments);
+    currentRejectLeaveId = leaveId;
+
+    // Get leave details
+    const leave = allLeaves.find(l => l.leaveId === leaveId);
+    if (leave) {
+        // Populate leave details in modal
+        const detailsContainer = document.getElementById('rejectLeaveDetails');
+        detailsContainer.innerHTML = `
+            <div style="font-size: 14px;">
+                <strong>Leave Request Details:</strong><br>
+                <div style="margin-top: 8px;">
+                    <strong>Employee:</strong> ${leave.employee ? leave.employee.fullName : 'N/A'} (${leave.employee ? leave.employee.id : 'N/A'})<br>
+                    <strong>Period:</strong> ${leave.startDate} to ${leave.endDate}<br>
+                    <strong>Total Days:</strong> ${calculateTotalDays(leave.startDate, leave.endDate)}<br>
+                    <strong>Reason:</strong> ${leave.reason || 'N/A'}
+                </div>
+            </div>
+        `;
+
+        // Reset form
+        document.getElementById('rejectComments').value = '';
+        document.getElementById('rejectLeaveModal').style.display = 'block';
+    }
 }
 
 // Update leave status
 async function updateLeaveStatus(leaveId, status, comments = '') {
     try {
+        console.log(`Updating leave ${leaveId} to status: ${status}`);
+
         const url = `/hr/leave/${leaveId}/status?status=${status}` +
             (comments ? `&comments=${encodeURIComponent(comments)}` : '');
 
@@ -1119,10 +1218,13 @@ async function updateLeaveStatus(leaveId, status, comments = '') {
         const result = await response.json();
 
         if (result.success) {
-            showAlert(result.message, 'success');
+            const statusMessage = status === 'APPROVED' ? 'approved' :
+                status === 'REJECTED' ? 'rejected' :
+                    'updated';
+            showAlert(`Leave request ${statusMessage} successfully!`, 'success');
             await loadLeaveRequests(); // Refresh the list
         } else {
-            showAlert(result.message, 'error');
+            showAlert(result.message || 'Failed to update leave status', 'error');
         }
     } catch (error) {
         console.error('Error updating leave status:', error);
@@ -1130,33 +1232,121 @@ async function updateLeaveStatus(leaveId, status, comments = '') {
     }
 }
 
-// View leave details
+// View leave details in modal
 async function viewLeaveDetails(leaveId) {
-    // Find the leave in our data
     const leave = allLeaves.find(l => l.leaveId === leaveId);
 
     if (leave) {
-        let details = `Leave ID: ${leave.leaveId}\n`;
-        details += `Employee: ${leave.employee ? leave.employee.fullName : 'N/A'} (${leave.employee ? leave.employee.id : 'N/A'})\n`;
-        details += `Reason: ${leave.reason}\n`;
-        details += `Period: ${leave.startDate} to ${leave.endDate}\n`;
-        details += `Total Days: ${calculateTotalDays(leave.startDate, leave.endDate)}\n`;
-        details += `Status: ${leave.status}\n`;
-        details += `Request Date: ${formatDate(leave.requestDate)}\n`;
+        const detailsContent = document.getElementById('leaveDetailsContent');
+        const cleanStatus = leave.status || 'PENDING';
 
-        if (leave.actionDate) {
-            details += `Action Date: ${formatDate(leave.actionDate)}\n`;
-        }
+        // Format dates
+        const requestDate = formatDate(leave.requestDate);
+        const actionDate = leave.actionDate ? formatDate(leave.actionDate) : 'N/A';
 
-        if (leave.comments) {
-            details += `Comments: ${leave.comments}\n`;
-        }
+        detailsContent.innerHTML = `
+            <div class="detail-section">
+                <h4 style="margin-bottom: 15px; color: #333; border-bottom: 2px solid #007bff; padding-bottom: 5px;">Employee Information</h4>
+                <div class="detail-row">
+                    <span class="detail-label">Employee ID:</span>
+                    <span class="detail-value">${leave.employee ? leave.employee.id : 'N/A'}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Employee Name:</span>
+                    <span class="detail-value">${leave.employee ? leave.employee.fullName : 'N/A'}</span>
+                </div>
+                ${leave.employee && leave.employee.department ? `
+                <div class="detail-row">
+                    <span class="detail-label">Department:</span>
+                    <span class="detail-value">${leave.employee.department.departmentName || 'N/A'}</span>
+                </div>
+                ` : ''}
+            </div>
+            
+            <div class="detail-section">
+                <h4 style="margin-bottom: 15px; color: #333; border-bottom: 2px solid #007bff; padding-bottom: 5px;">Leave Details</h4>
+                <div class="detail-row">
+                    <span class="detail-label">Leave ID:</span>
+                    <span class="detail-value">#${leave.leaveId || 'N/A'}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Reason:</span>
+                    <span class="detail-value" style="background: #f8f9fa; padding: 8px; border-radius: 4px;">${leave.reason || 'N/A'}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Start Date:</span>
+                    <span class="detail-value">${leave.startDate || 'N/A'}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">End Date:</span>
+                    <span class="detail-value">${leave.endDate || 'N/A'}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Total Days:</span>
+                    <span class="detail-value"><strong>${calculateTotalDays(leave.startDate, leave.endDate)}</strong></span>
+                </div>
+            </div>
+            
+            <div class="detail-section">
+                <h4 style="margin-bottom: 15px; color: #333; border-bottom: 2px solid #007bff; padding-bottom: 5px;">Status Information</h4>
+                <div class="detail-row">
+                    <span class="detail-label">Status:</span>
+                    <span class="detail-value">
+                        <span class="status-badge status-${cleanStatus.toLowerCase()} status-badge-large">
+                            ${cleanStatus}
+                        </span>
+                    </span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Request Date:</span>
+                    <span class="detail-value">${requestDate}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Action Date:</span>
+                    <span class="detail-value">${actionDate}</span>
+                </div>
+                ${leave.comments ? `
+                <div class="detail-row">
+                    <span class="detail-label">HR Comments:</span>
+                    <span class="detail-value" style="background: #e9ecef; padding: 10px; border-radius: 4px; border-left: 4px solid #dc3545; font-style: italic;">
+                        "${leave.comments}"
+                    </span>
+                </div>
+                ` : ''}
+            </div>
+        `;
 
-        alert(details);
+        document.getElementById('leaveDetailsModal').style.display = 'block';
     }
 }
 
-// Update the showSection function to load leaves when section is shown
+// Modal management functions
+function closeRejectLeaveModal() {
+    document.getElementById('rejectLeaveModal').style.display = 'none';
+    currentRejectLeaveId = null;
+    document.getElementById('rejectComments').value = '';
+}
+
+function closeLeaveDetailsModal() {
+    document.getElementById('leaveDetailsModal').style.display = 'none';
+}
+
+// Submit reject leave form
+document.getElementById('rejectLeaveForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    if (!currentRejectLeaveId) {
+        showAlert('No leave selected for rejection', 'error');
+        return;
+    }
+
+    const comments = document.getElementById('rejectComments').value.trim();
+
+    await updateLeaveStatus(currentRejectLeaveId, 'REJECTED', comments);
+    closeRejectLeaveModal();
+});
+
+// Update showSection to include leave management
 function showSection(sectionId) {
     document.querySelectorAll('.content-section').forEach(section => {
         section.classList.remove('active');
@@ -1179,21 +1369,26 @@ function showSection(sectionId) {
         loadLeaveRequests();
     } else if (sectionId === 'workload') {
         console.log('Switching to workload section, loading tasks...');
-        loadProductionTasks();
-    }
-}
-// Add this function to show leave statistics
-async function updateLeaveStatistics() {
-    try {
-        const response = await fetchWithAuth('/hr/leave/statistics');
-        if (response.ok) {
-            const result = await response.json();
-            const stats = result.statistics;
-
-            // You can display this in a new card or update existing elements
-            console.log('Leave Statistics:', stats);
+        if (typeof loadProductionTasks === 'function') {
+            loadProductionTasks();
         }
-    } catch (error) {
-        console.error('Error loading leave statistics:', error);
     }
 }
+
+// Add modal close handlers to window.onclick
+window.onclick = function(event) {
+    const modal = document.getElementById('employeeModal');
+    if (event.target === modal) closeEmployeeModal();
+
+    const departmentModal = document.getElementById('departmentModal');
+    if (event.target === departmentModal) closeDepartmentModal();
+
+    const rejectModal = document.getElementById('rejectLeaveModal');
+    if (event.target === rejectModal) closeRejectLeaveModal();
+
+    const detailsModal = document.getElementById('leaveDetailsModal');
+    if (event.target === detailsModal) closeLeaveDetailsModal();
+
+    const approveModal = document.getElementById('approveLeaveModal');
+    if (event.target === approveModal) closeApproveLeaveModal();
+};

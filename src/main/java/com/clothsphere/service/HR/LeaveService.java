@@ -5,6 +5,7 @@ import com.clothsphere.model.HR.Employee;
 import com.clothsphere.repository.HR.LeaveRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -22,7 +23,8 @@ public class LeaveService {
     @Autowired
     private EmployeeService employeeService;
 
-    // Request new leave
+    // Request new leave using manual INSERT query
+    @Transactional
     public Leave requestLeave(Leave leave, String employeeId) {
         Employee employee = employeeService.getEmployeeById(employeeId);
         if (employee == null) {
@@ -46,11 +48,24 @@ public class LeaveService {
             throw new RuntimeException("You already have a leave request for the selected dates");
         }
 
-        leave.setEmployee(employee);
-        leave.setStatus("PENDING");
-        leave.setRequestDate(LocalDateTime.now());
+        // Using manual INSERT query
+        int result = leaveRepository.insertLeave(
+                leave.getReason(),
+                leave.getStartDate(),
+                leave.getEndDate(),
+                "PENDING",
+                LocalDateTime.now(),
+                employeeId,
+                leave.getComments()
+        );
 
-        return leaveRepository.save(leave);
+        if (result > 0) {
+            // To get the saved entity, we need to find the latest leave for this employee
+            List<Leave> recentLeaves = leaveRepository.findByEmployeeOrderByRequestDateDesc(employee);
+            return recentLeaves.isEmpty() ? leave : recentLeaves.get(0);
+        } else {
+            throw new RuntimeException("Failed to save leave request");
+        }
     }
 
     // Get all leaves for an employee
@@ -64,29 +79,29 @@ public class LeaveService {
         return leaveRepository.findById(leaveId);
     }
 
-    // Cancel leave request (only if pending)
+    // Cancel leave request using manual DELETE query
+    @Transactional
     public boolean cancelLeaveRequest(Long leaveId, String employeeId) {
         Optional<Leave> leaveOpt = leaveRepository.findById(leaveId);
         if (leaveOpt.isPresent()) {
             Leave leave = leaveOpt.get();
             if (leave.getEmployee().getId().equals(employeeId) &&
                     "PENDING".equals(leave.getStatus())) {
-                leaveRepository.delete(leave);
-                return true;
+
+                // Using manual DELETE query
+                int result = leaveRepository.deleteLeaveById(leaveId);
+                return result > 0;
             }
         }
         return false;
     }
 
-    // Get leave statistics for employee
+    // Get leave statistics for employee using manual count query
     public LeaveStatistics getLeaveStatistics(String employeeId) {
-        Employee employee = employeeService.getEmployeeById(employeeId);
-        List<Leave> allLeaves = leaveRepository.findByEmployeeOrderByRequestDateDesc(employee);
-
-        long totalRequests = allLeaves.size();
-        long pending = allLeaves.stream().filter(l -> "PENDING".equals(l.getStatus())).count();
-        long approved = allLeaves.stream().filter(l -> "APPROVED".equals(l.getStatus())).count();
-        long rejected = allLeaves.stream().filter(l -> "REJECTED".equals(l.getStatus())).count();
+        long totalRequests = leaveRepository.findByEmployeeId(employeeId).size();
+        long pending = leaveRepository.countByEmployeeIdAndStatus(employeeId, "PENDING");
+        long approved = leaveRepository.countByEmployeeIdAndStatus(employeeId, "APPROVED");
+        long rejected = leaveRepository.countByEmployeeIdAndStatus(employeeId, "REJECTED");
 
         return new LeaveStatistics(totalRequests, pending, approved, rejected);
     }
@@ -111,14 +126,14 @@ public class LeaveService {
         public long getApproved() { return approved; }
         public long getRejected() { return rejected; }
     }
-    // Add these methods to your existing LeaveService class
 
     // Get all leave requests for HR
     public List<Leave> getAllLeaveRequests() {
         return leaveRepository.findAllByOrderByRequestDateDesc();
     }
 
-    // Update leave status
+    // Update leave status using manual UPDATE query
+    @Transactional
     public boolean updateLeaveStatus(Long leaveId, String status, String comments) {
         Optional<Leave> leaveOpt = leaveRepository.findById(leaveId);
         if (leaveOpt.isPresent()) {
@@ -129,18 +144,19 @@ public class LeaveService {
                 throw new RuntimeException("Invalid status: " + status);
             }
 
-            leave.setStatus(status);
-            leave.setActionDate(LocalDateTime.now());
+            // Using manual UPDATE query
+            int result = leaveRepository.updateLeaveStatus(
+                    leaveId,
+                    status,
+                    comments,
+                    LocalDateTime.now()
+            );
 
-            if (comments != null && !comments.trim().isEmpty()) {
-                leave.setComments(comments);
-            }
-
-            leaveRepository.save(leave);
-            return true;
+            return result > 0;
         }
         return false;
     }
+
 
     // Get HR dashboard statistics
     public Map<String, Long> getHRLeaveStatistics() {
@@ -163,4 +179,5 @@ public class LeaveService {
     public List<Leave> getLeavesByStatus(String status) {
         return leaveRepository.findByStatusOrderByRequestDateDesc(status);
     }
+
 }
