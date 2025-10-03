@@ -13,15 +13,15 @@
 <div class="sidebar">
   <h2>Employee Dashboard</h2>
   <ul>
-    <li><a href="#" onclick="showSection('profile')" class="nav-link active">
+    <li><a href="#" onclick="showSection('profile', event)" class="nav-link active">
       <i class="fas fa-user"></i> Profile Info</a></li>
-    <li><a href="#" onclick="showSection('attendance')" class="nav-link">
+    <li><a href="#" onclick="showSection('attendance', event)" class="nav-link">
       <i class="fas fa-calendar-check"></i> Mark Attendance</a></li>
-    <li><a href="#" onclick="showSection('leave')" class="nav-link">
+    <li><a href="#" onclick="showSection('leave', event)" class="nav-link">
       <i class="fas fa-file-alt"></i> Request Leave</a></li>
-    <li><a href="#" onclick="showSection('tasks')" class="nav-link">
+    <li><a href="#" onclick="showSection('tasks', event)" class="nav-link">
       <i class="fas fa-tasks"></i> View Tasks</a></li>
-    <li><a href="#" onclick="showSection('paysheet')" class="nav-link">
+    <li><a href="#" onclick="showSection('paysheet', event)" class="nav-link">
       <i class="fas fa-file-invoice-dollar"></i> View Paysheet</a></li>
   </ul>
 </div>
@@ -69,33 +69,43 @@
     <div class="card">
       <h3>Employee Profile</h3>
       <div class="profile-info">
-        <div class="info-group">
-          <label>Username</label>
-          <div class="value" id="username-value" th:text="${employeeData != null ? employeeData.username : 'N/A'}">N/A</div>
+        <!-- Compact Profile Info -->
+        <div class="profile-info-compact">
+          <div class="info-group-compact">
+            <label>Username</label>
+            <div class="value" id="username-value" th:text="${employeeData != null ? employeeData.username : 'N/A'}">chanul</div>
+          </div>
+
+          <div class="info-group-compact">
+            <label>Role</label>
+            <div class="value" id="role-value">Employee</div>
+          </div>
+
+          <div class="info-group-compact">
+            <label>Email</label>
+            <div class="value" id="email-value" th:text="${employeeData != null ? employeeData.email : 'N/A'}">jeewaka@gmail.com</div>
+          </div>
+
+          <div class="info-group-compact">
+            <label>Phone Number</label>
+            <div class="value" id="phone-value" th:text="${employeeData != null ? employeeData.phoneNumber : 'N/A'}">0710683123</div>
+          </div>
+
+          <div class="info-group-compact">
+            <label>Employee ID</label>
+            <div class="value" id="employee-id" th:text="${employeeData != null ? employeeData.employeeId : 'N/A'}">emp01</div>
+          </div>
+
+          <div class="info-group-compact">
+            <label>Department Name</label>
+            <div class="value" id="department-name" th:text="${employeeData != null ? employeeData.departmentName : 'Not Assigned'}">Design and Sample Department</div>
+          </div>
         </div>
-        <div class="info-group">
-          <label>Role</label>
-          <div class="value" id="role-value">Employee</div>
-        </div>
-        <div class="info-group">
-          <label>Email</label>
-          <div class="value" id="email-value" th:text="${employeeData != null ? employeeData.email : 'N/A'}">N/A</div>
-        </div>
-        <div class="info-group">
-          <label>Phone Number</label>
-          <div class="value" id="phone-value" th:text="${employeeData != null ? employeeData.phoneNumber : 'N/A'}">N/A</div>
-        </div>
-        <div class="info-group">
-          <label>Employee ID</label>
-          <div class="value" id="employee-id" th:text="${employeeData != null ? employeeData.employeeId : 'N/A'}">N/A</div>
-        </div>
-        <div class="info-group">
-          <label>Department Name</label>
-          <div class="value" id="department-name" th:text="${employeeData != null ? employeeData.departmentName : 'Not Assigned'}">Not Assigned</div>
-        </div>
-        <div class="info-group">
+
+        <!-- Department Description in a separate row if it's long -->
+        <div class="info-group-compact" style="grid-column: 1 / -1;">
           <label>Department Description</label>
-          <div class="value" id="department-description" th:text="${employeeData != null ? employeeData.departmentDescription : 'No description available'}">No description available</div>
+          <div class="value" id="department-description" th:text="${employeeData != null ? employeeData.departmentDescription : 'No description available'}">Handles design creation and sample development for new collections</div>
         </div>
 
         <!-- Password Section -->
@@ -208,12 +218,118 @@
           <i class="fas fa-user-cog"></i> Go to Profile
         </button>
       </div>
+
       <div id="leave-content" th:style="${!firstLogin ? 'display: block;' : 'display: none;'}">
-        <p>Leave request functionality would go here.</p>
+        <!-- Leave Statistics -->
+        <div class="leave-stats-grid">
+          <div class="leave-stat-card" style="background: #e3f2fd;">
+            <div class="leave-stat-number" id="total-leaves">0</div>
+            <div class="leave-stat-label">Total Requests</div>
+          </div>
+          <div class="leave-stat-card" style="background: #fff3e0;">
+            <div class="leave-stat-number" id="pending-leaves">0</div>
+            <div class="leave-stat-label">Pending</div>
+          </div>
+          <div class="leave-stat-card" style="background: #e8f5e8;">
+            <div class="leave-stat-number" id="approved-leaves">0</div>
+            <div class="leave-stat-label">Approved</div>
+          </div>
+          <div class="leave-stat-card" style="background: #ffebee;">
+            <div class="leave-stat-number" id="rejected-leaves">0</div>
+            <div class="leave-stat-label">Rejected</div>
+          </div>
+        </div>
+
+        <!-- Leave Request Form -->
+        <div class="leave-form-section">
+          <h4>New Leave Request</h4>
+          <form id="leave-request-form">
+            <div class="form-group">
+              <label for="reason">Reason for Leave *</label>
+              <textarea id="reason" class="form-control" placeholder="Enter reason for leave" required rows="3"></textarea>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="start-date">Start Date *</label>
+                <input type="date" id="start-date" class="form-control" required onchange="calculateLeaveDuration()">
+              </div>
+
+              <div class="form-group">
+                <label for="end-date">End Date *</label>
+                <input type="date" id="end-date" class="form-control" required onchange="calculateLeaveDuration()">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <div id="leave-duration" style="padding: 10px; background: #e8f5e8; border: 1px solid #28a745; border-radius: 4px; display: none;">
+                <strong>Duration:</strong> <span id="duration-days">0</span> day(s)
+              </div>
+            </div>
+
+            <div class="button-group">
+              <button type="submit" class="btn btn-success">
+                <i class="fas fa-paper-plane"></i> Submit Request
+              </button>
+              <button type="reset" class="btn btn-secondary" onclick="document.getElementById('leave-duration').style.display = 'none'">
+                <i class="fas fa-times"></i> Clear
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Leave History -->
+        <div class="leave-history-section">
+          <h4>Leave History</h4>
+
+          <!-- Filter Controls -->
+          <div class="filter-controls">
+            <div class="filter-group">
+              <select id="leave-status-filter" class="form-control" onchange="filterLeaves()">
+                <option value="all">All Status</option>
+                <option value="PENDING">Pending</option>
+                <option value="APPROVED">Approved</option>
+                <option value="REJECTED">Rejected</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Leave Table -->
+          <div class="table-responsive">
+            <table class="table" id="leaves-table">
+              <thead>
+              <tr>
+                <th>Leave ID</th>
+                <th>Reason</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+                <th>Duration</th>
+                <th>Request Date</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+              </thead>
+              <tbody id="leaves-table-body">
+              <!-- Leaves will be loaded here dynamically -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- No Leaves Message -->
+          <div id="no-leaves-message" style="display: none; text-align: center; padding: 40px;">
+            <i class="fas fa-calendar-times" style="font-size: 48px; color: #6c757d; margin-bottom: 20px;"></i>
+            <h4>No Leave Requests</h4>
+            <p>You haven't submitted any leave requests yet.</p>
+          </div>
+
+          <!-- Loading Spinner -->
+          <div id="leaves-loading" style="text-align: center; padding: 20px;">
+            <i class="fas fa-spinner fa-spin"></i> Loading leave requests...
+          </div>
+        </div>
       </div>
     </div>
   </div>
-
   <!-- Tasks Section -->
   <div id="tasks" class="content-section">
     <div class="card">

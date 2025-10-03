@@ -795,4 +795,408 @@
      if (sectionId === 'tasks' && !isFirstLogin) {
          loadEmployeeTasks();
      }
+
+     // Initialize leave section when it's shown
+     if (sectionId === 'leave' && !isFirstLogin) {
+         initializeLeaveSection();
+     }
  };
+
+ // ========================= LEAVE MANAGEMENT =========================
+ let currentLeaves = [];
+
+ // Load employee leaves
+ function loadEmployeeLeaves() {
+     const loadingElement = document.getElementById('leaves-loading');
+     const tableBody = document.getElementById('leaves-table-body');
+     const noLeavesMessage = document.getElementById('no-leaves-message');
+
+     if (loadingElement) loadingElement.style.display = 'block';
+     if (tableBody) tableBody.innerHTML = '';
+     if (noLeavesMessage) noLeavesMessage.style.display = 'none';
+
+     fetch('/leave/history', {
+         method: 'GET',
+         headers: {
+             'Content-Type': 'application/json',
+         },
+         credentials: 'include'
+     })
+         .then(response => response.json())
+         .then(data => {
+             if (data.success) {
+                 currentLeaves = data.leaves;
+                 displayLeaves(data.leaves);
+                 updateLeaveStatistics(data.statistics);
+
+                 if (!data.leaves || data.leaves.length === 0) {
+                     if (noLeavesMessage) noLeavesMessage.style.display = 'block';
+                 }
+             } else {
+                 throw new Error(data.message);
+             }
+         })
+         .catch(error => {
+             console.error('Error loading leaves:', error);
+             showMessage('Error loading leave requests: ' + error.message, 'error');
+             if (noLeavesMessage) noLeavesMessage.style.display = 'block';
+         })
+         .finally(() => {
+             if (loadingElement) loadingElement.style.display = 'none';
+         });
+ }
+
+ // Display leaves in table
+ function displayLeaves(leaves) {
+     const tableBody = document.getElementById('leaves-table-body');
+     const noLeavesMessage = document.getElementById('no-leaves-message');
+
+     if (!tableBody) return;
+
+     if (!leaves || leaves.length === 0) {
+         tableBody.innerHTML = '';
+         if (noLeavesMessage) noLeavesMessage.style.display = 'block';
+         return;
+     }
+
+     if (noLeavesMessage) noLeavesMessage.style.display = 'none';
+
+     const leavesHtml = leaves.map(leave => {
+         const startDate = new Date(leave.startDate);
+         const endDate = new Date(leave.endDate);
+         const duration = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+
+         const isPending = leave.status === 'PENDING';
+         const isApproved = leave.status === 'APPROVED';
+
+         return `
+            <tr>
+                <td>${leave.leaveId || 'N/A'}</td>
+                <td>${escapeHtml(leave.reason)}</td>
+                <td>${formatDate(leave.startDate)}</td>
+                <td>${formatDate(leave.endDate)}</td>
+                <td>${duration} day(s)</td>
+                <td>${formatDateTime(leave.requestDate)}</td>
+                <td>
+                    <span class="status-badge status-${leave.status.toLowerCase()}">
+                        ${getLeaveStatusLabel(leave.status)}
+                    </span>
+                </td>
+                <td>
+                    <div class="leave-actions">
+                        ${isPending ? `
+                            <button class="btn btn-danger btn-sm" onclick="cancelLeaveRequest(${leave.leaveId})">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                        ` : ''}
+                        <button class="btn btn-info btn-sm" onclick="viewLeaveDetails(${leave.leaveId})">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+     }).join('');
+
+     tableBody.innerHTML = leavesHtml;
+ }
+
+ // Update leave statistics
+ function updateLeaveStatistics(stats) {
+     if (!stats) return;
+
+     document.getElementById('total-leaves').textContent = stats.totalRequests;
+     document.getElementById('pending-leaves').textContent = stats.pending;
+     document.getElementById('approved-leaves').textContent = stats.approved;
+     document.getElementById('rejected-leaves').textContent = stats.rejected;
+ }
+
+ // Submit leave request
+ function submitLeaveRequest(event) {
+     event.preventDefault(); // Prevent default form submission
+
+     const reason = document.getElementById('reason').value;
+     const startDate = document.getElementById('start-date').value;
+     const endDate = document.getElementById('end-date').value;
+
+     if (!reason || !startDate || !endDate) {
+         showMessage('Please fill in all required fields', 'error');
+         return;
+     }
+
+     if (new Date(startDate) > new Date(endDate)) {
+         showMessage('End date cannot be before start date', 'error');
+         return;
+     }
+
+     const submitBtn = event.target.querySelector('button[type="submit"]');
+     const originalText = submitBtn.innerHTML;
+     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+     submitBtn.disabled = true;
+
+     const formData = new URLSearchParams();
+     formData.append('reason', reason);
+     formData.append('startDate', startDate);
+     formData.append('endDate', endDate);
+
+     fetch('/leave/request', {
+         method: 'POST',
+         headers: {
+             'Content-Type': 'application/x-www-form-urlencoded',
+         },
+         body: formData
+     })
+         .then(response => response.json())
+         .then(data => {
+             if (data.success) {
+                 showMessage('Leave request submitted successfully!', 'success');
+                 document.getElementById('leave-request-form').reset();
+                 document.getElementById('leave-duration').style.display = 'none';
+
+                 // Reload leaves without changing section
+                 loadEmployeeLeaves();
+             } else {
+                 throw new Error(data.message);
+             }
+         })
+         .catch(error => {
+             console.error('Error submitting leave request:', error);
+             showMessage('Error submitting leave request: ' + error.message, 'error');
+         })
+         .finally(() => {
+             submitBtn.innerHTML = originalText;
+             submitBtn.disabled = false;
+         });
+ }
+
+ // Cancel leave request
+ function cancelLeaveRequest(leaveId) {
+     if (!confirm('Are you sure you want to cancel this leave request?')) {
+         return;
+     }
+
+     fetch(`/leave/cancel/${leaveId}`, {
+         method: 'DELETE',
+         credentials: 'include'
+     })
+         .then(response => response.json())
+         .then(data => {
+             if (data.success) {
+                 showMessage('Leave request cancelled successfully!', 'success');
+                 loadEmployeeLeaves();
+             } else {
+                 throw new Error(data.message);
+             }
+         })
+         .catch(error => {
+             console.error('Error cancelling leave request:', error);
+             showMessage('Error cancelling leave request: ' + error.message, 'error');
+         });
+ }
+
+ // View leave details
+ function viewLeaveDetails(leaveId) {
+     const leave = currentLeaves.find(l => l.leaveId === leaveId);
+     if (!leave) return;
+
+     const startDate = new Date(leave.startDate);
+     const endDate = new Date(leave.endDate);
+     const duration = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+
+     const detailsHtml = `
+        <div class="status-modal" id="leave-details-modal">
+            <div class="status-modal-content" style="max-width: 600px;">
+                <div class="status-modal-header">
+                    <h4>Leave Request Details</h4>
+                    <button type="button" class="btn-close" onclick="closeLeaveDetails()">×</button>
+                </div>
+                <div class="status-modal-body">
+                    <div class="profile-info">
+                        <div class="info-group">
+                            <label>Leave ID</label>
+                            <div class="value">${leave.leaveId}</div>
+                        </div>
+                        <div class="info-group">
+                            <label>Reason</label>
+                            <div class="value">${escapeHtml(leave.reason)}</div>
+                        </div>
+                        <div class="info-group">
+                            <label>Start Date</label>
+                            <div class="value">${formatDate(leave.startDate)}</div>
+                        </div>
+                        <div class="info-group">
+                            <label>End Date</label>
+                            <div class="value">${formatDate(leave.endDate)}</div>
+                        </div>
+                        <div class="info-group">
+                            <label>Duration</label>
+                            <div class="value">${duration} day(s)</div>
+                        </div>
+                        <div class="info-group">
+                            <label>Request Date</label>
+                            <div class="value">${formatDateTime(leave.requestDate)}</div>
+                        </div>
+                        <div class="info-group">
+                            <label>Status</label>
+                            <div class="value">
+                                <span class="status-badge status-${leave.status.toLowerCase()}">
+                                    ${getLeaveStatusLabel(leave.status)}
+                                </span>
+                            </div>
+                        </div>
+                        ${leave.actionDate ? `
+                        <div class="info-group">
+                            <label>Action Date</label>
+                            <div class="value">${formatDateTime(leave.actionDate)}</div>
+                        </div>
+                        ` : ''}
+                        ${leave.comments ? `
+                        <div class="info-group">
+                            <label>Manager Comments</label>
+                            <div class="value">${escapeHtml(leave.comments)}</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+                <div class="status-modal-footer">
+                    <button class="btn btn-secondary" onclick="closeLeaveDetails()">Close</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+     document.body.insertAdjacentHTML('beforeend', detailsHtml);
+     document.body.classList.add('modal-open');
+ }
+
+ // Close leave details modal
+ function closeLeaveDetails() {
+     const modal = document.getElementById('leave-details-modal');
+     if (modal) modal.remove();
+     document.body.classList.remove('modal-open');
+ }
+
+ // Calculate leave duration
+ function calculateLeaveDuration() {
+     const startDate = document.getElementById('start-date').value;
+     const endDate = document.getElementById('end-date').value;
+     const durationElement = document.getElementById('leave-duration');
+
+     if (startDate && endDate) {
+         const start = new Date(startDate);
+         const end = new Date(endDate);
+
+         if (start <= end) {
+             const duration = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+             document.getElementById('duration-days').textContent = duration;
+             durationElement.style.display = 'block';
+         } else {
+             durationElement.style.display = 'none';
+         }
+     } else {
+         durationElement.style.display = 'none';
+     }
+ }
+
+ // Filter leaves
+ function filterLeaves() {
+     const statusFilter = document.getElementById('leave-status-filter').value;
+
+     let filteredLeaves = currentLeaves;
+
+     if (statusFilter !== 'all') {
+         filteredLeaves = filteredLeaves.filter(leave => leave.status === statusFilter);
+     }
+
+     displayLeaves(filteredLeaves);
+ }
+
+ // Initialize leave form
+ function initializeLeaveForm() {
+     const leaveForm = document.getElementById('leave-request-form');
+     if (leaveForm) {
+         leaveForm.addEventListener('submit', submitLeaveRequest);
+     }
+
+     const startDateInput = document.getElementById('start-date');
+     const endDateInput = document.getElementById('end-date');
+     if (startDateInput && endDateInput) {
+         startDateInput.addEventListener('change', calculateLeaveDuration);
+         endDateInput.addEventListener('change', calculateLeaveDuration);
+     }
+ }
+
+ // Leave status label helper
+ function getLeaveStatusLabel(status) {
+     const statusLabels = {
+         'PENDING': 'Pending',
+         'APPROVED': 'Approved',
+         'REJECTED': 'Rejected'
+     };
+     return statusLabels[status] || status;
+ }
+
+ // Initialize leave section when shown
+ function initializeLeaveSection() {
+     if (!isFirstLogin) {
+         loadEmployeeLeaves();
+         initializeLeaveForm();
+     }
+ }
+
+ // Utility function to escape HTML (prevent XSS)
+ function escapeHtml(unsafe) {
+     if (!unsafe) return '';
+     return unsafe
+         .toString()
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
+ }
+
+ // Date formatting utility
+ function formatDate(dateString) {
+     if (!dateString) return 'N/A';
+     const date = new Date(dateString);
+     return date.toLocaleDateString('en-US', {
+         year: 'numeric',
+         month: 'short',
+         day: 'numeric'
+     });
+ }
+
+ // DateTime formatting utility
+ function formatDateTime(dateTimeString) {
+     if (!dateTimeString) return 'N/A';
+     const date = new Date(dateTimeString);
+     return date.toLocaleString('en-US', {
+         year: 'numeric',
+         month: 'short',
+         day: 'numeric',
+         hour: '2-digit',
+         minute: '2-digit'
+     });
+ }
+
+ // Message display utility
+ function showMessage(message, type) {
+     const toast = document.createElement('div');
+     toast.className = `alert alert-${type === 'error' ? 'error' : 'success'}`;
+     toast.style.position = 'fixed';
+     toast.style.top = '20px';
+     toast.style.right = '20px';
+     toast.style.zIndex = '1001';
+     toast.style.minWidth = '300px';
+     toast.innerHTML = `
+        <i class="fas ${type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle'}"></i>
+        ${message}
+    `;
+
+     document.body.appendChild(toast);
+
+     setTimeout(() => {
+         toast.remove();
+     }, 5000);
+ }
