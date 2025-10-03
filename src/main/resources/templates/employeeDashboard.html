@@ -200,8 +200,138 @@
           <i class="fas fa-user-cog"></i> Go to Profile
         </button>
       </div>
+
       <div id="attendance-content" th:style="${!firstLogin ? 'display: block;' : 'display: none;'}">
-        <p>Attendance marking functionality would go here.</p>
+        <!-- Attendance Statistics -->
+        <div class="attendance-stats-grid">
+          <div class="attendance-stat-card" style="background: #e8f5e8;">
+            <div class="attendance-stat-number" id="present-days">0</div>
+            <div class="attendance-stat-label">Present Days</div>
+          </div>
+          <div class="attendance-stat-card" style="background: #fff3e0;">
+            <div class="attendance-stat-number" id="working-days">0</div>
+            <div class="attendance-stat-label">Working Days</div>
+          </div>
+          <div class="attendance-stat-card" style="background: #e3f2fd;">
+            <div class="attendance-stat-number" id="attendance-percentage">0%</div>
+            <div class="attendance-stat-label">Attendance %</div>
+          </div>
+        </div>
+
+        <!-- Today's Attendance Card -->
+        <div class="card" style="margin-top: 20px;">
+          <h4>Today's Attendance - <span id="current-date"></span></h4>
+
+          <div id="today-attendance-status">
+            <div class="attendance-status" id="attendance-not-marked">
+              <i class="fas fa-clock text-warning" style="font-size: 48px; margin-bottom: 15px;"></i>
+              <h5>Attendance Not Marked</h5>
+              <p>You haven't marked your attendance for today.</p>
+              <button class="btn btn-success" onclick="checkIn()">
+                <i class="fas fa-sign-in-alt"></i> Check In
+              </button>
+            </div>
+
+            <div class="attendance-status" id="attendance-checked-in" style="display: none;">
+              <i class="fas fa-user-check text-primary" style="font-size: 48px; margin-bottom: 15px;"></i>
+              <h5>Checked In</h5>
+              <p>You checked in at: <strong id="check-in-time"></strong></p>
+              <div class="button-group">
+                <button class="btn btn-warning" onclick="checkOut()">
+                  <i class="fas fa-sign-out-alt"></i> Check Out
+                </button>
+                <button class="btn btn-info" onclick="showCheckInNotes()">
+                  <i class="fas fa-edit"></i> Add Notes
+                </button>
+              </div>
+            </div>
+
+            <div class="attendance-status" id="attendance-checked-out" style="display: none;">
+              <i class="fas fa-check-circle text-success" style="font-size: 48px; margin-bottom: 15px;"></i>
+              <h5>Attendance Complete</h5>
+              <p>Check In: <strong id="completed-check-in"></strong></p>
+              <p>Check Out: <strong id="completed-check-out"></strong></p>
+              <p>Work Hours: <strong id="work-hours"></strong></p>
+            </div>
+          </div>
+
+          <!-- Notes Modal -->
+          <div id="notes-modal" class="status-modal" style="display: none;">
+            <div class="status-modal-content">
+              <div class="status-modal-header">
+                <h4>Add Notes</h4>
+                <button type="button" class="btn-close" onclick="closeNotesModal()">×</button>
+              </div>
+              <div class="status-modal-body">
+                <div class="form-group">
+                  <label for="attendance-notes">Notes (Optional)</label>
+                  <textarea id="attendance-notes" class="form-control" placeholder="Add any notes about your attendance..." rows="4"></textarea>
+                </div>
+              </div>
+              <div class="status-modal-footer">
+                <button class="btn btn-secondary" onclick="closeNotesModal()">Cancel</button>
+                <button class="btn btn-primary" id="notes-submit-btn" onclick="submitWithNotes()">Submit</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Attendance History -->
+        <div class="card" style="margin-top: 20px;">
+          <h4>Attendance History</h4>
+
+          <!-- Date Filter -->
+          <div class="filter-controls">
+            <div class="filter-group">
+              <label for="start-date-filter">From:</label>
+              <input type="date" id="start-date-filter" class="form-control">
+            </div>
+            <div class="filter-group">
+              <label for="end-date-filter">To:</label>
+              <input type="date" id="end-date-filter" class="form-control">
+            </div>
+            <div class="filter-group">
+              <button class="btn btn-primary" onclick="loadAttendanceHistory()">
+                <i class="fas fa-filter"></i> Filter
+              </button>
+              <button class="btn btn-secondary" onclick="resetAttendanceFilter()">
+                <i class="fas fa-redo"></i> Reset
+              </button>
+            </div>
+          </div>
+
+          <!-- Attendance History Table -->
+          <div class="table-responsive">
+            <table class="table" id="attendance-table">
+              <thead>
+              <tr>
+                <th>Date</th>
+                <th>Day</th>
+                <th>Check In</th>
+                <th>Check Out</th>
+                <th>Work Hours</th>
+                <th>Status</th>
+                <th>Notes</th>
+              </tr>
+              </thead>
+              <tbody id="attendance-table-body">
+              <!-- Attendance history will be loaded here -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- No Attendance Records Message -->
+          <div id="no-attendance-message" style="display: none; text-align: center; padding: 40px;">
+            <i class="fas fa-calendar-times" style="font-size: 48px; color: #6c757d; margin-bottom: 20px;"></i>
+            <h4>No Attendance Records</h4>
+            <p>No attendance records found for the selected period.</p>
+          </div>
+
+          <!-- Loading Spinner -->
+          <div id="attendance-loading" style="text-align: center; padding: 20px;">
+            <i class="fas fa-spinner fa-spin"></i> Loading attendance records...
+          </div>
+        </div>
       </div>
     </div>
   </div>

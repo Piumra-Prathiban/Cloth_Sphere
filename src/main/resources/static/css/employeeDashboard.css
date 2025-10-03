@@ -1440,3 +1440,228 @@ body.modal-open {
     color: #333;
     margin-left: 12px;
 }
+/* Attendance Styles */
+.attendance-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.attendance-stat-card {
+    text-align: center;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.attendance-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.attendance-stat-number {
+    font-size: 32px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.attendance-stat-label {
+    color: #6c757d;
+    font-size: 12px;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.attendance-status {
+    text-align: center;
+    padding: 30px;
+    border: 2px dashed #e9ecef;
+    border-radius: 10px;
+    margin: 20px 0;
+}
+
+.attendance-status h5 {
+    margin-bottom: 10px;
+    color: #495057;
+}
+
+.attendance-status p {
+    margin-bottom: 20px;
+    color: #6c757d;
+}
+
+/* Status badges for attendance */
+.status-present { background: linear-gradient(135deg, #81c784, #388e3c); color: white; }
+.status-absent { background: linear-gradient(135deg, #ff6b6b, #ee5a52); color: white; }
+.status-late { background: linear-gradient(135deg, #ffd54f, #fbc02d); color: #333; }
+.status-half-day { background: linear-gradient(135deg, #4fc3f7, #0288d1); color: white; }
+
+/* Responsive design for attendance */
+@media (max-width: 768px) {
+    .attendance-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .attendance-status {
+        padding: 20px;
+    }
+}
+
+@media (max-width: 576px) {
+    .attendance-stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .filter-controls {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .filter-group {
+        justify-content: space-between;
+    }
+}
+/* Attendance Styles */
+.attendance-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.attendance-stat-card {
+    text-align: center;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.attendance-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.attendance-stat-number {
+    font-size: 32px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.attendance-stat-label {
+    color: #6c757d;
+    font-size: 12px;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.attendance-status {
+    text-align: center;
+    padding: 30px;
+    border: 2px dashed #e9ecef;
+    border-radius: 10px;
+    margin: 20px 0;
+}
+
+.attendance-status h5 {
+    margin-bottom: 10px;
+    color: #495057;
+}
+
+.attendance-status p {
+    margin-bottom: 20px;
+    color: #6c757d;
+}
+
+/* Status badges for attendance */
+.status-present {
+    background: linear-gradient(135deg, #81c784, #388e3c);
+    color: white;
+}
+.status-absent {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+    color: white;
+}
+.status-late {
+    background: linear-gradient(135deg, #ffd54f, #fbc02d);
+    color: #333;
+}
+.status-half-day {
+    background: linear-gradient(135deg, #4fc3f7, #0288d1);
+    color: white;
+}
+
+.table-secondary {
+    background-color: #f8f9fa !important;
+}
+/* Enhanced mobile responsiveness */
+@media (max-width: 768px) {
+    .attendance-stats-grid,
+    .leave-stats-grid,
+    .task-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    .filter-controls {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .filter-group {
+        justify-content: space-between;
+        width: 100%;
+    }
+
+    .table-responsive {
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .attendance-stats-grid,
+    .leave-stats-grid,
+    .task-stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .status-modal-content {
+        margin: 10px;
+        padding: 20px;
+        width: calc(100% - 20px);
+    }
+}
+/* Attendance Status Badges */
+.status-present {
+    background: linear-gradient(135deg, #81c784, #388e3c);
+    color: white;
+    box-shadow: 0 2px 4px rgba(129, 199, 132, 0.3);
+}
+
+.status-absent {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+    color: white;
+    box-shadow: 0 2px 4px rgba(255, 107, 107, 0.3);
+}
+
+.status-late {
+    background: linear-gradient(135deg, #ffd54f, #fbc02d);
+    color: #333;
+    box-shadow: 0 2px 4px rgba(255, 213, 79, 0.3);
+}
+
+.status-half-day {
+    background: linear-gradient(135deg, #4fc3f7, #0288d1);
+    color: white;
+    box-shadow: 0 2px 4px rgba(79, 195, 247, 0.3);
+}
+
+.status-not-marked {
+    background: linear-gradient(135deg, #bdbdbd, #757575);
+    color: white;
+    box-shadow: 0 2px 4px rgba(189, 189, 189, 0.3);
+}

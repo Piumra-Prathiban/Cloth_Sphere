@@ -1200,3 +1200,336 @@
          toast.remove();
      }, 5000);
  }
+ // ========================= ATTENDANCE MANAGEMENT =========================
+
+ // Initialize attendance section when shown
+ function initializeAttendanceSection() {
+     if (!isFirstLogin) {
+         loadTodayAttendance();
+         loadAttendanceStatistics();
+         loadAttendanceHistory();
+         updateCurrentDate();
+     }
+ }
+
+ // Update current date display
+ function updateCurrentDate() {
+     const dateElement = document.getElementById('current-date');
+     if (dateElement) {
+         const today = new Date();
+         dateElement.textContent = today.toLocaleDateString('en-US', {
+             weekday: 'long',
+             year: 'numeric',
+             month: 'long',
+             day: 'numeric'
+         });
+     }
+ }
+
+ // Load today's attendance status
+ function loadTodayAttendance() {
+     fetch('/attendance/today', {
+         method: 'GET',
+         credentials: 'include'
+     })
+         .then(response => response.json())
+         .then(data => {
+             updateTodayAttendanceUI(data);
+         })
+         .catch(error => {
+             console.error('Error loading today attendance:', error);
+             showMessage('Error loading attendance status', 'error');
+         });
+ }
+
+ // Update today's attendance UI
+ function updateTodayAttendanceUI(data) {
+     const notMarked = document.getElementById('attendance-not-marked');
+     const checkedIn = document.getElementById('attendance-checked-in');
+     const checkedOut = document.getElementById('attendance-checked-out');
+
+     // Hide all sections first
+     if (notMarked) notMarked.style.display = 'none';
+     if (checkedIn) checkedIn.style.display = 'none';
+     if (checkedOut) checkedOut.style.display = 'none';
+
+     if (!data.hasCheckedIn) {
+         // Not checked in yet
+         if (notMarked) notMarked.style.display = 'block';
+     } else if (data.hasCheckedIn && !data.hasCheckedOut) {
+         // Checked in but not checked out
+         if (checkedIn) checkedIn.style.display = 'block';
+         const checkInTimeElement = document.getElementById('check-in-time');
+         if (checkInTimeElement && data.checkInTime) {
+             checkInTimeElement.textContent = formatTime(data.checkInTime);
+         }
+     } else if (data.hasCheckedIn && data.hasCheckedOut) {
+         // Both checked in and checked out
+         if (checkedOut) checkedOut.style.display = 'block';
+         const completedCheckIn = document.getElementById('completed-check-in');
+         const completedCheckOut = document.getElementById('completed-check-out');
+         const workHoursElement = document.getElementById('work-hours');
+
+         if (completedCheckIn && data.checkInTime) {
+             completedCheckIn.textContent = formatTime(data.checkInTime);
+         }
+         if (completedCheckOut && data.checkOutTime) {
+             completedCheckOut.textContent = formatTime(data.checkOutTime);
+         }
+         if (workHoursElement && data.workHours) {
+             workHoursElement.textContent = data.workHours.toFixed(2) + ' hours';
+         }
+     }
+ }
+
+ // Check in function
+ function checkIn() {
+     if (!confirm('Are you sure you want to check in now?')) {
+         return;
+     }
+
+     fetch('/attendance/checkin', {
+         method: 'POST',
+         headers: {
+             'Content-Type': 'application/x-www-form-urlencoded',
+         },
+         credentials: 'include'
+     })
+         .then(response => response.json())
+         .then(data => {
+             if (data.success) {
+                 showMessage('Check-in successful!', 'success');
+                 loadTodayAttendance();
+                 loadAttendanceStatistics();
+             } else {
+                 showMessage(data.message || 'Check-in failed', 'error');
+             }
+         })
+         .catch(error => {
+             console.error('Error checking in:', error);
+             showMessage('Error checking in. Please try again.', 'error');
+         });
+ }
+
+ // Check out function
+ function checkOut() {
+     if (!confirm('Are you sure you want to check out now?')) {
+         return;
+     }
+
+     fetch('/attendance/checkout', {
+         method: 'POST',
+         headers: {
+             'Content-Type': 'application/x-www-form-urlencoded',
+         },
+         credentials: 'include'
+     })
+         .then(response => response.json())
+         .then(data => {
+             if (data.success) {
+                 showMessage('Check-out successful! Work hours: ' + data.workHours.toFixed(2) + ' hours', 'success');
+                 loadTodayAttendance();
+                 loadAttendanceStatistics();
+                 loadAttendanceHistory();
+             } else {
+                 showMessage(data.message || 'Check-out failed', 'error');
+             }
+         })
+         .catch(error => {
+             console.error('Error checking out:', error);
+             showMessage('Error checking out. Please try again.', 'error');
+         });
+ }
+
+ // Show check-in notes modal
+ function showCheckInNotes() {
+     const modal = document.getElementById('notes-modal');
+     if (modal) {
+         modal.style.display = 'flex';
+         document.body.classList.add('modal-open');
+     }
+ }
+
+ // Close notes modal
+ function closeNotesModal() {
+     const modal = document.getElementById('notes-modal');
+     if (modal) {
+         modal.style.display = 'none';
+         document.body.classList.remove('modal-open');
+         document.getElementById('attendance-notes').value = '';
+     }
+ }
+
+ // Submit with notes (for check-in or check-out)
+ function submitWithNotes() {
+     const notes = document.getElementById('attendance-notes').value;
+     // This can be used for either check-in or check-out with notes
+     closeNotesModal();
+ }
+
+ // Show attendance details
+ function showAttendanceDetails() {
+     loadTodayAttendance();
+     showMessage('Attendance details refreshed', 'success');
+ }
+
+ // Load attendance statistics
+ function loadAttendanceStatistics() {
+     fetch('/attendance/statistics', {
+         method: 'GET',
+         credentials: 'include'
+     })
+         .then(response => response.json())
+         .then(data => {
+             updateAttendanceStatistics(data);
+         })
+         .catch(error => {
+             console.error('Error loading attendance statistics:', error);
+         });
+ }
+
+ // Update attendance statistics UI
+ function updateAttendanceStatistics(stats) {
+     const presentDaysElement = document.getElementById('present-days');
+     const workingDaysElement = document.getElementById('working-days');
+     const percentageElement = document.getElementById('attendance-percentage');
+
+     if (presentDaysElement) {
+         presentDaysElement.textContent = stats.presentDays || 0;
+     }
+     if (workingDaysElement) {
+         workingDaysElement.textContent = stats.totalWorkingDays || 0;
+     }
+     if (percentageElement) {
+         const percentage = stats.attendancePercentage || 0;
+         percentageElement.textContent = percentage.toFixed(1) + '%';
+     }
+ }
+
+ // Load attendance history
+ function loadAttendanceHistory() {
+     const loadingElement = document.getElementById('attendance-loading');
+     const tableBody = document.getElementById('attendance-table-body');
+     const noAttendanceMessage = document.getElementById('no-attendance-message');
+
+     if (loadingElement) loadingElement.style.display = 'block';
+     if (tableBody) tableBody.innerHTML = '';
+     if (noAttendanceMessage) noAttendanceMessage.style.display = 'none';
+
+     // Get filter dates if set
+     const startDate = document.getElementById('start-date-filter')?.value;
+     const endDate = document.getElementById('end-date-filter')?.value;
+
+     let url = '/attendance/history';
+     const params = new URLSearchParams();
+     if (startDate) params.append('startDate', startDate);
+     if (endDate) params.append('endDate', endDate);
+     if (params.toString()) url += '?' + params.toString();
+
+     fetch(url, {
+         method: 'GET',
+         credentials: 'include'
+     })
+         .then(response => response.json())
+         .then(data => {
+             displayAttendanceHistory(data);
+         })
+         .catch(error => {
+             console.error('Error loading attendance history:', error);
+             showMessage('Error loading attendance history', 'error');
+             if (noAttendanceMessage) noAttendanceMessage.style.display = 'block';
+         })
+         .finally(() => {
+             if (loadingElement) loadingElement.style.display = 'none';
+         });
+ }
+
+ // Display attendance history in table
+ function displayAttendanceHistory(records) {
+     const tableBody = document.getElementById('attendance-table-body');
+     const noAttendanceMessage = document.getElementById('no-attendance-message');
+
+     if (!tableBody) return;
+
+     if (!records || records.length === 0) {
+         tableBody.innerHTML = '';
+         if (noAttendanceMessage) noAttendanceMessage.style.display = 'block';
+         return;
+     }
+
+     if (noAttendanceMessage) noAttendanceMessage.style.display = 'none';
+
+     const recordsHtml = records.map(record => {
+         const date = new Date(record.attendanceDate);
+         const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+
+         return `
+            <tr>
+                <td>${formatDate(record.attendanceDate)}</td>
+                <td>${dayName}</td>
+                <td>${record.checkInTime ? formatTime(record.checkInTime) : 'N/A'}</td>
+                <td>${record.checkOutTime ? formatTime(record.checkOutTime) : 'N/A'}</td>
+                <td>${record.workHours ? record.workHours.toFixed(2) + ' hours' : 'N/A'}</td>
+                <td>
+                    <span class="status-badge status-${record.status.toLowerCase().replace('_', '-')}">
+                        ${getAttendanceStatusLabel(record.status)}
+                    </span>
+                </td>
+                <td>${escapeHtml(record.notes || '-')}</td>
+            </tr>
+        `;
+     }).join('');
+
+     tableBody.innerHTML = recordsHtml;
+ }
+
+ // Reset attendance filter
+ function resetAttendanceFilter() {
+     document.getElementById('start-date-filter').value = '';
+     document.getElementById('end-date-filter').value = '';
+     loadAttendanceHistory();
+ }
+
+ // Get attendance status label
+ function getAttendanceStatusLabel(status) {
+     const statusLabels = {
+         'PRESENT': 'Present',
+         'ABSENT': 'Absent',
+         'LATE': 'Late',
+         'HALF_DAY': 'Half Day',
+         'NOT_MARKED': 'Not Marked'
+     };
+     return statusLabels[status] || status;
+ }
+
+ // Format time (HH:mm:ss to readable format)
+ function formatTime(timeString) {
+     if (!timeString) return 'N/A';
+
+     // Handle both ISO format and simple time format
+     let time;
+     if (timeString.includes('T')) {
+         time = new Date(timeString);
+     } else {
+         // Handle HH:mm:ss format
+         const [hours, minutes] = timeString.split(':');
+         time = new Date();
+         time.setHours(parseInt(hours), parseInt(minutes), 0);
+     }
+
+     return time.toLocaleTimeString('en-US', {
+         hour: '2-digit',
+         minute: '2-digit',
+         hour12: true
+     });
+ }
+
+ // Add to the existing showSection override
+ const originalShowSectionForAttendance = showSection;
+ showSection = function(sectionId) {
+     originalShowSectionForAttendance(sectionId);
+
+     if (sectionId === 'attendance' && !isFirstLogin) {
+         initializeAttendanceSection();
+     }
+ };

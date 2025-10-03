@@ -233,7 +233,7 @@ public class productionTaskService {
             if (optionalTask.isPresent()) {
                 ProductionTask task = optionalTask.get();
                 task.setStatus(status);
-                productionTaskRepository.save(task);
+                productionTaskRepository.insertTask(task);
                 return true;
             }
             return false;

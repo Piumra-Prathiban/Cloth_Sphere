@@ -62,7 +62,10 @@ public class LoginController {
                 // For first-time login, validate against default password
                 if (password == null || password.trim().isEmpty()) {
                     System.out.println("No password provided for first-time login - allowing access");
+                    // Set session attributes including employeeId
                     session.setAttribute("currentUser", user);
+                    session.setAttribute("employeeId", user.getUserName()); // ADD THIS LINE
+                    session.setAttribute("username", username); // ADD THIS LINE
                     session.setAttribute("firstLogin", true);
                     session.setAttribute("requirePasswordChange", true);
                     return "redirect:/employeeDashboard?firstLogin=true";
@@ -70,7 +73,10 @@ public class LoginController {
                     // If password is provided, validate it against the encrypted default password
                     if (PasswordEncoder.matches(password, user.getPassword())) {
                         System.out.println("First-time employee password validated: " + username);
+                        // Set session attributes including employeeId
                         session.setAttribute("currentUser", user);
+                        session.setAttribute("employeeId", user.getUserName()); // ADD THIS LINE
+                        session.setAttribute("username", username); // ADD THIS LINE
                         session.setAttribute("firstLogin", true);
                         session.setAttribute("requirePasswordChange", true);
                         return "redirect:/employeeDashboard?firstLogin=true";
@@ -93,7 +99,10 @@ public class LoginController {
                     user.setLogCount(user.getLogCount() + 1);
                     systemUserService.updateLogCount(username, user.getLogCount());
 
+                    // Set session attributes including employeeId
                     session.setAttribute("currentUser", user);
+                    session.setAttribute("employeeId", user.getUserName()); // ADD THIS LINE
+                    session.setAttribute("username", username); // ADD THIS LINE
                     return "redirect:/employeeDashboard";
                 } else {
                     System.out.println("Invalid password for returning employee: " + username);
@@ -112,6 +121,7 @@ public class LoginController {
         if (PasswordEncoder.matches(password, user.getPassword())) {
             System.out.println("User validation successful for: " + username);
             session.setAttribute("currentUser", user);
+            session.setAttribute("username", username); // ADD THIS LINE FOR ALL USERS
 
             String lowerRole = userRole.toLowerCase().trim();
             System.out.println("Redirecting to dashboard for role: '" + lowerRole + "'");
@@ -128,6 +138,8 @@ public class LoginController {
                 case "sales-executive":
                     return "redirect:/salesDashboard";
                 case "employee":
+                    // Set employeeId for employee role
+                    session.setAttribute("employeeId", user.getUserName());
                     return "redirect:/employeeDashboard";
                 default:
                     return "redirect:/dashboard";
@@ -209,6 +221,4 @@ public class LoginController {
     public String showSalesDashboard(HttpSession session, Model model) {
         return loadDashboard("salesDashboard", session, model);
     }
-
-    // REMOVED: showEmployeeDashboard method - it's already in HREController
 }
