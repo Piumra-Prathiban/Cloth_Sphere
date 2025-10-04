@@ -492,18 +492,6 @@ document.getElementById('departmentForm').addEventListener('submit', async funct
     }
 });
 
-// Attendance Chart
-const ctx = document.getElementById('attendanceChart');
-if (ctx) {
-    new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Working Employees', 'On Leave'],
-            datasets: [{ data: [85, 15], backgroundColor: ['#28a745', '#dc3545'] }]
-        },
-        options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
-    });
-}
 
 // Other functions
 function logout() {
