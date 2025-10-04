@@ -72,7 +72,7 @@ public class CalendarNoteService {
                 return null;
             }
 
-            // Use manual INSERT query instead of JPA save
+            // Use manual INSERT query
             LocalDateTime now = LocalDateTime.now();
             int result = calendarNoteRepository.insertCalendarNote(userName, noteDate, cleanedNoteText, now, now);
 
