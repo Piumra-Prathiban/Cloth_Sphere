@@ -243,7 +243,9 @@
         <div class="filter-row">
           <div class="filter-group">
             <label for="employeeSearch">Employee ID (Optional):</label>
-            <input type="text" id="employeeSearch" placeholder="Enter Employee ID (e.g., emp01)">
+            <div class="suggestions-container">
+              <input type="text" id="employeeSearch" placeholder="Enter Employee ID (e.g., emp01)">
+            </div>
           </div>
           <div class="filter-group">
             <label for="fromDate">From Date:</label>
@@ -267,40 +269,40 @@
         </div>
       </div>
 
-      <!-- Attendance Summary -->
-      <div id="attendanceSummary" class="summary-card" style="display: none;">
-        <h4>Attendance Summary</h4>
-        <div class="summary-grid">
-          <div class="summary-item">
-            <span class="summary-label">EMPLOYEE:</span>
-            <span class="summary-value" id="summaryEmpId">-</span>
-          </div>
-          <div class="summary-item">
-            <span class="summary-label">TOTAL EMPLOYEES:</span>
-            <span class="summary-value" id="summaryEmpName">-</span>
-          </div>
-          <div class="summary-item">
-            <span class="summary-label">TOTAL RECORDS:</span>
-            <span class="summary-value" id="summaryTotalDays">0</span>
-          </div>
-          <div class="summary-item">
-            <span class="summary-label">PRESENT DAYS:</span>
-            <span class="summary-value present-days" id="summaryPresentDays">0</span>
-          </div>
-          <div class="summary-item">
-            <span class="summary-label">ABSENT DAYS:</span>
-            <span class="summary-value absent-days" id="summaryAbsentDays">0</span>
-          </div>
-          <div class="summary-item">
-            <span class="summary-label">TOTAL WORK HOURS:</span>
-            <span class="summary-value" id="summaryWorkHours">0</span>
-          </div>
-          <div class="summary-item">
-            <span class="summary-label">ATTENDANCE RATE:</span>
-            <span class="summary-value" id="summaryAttendanceRate">0%</span>
+        <!-- Attendance Summary -->
+        <div id="attendanceSummary" class="summary-card" style="display: none;">
+          <h4>Attendance Summary</h4>
+          <div class="summary-grid">
+            <div class="summary-item">
+              <span class="summary-label">EMPLOYEE:</span>
+              <span class="summary-value" id="summaryEmpId">-</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">TOTAL EMPLOYEES:</span>
+              <span class="summary-value" id="summaryEmpName">-</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">TOTAL RECORDS:</span>
+              <span class="summary-value" id="summaryTotalDays">0</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">PRESENT DAYS:</span>
+              <span class="summary-value present-days" id="summaryPresentDays">0</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">ABSENT DAYS:</span>
+              <span class="summary-value absent-days" id="summaryAbsentDays">0</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">TOTAL WORK HOURS:</span>
+              <span class="summary-value" id="summaryWorkHours">0</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">ATTENDANCE RATE:</span>
+              <span class="summary-value" id="summaryAttendanceRate">0%</span>
+            </div>
           </div>
         </div>
-      </div>
 
       <!-- No Data Message -->
       <div id="noAttendanceData" class="no-data-message" style="display: none;">
