@@ -233,10 +233,101 @@
   </div>
 
 
+  <!-- Attendance Tracking Section -->
   <div id="attendance" class="content-section">
     <div class="card">
       <h3>Track Attendance</h3>
-      <p>Attendance tracking functionality will be implemented here.</p>
+
+      <!-- Search Filters -->
+      <div class="search-filters">
+        <div class="filter-row">
+          <div class="filter-group">
+            <label for="employeeSearch">Employee ID (Optional):</label>
+            <input type="text" id="employeeSearch" placeholder="Enter Employee ID (e.g., emp01)">
+          </div>
+          <div class="filter-group">
+            <label for="fromDate">From Date:</label>
+            <input type="date" id="fromDate" required>
+          </div>
+          <div class="filter-group">
+            <label for="toDate">To Date:</label>
+            <input type="date" id="toDate" required>
+          </div>
+          <div class="filter-group">
+            <button class="btn btn-primary" onclick="searchAttendance()">
+              <i class="fas fa-search"></i> Search
+            </button>
+            <button class="btn btn-secondary" onclick="resetAttendanceFilters()">
+              <i class="fas fa-refresh"></i> Reset
+            </button>
+          </div>
+        </div>
+        <div class="search-note">
+          <small><i class="fas fa-info-circle"></i> Leave Employee ID empty to see all employees</small>
+        </div>
+      </div>
+
+      <!-- Attendance Summary -->
+      <div id="attendanceSummary" class="summary-card" style="display: none;">
+        <h4>Attendance Summary</h4>
+        <div class="summary-grid">
+          <div class="summary-item">
+            <span class="summary-label">EMPLOYEE:</span>
+            <span class="summary-value" id="summaryEmpId">-</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">TOTAL EMPLOYEES:</span>
+            <span class="summary-value" id="summaryEmpName">-</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">TOTAL RECORDS:</span>
+            <span class="summary-value" id="summaryTotalDays">0</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">PRESENT DAYS:</span>
+            <span class="summary-value present-days" id="summaryPresentDays">0</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">ABSENT DAYS:</span>
+            <span class="summary-value absent-days" id="summaryAbsentDays">0</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">TOTAL WORK HOURS:</span>
+            <span class="summary-value" id="summaryWorkHours">0</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">ATTENDANCE RATE:</span>
+            <span class="summary-value" id="summaryAttendanceRate">0%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- No Data Message -->
+      <div id="noAttendanceData" class="no-data-message" style="display: none;">
+        <i class="fas fa-clipboard-list"></i>
+        <p>No attendance records found for the selected criteria</p>
+      </div>
+
+      <!-- Attendance Table -->
+      <div class="table-container">
+        <table id="attendanceTable">
+          <thead>
+          <tr>
+            <th>Employee ID</th>
+            <th>Date</th>
+            <th>Day</th>
+            <th>Check In</th>
+            <th>Check Out</th>
+            <th>Work Hours</th>
+            <th>Status</th>
+            <th>Notes</th>
+          </tr>
+          </thead>
+          <tbody>
+          <!-- Attendance data will be loaded here -->
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -485,6 +576,7 @@
 </div>
 
 <script src="/js/hrDashboard.js"></script>
+<script src="/js/hrDashboard_AT.js"></script>
 
 </body>
 </html>

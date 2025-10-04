@@ -1,6 +1,8 @@
 package com.clothsphere.controller;
 
+import com.clothsphere.model.HR.Employee;
 import com.clothsphere.model.SystemUser;
+import com.clothsphere.repository.HR.EmployeeRepository;
 import com.clothsphere.service.SystemUserService;
 import com.clothsphere.util.PasswordEncoder;
 import jakarta.servlet.http.HttpSession;
@@ -14,6 +16,9 @@ public class LoginController {
 
     @Autowired
     private SystemUserService systemUserService;
+
+    @Autowired
+    private EmployeeRepository employeeRepository;
 
     // ========================= Landing page =========================
 
@@ -53,6 +58,19 @@ public class LoginController {
         String userRole = user.getRole();
         System.out.println("User role: " + userRole);
 
+        // Get actual employee ID from employee table
+        String actualEmployeeId = null;
+        if ("employee".equalsIgnoreCase(userRole.trim())) {
+            // Look up employee by username to get the actual employee ID
+            Employee employee = employeeRepository.findByUsername(username);
+            if (employee != null) {
+                actualEmployeeId = employee.getId(); // This is the actual employee ID
+                System.out.println("Found employee ID: " + actualEmployeeId + " for username: " + username);
+            } else {
+                System.out.println("No employee record found for username: " + username);
+            }
+        }
+
         // Special handling for first-time employee login
         if ("employee".equalsIgnoreCase(userRole.trim())) {
             // Check if first-time login (logCount = 0)
@@ -62,10 +80,10 @@ public class LoginController {
                 // For first-time login, validate against default password
                 if (password == null || password.trim().isEmpty()) {
                     System.out.println("No password provided for first-time login - allowing access");
-                    // Set session attributes including employeeId
+                    // Set session attributes with ACTUAL employee ID
                     session.setAttribute("currentUser", user);
-                    session.setAttribute("employeeId", user.getUserName()); // ADD THIS LINE
-                    session.setAttribute("username", username); // ADD THIS LINE
+                    session.setAttribute("employeeId", actualEmployeeId); // Use actual employee ID
+                    session.setAttribute("username", username);
                     session.setAttribute("firstLogin", true);
                     session.setAttribute("requirePasswordChange", true);
                     return "redirect:/employeeDashboard?firstLogin=true";
@@ -73,10 +91,10 @@ public class LoginController {
                     // If password is provided, validate it against the encrypted default password
                     if (PasswordEncoder.matches(password, user.getPassword())) {
                         System.out.println("First-time employee password validated: " + username);
-                        // Set session attributes including employeeId
+                        // Set session attributes with ACTUAL employee ID
                         session.setAttribute("currentUser", user);
-                        session.setAttribute("employeeId", user.getUserName()); // ADD THIS LINE
-                        session.setAttribute("username", username); // ADD THIS LINE
+                        session.setAttribute("employeeId", actualEmployeeId); // Use actual employee ID
+                        session.setAttribute("username", username);
                         session.setAttribute("firstLogin", true);
                         session.setAttribute("requirePasswordChange", true);
                         return "redirect:/employeeDashboard?firstLogin=true";
@@ -99,10 +117,10 @@ public class LoginController {
                     user.setLogCount(user.getLogCount() + 1);
                     systemUserService.updateLogCount(username, user.getLogCount());
 
-                    // Set session attributes including employeeId
+                    // Set session attributes with ACTUAL employee ID
                     session.setAttribute("currentUser", user);
-                    session.setAttribute("employeeId", user.getUserName()); // ADD THIS LINE
-                    session.setAttribute("username", username); // ADD THIS LINE
+                    session.setAttribute("employeeId", actualEmployeeId); // Use actual employee ID
+                    session.setAttribute("username", username);
                     return "redirect:/employeeDashboard";
                 } else {
                     System.out.println("Invalid password for returning employee: " + username);
@@ -121,7 +139,7 @@ public class LoginController {
         if (PasswordEncoder.matches(password, user.getPassword())) {
             System.out.println("User validation successful for: " + username);
             session.setAttribute("currentUser", user);
-            session.setAttribute("username", username); // ADD THIS LINE FOR ALL USERS
+            session.setAttribute("username", username);
 
             String lowerRole = userRole.toLowerCase().trim();
             System.out.println("Redirecting to dashboard for role: '" + lowerRole + "'");
@@ -138,8 +156,8 @@ public class LoginController {
                 case "sales-executive":
                     return "redirect:/salesDashboard";
                 case "employee":
-                    // Set employeeId for employee role
-                    session.setAttribute("employeeId", user.getUserName());
+                    // Set ACTUAL employee ID for employee role
+                    session.setAttribute("employeeId", actualEmployeeId);
                     return "redirect:/employeeDashboard";
                 default:
                     return "redirect:/dashboard";

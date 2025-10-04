@@ -130,4 +130,6 @@ public interface EmployeeRepository extends JpaRepository<Employee, String> {
     // Custom query to check if email exists (any employee)
     @Query("SELECT COUNT(e) > 0 FROM Employee e WHERE e.email = :email")
     boolean existsByEmail(@Param("email") String email);
+
+
 }

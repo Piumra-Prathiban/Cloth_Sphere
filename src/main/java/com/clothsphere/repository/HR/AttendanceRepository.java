@@ -108,4 +108,24 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Attendan
     @Query("SELECT COUNT(a) FROM Attendance a WHERE a.employeeId = :employeeId AND YEAR(a.attendanceDate) = YEAR(CURRENT_DATE) AND MONTH(a.attendanceDate) = MONTH(CURRENT_DATE)")
     Long countTotalAttendanceDaysThisMonth(@Param("employeeId") String employeeId);
 
+    // Find attendance records by employee name and date range
+    @Query(value = "SELECT a.* FROM attendance a " +
+            "JOIN employees e ON a.employee_id = e.employee_id " +
+            "WHERE LOWER(e.full_name) LIKE LOWER(CONCAT('%', :employeeName, '%')) " +
+            "AND a.attendance_date BETWEEN :startDate AND :endDate " +
+            "ORDER BY a.attendance_date DESC",
+            nativeQuery = true)
+    List<Attendance> findByEmployeeNameAndAttendanceDateBetweenOrderByAttendanceDateDesc(
+            @Param("employeeName") String employeeName,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
+
+    // Find all employees attendance between dates
+    @Query(value = "SELECT a.* FROM attendance a " +
+            "WHERE a.attendance_date BETWEEN :startDate AND :endDate " +
+            "ORDER BY a.employee_id, a.attendance_date DESC",
+            nativeQuery = true)
+    List<Attendance> findAllEmployeesAttendanceBetweenDates(
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
 }

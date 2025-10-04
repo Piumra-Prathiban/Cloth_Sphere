@@ -28,9 +28,20 @@ public class AttendanceController {
     @ResponseBody
     public ResponseEntity<Map<String, Object>> checkIn(@RequestParam(value = "notes", required = false) String notes,
                                                        HttpSession session) {
+
         String employeeId = (String) session.getAttribute("employeeId");
 
+        // Debug logging
+        System.out.println("Session employeeId: " + employeeId);
+        System.out.println("All session attributes: " + session.getAttributeNames());
+
         if (employeeId == null) {
+            System.err.println("Employee ID not found in session. Available attributes:");
+            java.util.Enumeration<String> attributeNames = session.getAttributeNames();
+            while (attributeNames.hasMoreElements()) {
+                String name = attributeNames.nextElement();
+                System.err.println(" - " + name + ": " + session.getAttribute(name));
+            }
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Employee not logged in"));
         }
 
@@ -119,4 +130,35 @@ public class AttendanceController {
         Map<String, Object> result = attendanceService.markManualAttendance(employeeId, date, checkIn, checkOut, status, notes);
         return ResponseEntity.ok(result);
     }
+
+    //=====================================================================================
+    // HR Attendance Search Endpoint
+    @GetMapping("/hr/search")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> searchAttendance(
+            @RequestParam(required = false) String employeeId,
+            @RequestParam(required = false) String employeeName,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate) {
+
+        // FLOW: Controller receives HTTP request → calls Service method
+        Map<String, Object> result = attendanceService.searchAttendanceForHREnhanced(
+                employeeId, employeeName, fromDate, toDate);
+
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/hr/all-attendance")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> searchAllEmployeesAttendance(
+            @RequestParam(required = false) String employeeId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate) {
+
+        Map<String, Object> result = attendanceService.searchAllEmployeesAttendance(
+                fromDate, toDate, employeeId);
+
+        return ResponseEntity.ok(result);
+    }
+
 }

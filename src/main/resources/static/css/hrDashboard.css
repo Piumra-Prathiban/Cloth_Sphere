@@ -1014,3 +1014,258 @@ body.zoomed-out td {
     color: #721c24;
     border: 1px solid #f5c6cb;
 }
+/* Attendance Tracking Styles */
+.search-filters {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border: 1px solid #e9ecef;
+}
+
+.filter-row {
+    display: flex;
+    gap: 15px;
+    align-items: end;
+    flex-wrap: wrap;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    min-width: 150px;
+}
+
+.filter-group label {
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: #495057;
+    font-size: 14px;
+}
+
+.filter-group input {
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.filter-group input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+/* Summary Card */
+.summary-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.summary-card h4 {
+    margin-bottom: 15px;
+    font-size: 1.2rem;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+    padding-bottom: 10px;
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.summary-item {
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    backdrop-filter: blur(10px);
+}
+
+.summary-label {
+    font-size: 12px;
+    opacity: 0.9;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.summary-value {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.present-days {
+    color: #28a745;
+}
+
+.absent-days {
+    color: #dc3545;
+}
+
+/* Attendance Table */
+#attendanceTable th {
+    background: #343a40;
+    color: white;
+}
+
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.status-present {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-absent {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.status-late {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.status-halfday {
+    background-color: #cce7ff;
+    color: #004085;
+}
+
+/* No Data Message */
+.no-data-message {
+    text-align: center;
+    padding: 40px;
+    color: #6c757d;
+}
+
+.no-data-message i {
+    font-size: 48px;
+    margin-bottom: 15px;
+    color: #dee2e6;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .filter-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filter-group {
+        min-width: auto;
+    }
+
+    .summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .table-container {
+        font-size: 14px;
+    }
+}
+/* Enhanced Search Filters */
+.search-note {
+    margin-top: 10px;
+    color: #6c757d;
+    font-style: italic;
+}
+
+.search-note i {
+    color: #007bff;
+    margin-right: 5px;
+}
+
+/* Auto-suggest dropdown */
+.suggestions-dropdown {
+    position: absolute;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    width: 100%;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.suggestion-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.suggestion-item:hover {
+    background-color: #f8f9fa;
+}
+
+.suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.employee-id {
+    font-size: 12px;
+    color: #6c757d;
+    margin-left: 8px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .filter-group {
+        min-width: 100%;
+    }
+}
+/* No Data Message */
+.no-data-message {
+    text-align: center;
+    padding: 40px;
+    color: #6c757d;
+    display: none;
+}
+
+.no-data-message i {
+    font-size: 48px;
+    margin-bottom: 15px;
+    color: #dee2e6;
+}
+
+.no-data-message p {
+    font-size: 16px;
+    margin: 0;
+}
+
+/* Status badges for attendance */
+.status-present {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.status-absent {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.status-late {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.status-halfday {
+    background-color: #cce7ff;
+    color: #004085;
+    border: 1px solid #b3d7ff;
+}
