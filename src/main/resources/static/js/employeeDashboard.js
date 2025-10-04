@@ -885,11 +885,11 @@
                 <td>
                     <div class="leave-actions">
                         ${isPending ? `
-                            <button class="btn btn-danger btn-sm" onclick="cancelLeaveRequest(${leave.leaveId})">
+                            <button class="btn btn-danger btn-sm" onclick="event.preventDefault(); cancelLeaveRequest('${leave.leaveId}')">
                                 <i class="fas fa-times"></i> Cancel
                             </button>
                         ` : ''}
-                        <button class="btn btn-info btn-sm" onclick="viewLeaveDetails(${leave.leaveId})">
+                        <button class="btn btn-info btn-sm" onclick="event.preventDefault(); viewLeaveDetails('${leave.leaveId}')">
                             <i class="fas fa-eye"></i> View
                         </button>
                     </div>
