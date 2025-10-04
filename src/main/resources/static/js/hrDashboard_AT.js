@@ -215,113 +215,188 @@ function clearSuggestions() {
 }
 
 // Enhanced search attendance function
-// Enhanced search attendance function with better error handling
 async function searchAttendance() {
     try {
-        const employeeId = document.getElementById('employeeSearch')?.value.trim();
-        const fromDateInput = document.getElementById('fromDate');
-        const toDateInput = document.getElementById('toDate');
+        const employeeId = document.getElementById('employeeSearch').value.trim();
+        const fromDate = document.getElementById('fromDate').value;
+        const toDate = document.getElementById('toDate').value;
 
-        // Validate inputs
-        if (!fromDateInput || !toDateInput) {
-            showAlert('Date inputs not found', 'error');
-            return;
-        }
-
-        const fromDate = fromDateInput.value;
-        const toDate = toDateInput.value;
-
+        // Validate dates
         if (!fromDate || !toDate) {
-            showAlert('Please select both From and To dates', 'error');
+            showAlert('Please select both From Date and To Date', 'error');
             return;
         }
 
-        // Validate date range
-        if (new Date(fromDate) > new Date(toDate)) {
-            showAlert('From date cannot be after To date', 'error');
-            return;
-        }
+        // Show loading
+        const tbody = document.querySelector('#attendanceTable tbody');
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
 
-        // Show loading state
-        const searchBtn = document.querySelector('.btn-primary');
-        const originalText = searchBtn?.innerHTML;
-        if (searchBtn) {
-            searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching...';
-            searchBtn.disabled = true;
-        }
+        // Build URL
+        const url = `/attendance/hr/search?fromDate=${fromDate}&toDate=${toDate}` +
+            (employeeId ? `&employeeId=${encodeURIComponent(employeeId)}` : '');
 
-        // Build query parameters
-        const params = new URLSearchParams({
-            fromDate: fromDate,
-            toDate: toDate
-        });
+        console.log('Searching attendance:', url);
 
-        // Add employee ID filter if provided
-        if (employeeId) {
-            params.append('employeeId', employeeId);
-        }
+        const response = await fetchWithAuth(url);
+        const result = await response.json();
 
-        console.log('Searching with params:', params.toString());
+        console.log('Search Result:', result);
 
-        const response = await fetchWithAuth(`/attendance/hr/all-attendance?${params}`);
+        if (result.success) {
+            const records = result.attendanceRecords || [];
+            const summary = result.summary || {};
+            const searchType = result.searchCriteria?.searchType || 'MULTIPLE';
 
-        // Restore button state
-        if (searchBtn) {
-            searchBtn.innerHTML = originalText;
-            searchBtn.disabled = false;
-        }
+            console.log('Search Type:', searchType);
+            console.log('Summary Data:', summary);
 
-        if (response.ok) {
-            const result = await response.json();
-            console.log('Search result:', result);
+            // Display results
+            displayAttendanceRecords(records);
 
-            if (result.success) {
-                currentAttendanceData = result.attendanceRecords || [];
-
-                if (currentAttendanceData.length > 0) {
-                    displayAllEmployeesAttendanceSummary(result.summary);
-                    displayAttendanceDetails(currentAttendanceData);
-
-                    // Show/hide elements safely
-                    const summaryEl = document.getElementById('attendanceSummary');
-                    const noDataEl = document.getElementById('noAttendanceData');
-                    if (summaryEl) summaryEl.style.display = 'block';
-                    if (noDataEl) noDataEl.style.display = 'none';
-
-                    showAlert(`Found ${currentAttendanceData.length} attendance records`, 'success');
-                } else {
-                    const summaryEl = document.getElementById('attendanceSummary');
-                    const noDataEl = document.getElementById('noAttendanceData');
-                    if (summaryEl) summaryEl.style.display = 'none';
-                    if (noDataEl) noDataEl.style.display = 'block';
-                    showAlert('No attendance records found for the selected criteria', 'info');
-                }
+            // Display summary based on search type
+            if (searchType === 'INDIVIDUAL') {
+                // INDIVIDUAL EMPLOYEE SEARCH
+                displayIndividualSummary(summary, employeeId);
             } else {
-                showAlert(result.message || 'Failed to fetch attendance data', 'error');
+                // MULTIPLE EMPLOYEES SEARCH
+                displayAllEmployeesSummary(summary);
             }
+
+            if (records.length === 0) {
+                document.getElementById('noAttendanceData').style.display = 'block';
+            }
+
         } else {
-            let errorMessage = 'Failed to fetch attendance data';
-            try {
-                const errorText = await response.text();
-                const errorJson = JSON.parse(errorText);
-                errorMessage = errorJson.message || errorMessage;
-            } catch (e) {
-                // Use default error message
-            }
-            showAlert(errorMessage, 'error');
+            showAlert(result.message || 'Search failed', 'error');
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No records found</td></tr>';
         }
+
     } catch (error) {
         console.error('Error searching attendance:', error);
-        showAlert('Error searching attendance: ' + error.message, 'error');
-
-        // Restore button state in case of error
-        const searchBtn = document.querySelector('.btn-primary');
-        if (searchBtn) {
-            searchBtn.innerHTML = '<i class="fas fa-search"></i> Search';
-            searchBtn.disabled = false;
-        }
+        showAlert('Error: ' + error.message, 'error');
     }
 }
+
+// Display individual employee summary
+function displayIndividualSummary(summary, employeeId) {
+    const summaryCard = document.getElementById('attendanceSummary');
+    summaryCard.style.display = 'block';
+
+    // Update summary fields for INDIVIDUAL employee
+    document.getElementById('summaryEmpId').textContent =
+        summary.employeeId || employeeId || '-';
+
+    document.getElementById('summaryEmpName').textContent =
+        summary.employeeName || '1'; // Show "1" for total employees
+
+    document.getElementById('summaryTotalDays').textContent =
+        summary.totalRecords || 0;
+
+    document.getElementById('summaryPresentDays').textContent =
+        summary.presentDays || 0;
+
+    // CRITICAL FIX: Use individual employee's absent days
+    document.getElementById('summaryAbsentDays').textContent =
+        summary.absentDays || 0;
+
+    document.getElementById('summaryWorkHours').textContent =
+        (summary.totalWorkHours || 0).toFixed(2);
+
+    document.getElementById('summaryAttendanceRate').textContent =
+        (summary.attendanceRate || 0).toFixed(2) + '%';
+
+    console.log('Displayed Individual Summary:', {
+        employeeId: summary.employeeId,
+        presentDays: summary.presentDays,
+        absentDays: summary.absentDays,
+        attendanceRate: summary.attendanceRate
+    });
+}
+
+// Display all employees summary
+function displayAllEmployeesSummary(summary) {
+    const summaryCard = document.getElementById('attendanceSummary');
+    summaryCard.style.display = 'block';
+
+    // Update summary fields for ALL employees
+    document.getElementById('summaryEmpId').textContent = 'ALL EMPLOYEES';
+
+    document.getElementById('summaryEmpName').textContent =
+        summary.totalEmployees || 0;
+
+    document.getElementById('summaryTotalDays').textContent =
+        summary.totalRecords || 0;
+
+    document.getElementById('summaryPresentDays').textContent =
+        summary.totalPresentDays || 0;
+
+    // Use total absent days for all employees
+    document.getElementById('summaryAbsentDays').textContent =
+        summary.totalAbsentDays || 0;
+
+    document.getElementById('summaryWorkHours').textContent =
+        (summary.totalWorkHours || 0).toFixed(2);
+
+    document.getElementById('summaryAttendanceRate').textContent =
+        (summary.attendanceRate || 0).toFixed(2) + '%';
+
+    console.log('Displayed All Employees Summary:', {
+        totalEmployees: summary.totalEmployees,
+        totalPresentDays: summary.totalPresentDays,
+        totalAbsentDays: summary.totalAbsentDays,
+        attendanceRate: summary.attendanceRate
+    });
+}
+
+// Display attendance records in table
+function displayAttendanceRecords(records) {
+    const tbody = document.querySelector('#attendanceTable tbody');
+    tbody.innerHTML = '';
+
+    if (records.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #6c757d;">No attendance records found</td></tr>';
+        return;
+    }
+
+    records.forEach(record => {
+        const date = new Date(record.attendanceDate);
+        const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+
+        const row = `
+            <tr>
+                <td>${record.employeeId || '-'}</td>
+                <td>${record.attendanceDate || '-'}</td>
+                <td>${dayName}</td>
+                <td>${record.checkInTime || '-'}</td>
+                <td>${record.checkOutTime || '-'}</td>
+                <td>${record.workHours ? record.workHours.toFixed(2) : '-'}</td>
+                <td><span class="status-badge status-${(record.status || 'absent').toLowerCase()}">${record.status || 'ABSENT'}</span></td>
+                <td>${record.notes || '-'}</td>
+            </tr>
+        `;
+        tbody.innerHTML += row;
+    });
+}
+
+// Reset filters
+function resetAttendanceFilters() {
+    document.getElementById('employeeSearch').value = '';
+    document.getElementById('fromDate').value = '';
+    document.getElementById('toDate').value = '';
+    document.getElementById('attendanceSummary').style.display = 'none';
+    document.getElementById('noAttendanceData').style.display = 'none';
+
+    const tbody = document.querySelector('#attendanceTable tbody');
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #6c757d;">Please select dates and click Search</td></tr>';
+}
+
+// Show alert messages
+function showAlert(message, type) {
+    // Implementation depends on your alert system
+    console.log(`${type.toUpperCase()}: ${message}`);
+    alert(message);
+}
+
 
 // Safe element access for summary display
 // Fixed summary display function
@@ -503,6 +578,8 @@ async function fetchWithAuth(url, options = {}) {
         throw error;
     }
 }
+
+
 
 // Alert function
 function showAlert(message, type = 'info') {

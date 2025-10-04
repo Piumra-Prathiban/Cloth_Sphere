@@ -2,6 +2,7 @@ package com.clothsphere.service.HR;
 
 import com.clothsphere.model.HR.Attendance;
 import com.clothsphere.repository.HR.AttendanceRepository;
+import com.clothsphere.repository.HR.MonthlyAttendanceSummaryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +22,9 @@ public class AttendanceService {
 
     @Autowired
     private EmployeeRepository employeeRepository;
+
+    @Autowired
+    private MonthlyAttendanceSummaryRepository monthlySummaryRepository;
 
     @Transactional
     public Map<String, Object> checkIn(String employeeId, String notes) {
@@ -232,33 +236,39 @@ public Map<String, Object> searchAttendanceForHREnhanced(String employeeId, Stri
 
         // STEP 2: Determine Search Strategy
         List<Attendance> attendanceRecords;
-        String searchIdentifier;
+        boolean isIndividualSearch = false;
 
         if (employeeId != null && !employeeId.trim().isEmpty()) {
-            // Search by Employee ID
+            // Search by Employee ID - INDIVIDUAL EMPLOYEE
             System.out.println("Searching by Employee ID: " + employeeId);
+            isIndividualSearch = true;
 
             attendanceRecords = attendanceRepository
                     .findByEmployeeIdAndAttendanceDateBetweenOrderByAttendanceDateDesc(
                             employeeId.trim(), fromDate, toDate);
-            searchIdentifier = employeeId;
 
         } else {
-            // Search by Employee Name - FIX: Handle null employeeName
+            // Search by Employee Name
             String searchName = (employeeName != null) ? employeeName.trim() : "";
             System.out.println("Searching by Employee Name: " + searchName);
 
             attendanceRecords = attendanceRepository
                     .findByEmployeeNameAndAttendanceDateBetweenOrderByAttendanceDateDesc(
                             searchName, fromDate, toDate);
-            searchIdentifier = searchName;
         }
 
         System.out.println("Found " + attendanceRecords.size() + " attendance records");
+        System.out.println("Is Individual Search: " + isIndividualSearch);
 
         // STEP 3: Process Results and Calculate Summary
-        Map<String, Object> summary = calculateEnhancedAttendanceSummary(
-                searchIdentifier, attendanceRecords, fromDate, toDate);
+        Map<String, Object> summary;
+        if (isIndividualSearch) {
+            // INDIVIDUAL EMPLOYEE SEARCH - calculate only for this employee
+            summary = calculateIndividualEmployeeSummary(employeeId, attendanceRecords, fromDate, toDate);
+        } else {
+            // MULTIPLE EMPLOYEES SEARCH - calculate for all employees
+            summary = calculateAllEmployeesSummary(attendanceRecords, fromDate, toDate);
+        }
 
         // STEP 4: Prepare Response
         response.put("success", true);
@@ -268,7 +278,8 @@ public Map<String, Object> searchAttendanceForHREnhanced(String employeeId, Stri
                 "employeeId", employeeId != null ? employeeId : "",
                 "employeeName", employeeName != null ? employeeName : "",
                 "fromDate", fromDate.toString(),
-                "toDate", toDate.toString()
+                "toDate", toDate.toString(),
+                "searchType", isIndividualSearch ? "INDIVIDUAL" : "MULTIPLE"
         ));
 
         System.out.println("=== SERVICE LAYER: Search Completed Successfully ===");
@@ -276,7 +287,7 @@ public Map<String, Object> searchAttendanceForHREnhanced(String employeeId, Stri
     } catch (Exception e) {
         System.err.println("=== SERVICE LAYER: Error occurred ===");
         System.err.println("Error: " + e.getMessage());
-        e.printStackTrace(); // Add this for better debugging
+        e.printStackTrace();
         response.put("success", false);
         response.put("message", "Error searching attendance: " + (e.getMessage() != null ? e.getMessage() : "Unknown error"));
     }
@@ -284,33 +295,45 @@ public Map<String, Object> searchAttendanceForHREnhanced(String employeeId, Stri
     return response;
 }
 
-    // Enhanced Summary Calculation with Employee Details
-    private Map<String, Object> calculateEnhancedAttendanceSummary(String searchIdentifier,
+    /**
+     * Calculate summary for INDIVIDUAL employee search
+     */
+    private Map<String, Object> calculateIndividualEmployeeSummary(String employeeId,
                                                                    List<Attendance> records,
                                                                    LocalDate fromDate, LocalDate toDate) {
         Map<String, Object> summary = new HashMap<>();
 
-        // Get first record to extract employee info
-        String actualEmployeeId = records.isEmpty() ? searchIdentifier : records.get(0).getEmployeeId();
+        System.out.println("=== INDIVIDUAL EMPLOYEE CALCULATION ===");
+        System.out.println("Employee ID: " + employeeId);
+        System.out.println("Records found: " + records.size());
 
-        // FLOW: Service calls EmployeeRepository for employee details
-        String employeeName = getEmployeeDetails(actualEmployeeId);
+        // Get employee details
+        String employeeName = getEmployeeDetails(employeeId);
 
-        // Basic employee info
-        summary.put("employeeId", actualEmployeeId);
-        summary.put("employeeName", employeeName);
-        summary.put("searchPeriod", fromDate + " to " + toDate);
-        summary.put("searchType", records.isEmpty() ? "No records found" :
-                searchIdentifier.equals(actualEmployeeId) ? "ID Search" : "Name Search");
+        // Calculate total working days in the period (excluding weekends)
+        long totalWorkingDaysInPeriod = calculateWorkingDaysInPeriod(fromDate, toDate);
 
-        // Calculate statistics
-        long totalDays = records.size();
+        System.out.println("From Date: " + fromDate + " To Date: " + toDate);
+        System.out.println("Total Working Days in Period: " + totalWorkingDaysInPeriod);
+
+        // Calculate actual attended days from records - ONLY FOR THIS EMPLOYEE
+        long totalDaysWithRecords = records.size();
         long presentDays = records.stream()
                 .filter(att -> "PRESENT".equals(att.getStatus()) || "LATE".equals(att.getStatus()))
                 .count();
-        long absentDays = records.stream()
-                .filter(att -> "ABSENT".equals(att.getStatus()))
-                .count();
+
+        System.out.println("Present Days (from records): " + presentDays);
+
+        // Calculate absent days for THIS EMPLOYEE ONLY
+        long absentDays = totalWorkingDaysInPeriod - presentDays;
+
+        // Ensure absent days is not negative
+        if (absentDays < 0) {
+            absentDays = 0;
+        }
+
+        System.out.println("Calculated Absent Days for " + employeeId + ": " + absentDays);
+
         long halfDays = records.stream()
                 .filter(att -> "HALF_DAY".equals(att.getStatus()))
                 .count();
@@ -319,8 +342,14 @@ public Map<String, Object> searchAttendanceForHREnhanced(String employeeId, Stri
                 .mapToDouble(att -> att.getWorkHours() != null ? att.getWorkHours() : 0.0)
                 .sum();
 
-        double averageDailyHours = totalDays > 0 ? totalWorkHours / totalDays : 0.0;
-        double attendanceRate = totalDays > 0 ? (presentDays * 100.0 / totalDays) : 0.0;
+        double averageDailyHours = totalDaysWithRecords > 0 ? totalWorkHours / totalDaysWithRecords : 0.0;
+
+        // Calculate attendance rate for THIS EMPLOYEE
+        double attendanceRate = totalWorkingDaysInPeriod > 0 ?
+                (presentDays * 100.0 / totalWorkingDaysInPeriod) : 0.0;
+
+        System.out.println("Attendance Rate for " + employeeId + ": " + attendanceRate + "%");
+        System.out.println("=== END INDIVIDUAL CALCULATION ===");
 
         // Performance indicators
         String performanceIndicator;
@@ -329,7 +358,16 @@ public Map<String, Object> searchAttendanceForHREnhanced(String employeeId, Stri
         else if (attendanceRate >= 70) performanceIndicator = "Average";
         else performanceIndicator = "Needs Improvement";
 
-        summary.put("totalDays", totalDays);
+        // For individual search, show stats only for this employee
+        summary.put("employeeId", employeeId);
+        summary.put("employeeName", employeeName);
+        summary.put("searchPeriod", fromDate + " to " + toDate);
+        summary.put("searchType", "Individual Employee Search");
+        summary.put("totalWorkingDaysInPeriod", totalWorkingDaysInPeriod);
+
+        // INDIVIDUAL EMPLOYEE STATS ONLY - CRITICAL FIX
+        summary.put("totalEmployees", 1); // Only this employee
+        summary.put("totalRecords", totalDaysWithRecords);
         summary.put("presentDays", presentDays);
         summary.put("absentDays", absentDays);
         summary.put("halfDays", halfDays);
@@ -338,8 +376,27 @@ public Map<String, Object> searchAttendanceForHREnhanced(String employeeId, Stri
         summary.put("attendanceRate", Math.round(attendanceRate * 100.0) / 100.0);
         summary.put("performanceIndicator", performanceIndicator);
 
+        // Add explicit individual employee info
+        summary.put("searchedEmployeeId", employeeId);
+        summary.put("searchedEmployeeName", employeeName);
+        summary.put("isIndividualSearch", true);
+
         return summary;
     }
+
+    /**
+     * Debug method to check the summary content
+     */
+    private void debugSummary(String methodName, Map<String, Object> summary) {
+        System.out.println("=== DEBUG SUMMARY: " + methodName + " ===");
+        System.out.println("Total Employees: " + summary.get("totalEmployees"));
+        System.out.println("Absent Days: " + summary.get("absentDays"));
+        System.out.println("Is Individual Search: " + summary.get("isIndividualSearch"));
+        System.out.println("All Summary Keys: " + summary.keySet());
+        System.out.println("=== END DEBUG SUMMARY ===");
+    }
+
+
 
     // Enhanced employee details lookup
     private String getEmployeeDetails(String employeeId) {
@@ -390,7 +447,7 @@ public Map<String, Object> searchAttendanceForHREnhanced(String employeeId, Stri
 
             System.out.println("Found " + attendanceRecords.size() + " attendance records");
 
-            // Calculate summary for all employees
+            // Calculate summary for all employees - UPDATED WITH CORRECT ABSENT DAYS
             Map<String, Object> summary = calculateAllEmployeesSummary(attendanceRecords, fromDate, toDate);
 
             response.put("success", true);
@@ -415,25 +472,43 @@ public Map<String, Object> searchAttendanceForHREnhanced(String employeeId, Stri
         return response;
     }
 
+
     /**
-     * Calculate summary for all employees
+     * Calculate summary for all employees - FIXED ABSENT DAYS CALCULATION
      */
     private Map<String, Object> calculateAllEmployeesSummary(List<Attendance> records,
                                                              LocalDate fromDate, LocalDate toDate) {
         Map<String, Object> summary = new HashMap<>();
 
+        // Calculate total working days in period
+        long totalWorkingDaysInPeriod = calculateWorkingDaysInPeriod(fromDate, toDate);
+
+        // Get all employees to identify absent ones
+        List<String> allEmployeeIds = employeeRepository.findAllEmployeeIds();
+
         // Group records by employee
         Map<String, List<Attendance>> employeeAttendanceMap = records.stream()
                 .collect(Collectors.groupingBy(Attendance::getEmployeeId));
 
-        // Calculate overall statistics
+        // Calculate overall statistics - FIXED ABSENT DAYS
         long totalRecords = records.size();
-        long presentDays = records.stream()
+        long totalPresentDays = records.stream()
                 .filter(att -> "PRESENT".equals(att.getStatus()) || "LATE".equals(att.getStatus()))
                 .count();
-        long absentDays = records.stream()
-                .filter(att -> "ABSENT".equals(att.getStatus()))
-                .count();
+
+        // Calculate total absent days across all employees
+        long totalAbsentDays = 0;
+        for (String employeeId : allEmployeeIds) {
+            List<Attendance> empRecords = employeeAttendanceMap.getOrDefault(employeeId, new ArrayList<>());
+            long empPresentDays = empRecords.stream()
+                    .filter(att -> "PRESENT".equals(att.getStatus()) || "LATE".equals(att.getStatus()))
+                    .count();
+            long empAbsentDays = totalWorkingDaysInPeriod - empPresentDays;
+            if (empAbsentDays > 0) {
+                totalAbsentDays += empAbsentDays;
+            }
+        }
+
         long halfDays = records.stream()
                 .filter(att -> "HALF_DAY".equals(att.getStatus()))
                 .count();
@@ -442,40 +517,225 @@ public Map<String, Object> searchAttendanceForHREnhanced(String employeeId, Stri
                 .mapToDouble(att -> att.getWorkHours() != null ? att.getWorkHours() : 0.0)
                 .sum();
 
+        // Calculate overall attendance rate
+        long totalPotentialDays = allEmployeeIds.size() * totalWorkingDaysInPeriod;
+        double overallAttendanceRate = totalPotentialDays > 0 ?
+                (totalPresentDays * 100.0 / totalPotentialDays) : 0.0;
+
         // Calculate employee-wise summary
         List<Map<String, Object>> employeeSummaries = new ArrayList<>();
 
-        for (Map.Entry<String, List<Attendance>> entry : employeeAttendanceMap.entrySet()) {
-            String empId = entry.getKey();
-            List<Attendance> empRecords = entry.getValue();
+        for (String employeeId : allEmployeeIds) {
+            List<Attendance> empRecords = employeeAttendanceMap.getOrDefault(employeeId, new ArrayList<>());
 
             Map<String, Object> empSummary = new HashMap<>();
-            empSummary.put("employeeId", empId);
-            empSummary.put("employeeName", getEmployeeDetails(empId));
+            empSummary.put("employeeId", employeeId);
+            empSummary.put("employeeName", getEmployeeDetails(employeeId));
             empSummary.put("totalDays", empRecords.size());
-            empSummary.put("presentDays", empRecords.stream()
+
+            long empPresentDays = empRecords.stream()
                     .filter(att -> "PRESENT".equals(att.getStatus()) || "LATE".equals(att.getStatus()))
-                    .count());
-            empSummary.put("absentDays", empRecords.stream()
-                    .filter(att -> "ABSENT".equals(att.getStatus()))
-                    .count());
+                    .count();
+
+            long empAbsentDays = totalWorkingDaysInPeriod - empPresentDays;
+            if (empAbsentDays < 0) empAbsentDays = 0;
+
+            double empAttendanceRate = totalWorkingDaysInPeriod > 0 ?
+                    (empPresentDays * 100.0 / totalWorkingDaysInPeriod) : 0.0;
+
+            empSummary.put("presentDays", empPresentDays);
+            empSummary.put("absentDays", empAbsentDays);
             empSummary.put("totalWorkHours", empRecords.stream()
                     .mapToDouble(att -> att.getWorkHours() != null ? att.getWorkHours() : 0.0)
                     .sum());
+            empSummary.put("attendanceRate", Math.round(empAttendanceRate * 100.0) / 100.0);
+            empSummary.put("isFullyAbsent", empPresentDays == 0);
 
             employeeSummaries.add(empSummary);
         }
 
-        summary.put("totalEmployees", employeeAttendanceMap.size());
+        summary.put("totalEmployees", allEmployeeIds.size());
         summary.put("totalRecords", totalRecords);
-        summary.put("totalPresentDays", presentDays);
-        summary.put("totalAbsentDays", absentDays);
+        summary.put("totalPresentDays", totalPresentDays);
+        summary.put("totalAbsentDays", totalAbsentDays);
         summary.put("totalHalfDays", halfDays);
         summary.put("totalWorkHours", Math.round(totalWorkHours * 100.0) / 100.0);
+        summary.put("attendanceRate", Math.round(overallAttendanceRate * 100.0) / 100.0);
         summary.put("employeeSummaries", employeeSummaries);
         summary.put("searchPeriod", fromDate + " to " + toDate);
+        summary.put("totalWorkingDaysInPeriod", totalWorkingDaysInPeriod);
 
         return summary;
+    }
+    //===========================================================================================================================
+
+    // Add these methods to your existing AttendanceService class
+
+    /**
+     * Get attendance rate for HR dashboard
+     */
+    public Map<String, Object> getHRAttendanceOverview(LocalDate fromDate, LocalDate toDate) {
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            // Get all attendance records in date range
+            List<Attendance> allRecords = attendanceRepository
+                    .findAllEmployeesAttendanceBetweenDates(fromDate, toDate);
+
+            // Get all employees
+            List<String> allEmployeeIds = employeeRepository.findAllEmployeeIds();
+
+            // Calculate overall statistics
+            Map<String, Object> overallStats = calculateOverallAttendanceStats(allRecords, allEmployeeIds, fromDate, toDate);
+
+            // Calculate employee-wise statistics
+            List<Map<String, Object>> employeeStats = calculateEmployeeWiseStats(allRecords, allEmployeeIds, fromDate, toDate);
+
+            // Identify absent employees (no records in date range)
+            List<Map<String, Object>> absentEmployees = identifyAbsentEmployees(allRecords, allEmployeeIds, fromDate, toDate);
+
+            response.put("success", true);
+            response.put("overallStats", overallStats);
+            response.put("employeeStats", employeeStats);
+            response.put("absentEmployees", absentEmployees);
+            response.put("searchPeriod", fromDate + " to " + toDate);
+            response.put("totalEmployees", allEmployeeIds.size());
+
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Error generating attendance overview: " + e.getMessage());
+        }
+
+        return response;
+    }
+
+    private Map<String, Object> calculateOverallAttendanceStats(List<Attendance> records,
+                                                                List<String> allEmployeeIds,
+                                                                LocalDate fromDate, LocalDate toDate) {
+        Map<String, Object> stats = new HashMap<>();
+
+        long totalDays = records.size();
+        long presentDays = records.stream()
+                .filter(att -> "PRESENT".equals(att.getStatus()) || "LATE".equals(att.getStatus()))
+                .count();
+        long absentDays = records.stream()
+                .filter(att -> "ABSENT".equals(att.getStatus()))
+                .count();
+
+        double totalWorkHours = records.stream()
+                .mapToDouble(att -> att.getWorkHours() != null ? att.getWorkHours() : 0.0)
+                .sum();
+
+        // Calculate potential working days
+        long workingDaysInPeriod = calculateWorkingDaysInPeriod(fromDate, toDate);
+        long totalPotentialDays = allEmployeeIds.size() * workingDaysInPeriod;
+
+        double overallAttendanceRate = totalPotentialDays > 0 ?
+                (presentDays * 100.0 / totalPotentialDays) : 0.0;
+
+        stats.put("totalEmployees", allEmployeeIds.size());
+        stats.put("totalRecords", totalDays);
+        stats.put("presentDays", presentDays);
+        stats.put("absentDays", absentDays);
+        stats.put("totalWorkHours", Math.round(totalWorkHours * 100.0) / 100.0);
+        stats.put("overallAttendanceRate", Math.round(overallAttendanceRate * 100.0) / 100.0);
+        stats.put("workingDaysInPeriod", workingDaysInPeriod);
+        stats.put("totalPotentialDays", totalPotentialDays);
+
+        return stats;
+    }
+
+    private List<Map<String, Object>> calculateEmployeeWiseStats(List<Attendance> records,
+                                                                 List<String> allEmployeeIds,
+                                                                 LocalDate fromDate, LocalDate toDate) {
+        List<Map<String, Object>> employeeStats = new ArrayList<>();
+        long workingDaysInPeriod = calculateWorkingDaysInPeriod(fromDate, toDate);
+
+        for (String employeeId : allEmployeeIds) {
+            Map<String, Object> empStats = new HashMap<>();
+
+            List<Attendance> empRecords = records.stream()
+                    .filter(r -> r.getEmployeeId().equals(employeeId))
+                    .collect(Collectors.toList());
+
+            long empPresentDays = empRecords.stream()
+                    .filter(att -> "PRESENT".equals(att.getStatus()) || "LATE".equals(att.getStatus()))
+                    .count();
+
+            double empWorkHours = empRecords.stream()
+                    .mapToDouble(att -> att.getWorkHours() != null ? att.getWorkHours() : 0.0)
+                    .sum();
+
+            double empAttendanceRate = workingDaysInPeriod > 0 ?
+                    (empPresentDays * 100.0 / workingDaysInPeriod) : 0.0;
+
+            empStats.put("employeeId", employeeId);
+            empStats.put("employeeName", getEmployeeDetails(employeeId));
+            empStats.put("presentDays", empPresentDays);
+            empStats.put("absentDays", workingDaysInPeriod - empPresentDays);
+            empStats.put("totalWorkHours", Math.round(empWorkHours * 100.0) / 100.0);
+            empStats.put("attendanceRate", Math.round(empAttendanceRate * 100.0) / 100.0);
+            empStats.put("isAbsent", empPresentDays == 0);
+
+            employeeStats.add(empStats);
+        }
+
+        // Sort by attendance rate (ascending)
+        employeeStats.sort((a, b) -> Double.compare(
+                (Double) a.get("attendanceRate"),
+                (Double) b.get("attendanceRate")
+        ));
+
+        return employeeStats;
+    }
+
+    private List<Map<String, Object>> identifyAbsentEmployees(List<Attendance> records,
+                                                              List<String> allEmployeeIds,
+                                                              LocalDate fromDate, LocalDate toDate) {
+        List<Map<String, Object>> absentEmployees = new ArrayList<>();
+
+        for (String employeeId : allEmployeeIds) {
+            boolean hasRecords = records.stream()
+                    .anyMatch(r -> r.getEmployeeId().equals(employeeId));
+
+            if (!hasRecords) {
+                Map<String, Object> absentEmp = new HashMap<>();
+                absentEmp.put("employeeId", employeeId);
+                absentEmp.put("employeeName", getEmployeeDetails(employeeId));
+                absentEmp.put("absencePeriod", fromDate + " to " + toDate);
+                absentEmp.put("totalDays", calculateWorkingDaysInPeriod(fromDate, toDate));
+                absentEmployees.add(absentEmp);
+            }
+        }
+
+        return absentEmployees;
+    }
+
+    /**
+     * Calculate working days in a period (excluding weekends)
+     */
+    private long calculateWorkingDaysInPeriod(LocalDate fromDate, LocalDate toDate) {
+        long workingDays = 0;
+        LocalDate date = fromDate;
+
+        System.out.println("=== WORKING DAYS CALCULATION ===");
+        System.out.println("Period: " + fromDate + " to " + toDate);
+
+        while (!date.isAfter(toDate)) {
+            // Exclude weekends (Saturday = 6, Sunday = 7)
+            if (date.getDayOfWeek().getValue() < 6) {
+                workingDays++;
+                System.out.println(date + " - " + date.getDayOfWeek() + " - WORKING DAY");
+            } else {
+                System.out.println(date + " - " + date.getDayOfWeek() + " - WEEKEND");
+            }
+            date = date.plusDays(1);
+        }
+
+        System.out.println("Total Working Days: " + workingDays);
+        System.out.println("=== END WORKING DAYS CALCULATION ===");
+
+        return workingDays;
     }
 
 }
