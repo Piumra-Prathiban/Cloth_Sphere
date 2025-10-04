@@ -4,6 +4,7 @@ import com.clothsphere.model.HR.Attendance;
 import com.clothsphere.repository.HR.AttendanceRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -19,10 +20,13 @@ public class AttendanceService {
     @Autowired
     private AttendanceRepository attendanceRepository;
 
-    // Check in for today - FIXED VERSION
+    // Check in for today - USING MANUAL QUERIES
+    @Transactional
     public Map<String, Object> checkIn(String employeeId, String notes) {
         Map<String, Object> response = new HashMap<>();
         LocalDate today = LocalDate.now();
+        LocalTime now = LocalTime.now();
+        LocalDateTime currentDateTime = LocalDateTime.now();
 
         // Check if ANY attendance record exists for today
         Optional<Attendance> existingAttendance = attendanceRepository.findByEmployeeIdAndAttendanceDate(employeeId, today);
@@ -30,44 +34,35 @@ public class AttendanceService {
         if (existingAttendance.isPresent()) {
             Attendance attendance = existingAttendance.get();
 
-            // CRITICAL FIX: Check if already checked in
+            // Check if already checked in
             if (attendance.getCheckInTime() != null) {
                 response.put("success", false);
                 response.put("message", "You have already checked in today at " + attendance.getCheckInTime());
                 return response;
             }
 
-            // Update existing record
-            attendance.setCheckInTime(LocalTime.now());
-            attendance.setStatus("PRESENT");
-            if (notes != null && !notes.trim().isEmpty()) {
-                attendance.setNotes(notes);
-            }
-            attendance.setUpdatedAt(LocalDateTime.now());
-            attendanceRepository.save(attendance);
+            // Update existing record using manual UPDATE query
+            attendanceRepository.updateCheckIn(employeeId, today, now, "PRESENT",
+                    notes != null && !notes.trim().isEmpty() ? notes : null, currentDateTime);
         } else {
-            // Create new record
-            Attendance newAttendance = new Attendance();
-            newAttendance.setEmployeeId(employeeId);
-            newAttendance.setAttendanceDate(today);
-            newAttendance.setCheckInTime(LocalTime.now());
-            newAttendance.setStatus("PRESENT");
-            if (notes != null && !notes.trim().isEmpty()) {
-                newAttendance.setNotes(notes);
-            }
-            attendanceRepository.save(newAttendance);
+            // Create new record using manual INSERT query
+            attendanceRepository.insertAttendance(employeeId, today, now, null, "PRESENT",
+                    null, notes != null && !notes.trim().isEmpty() ? notes : null, currentDateTime, currentDateTime);
         }
 
         response.put("success", true);
         response.put("message", "Check-in successful!");
-        response.put("checkInTime", LocalTime.now().toString());
+        response.put("checkInTime", now.toString());
         return response;
     }
 
-    // Check out for today - FIXED VERSION
+    // Check out for today - USING MANUAL QUERIES
+    @Transactional
     public Map<String, Object> checkOut(String employeeId, String notes) {
         Map<String, Object> response = new HashMap<>();
         LocalDate today = LocalDate.now();
+        LocalTime now = LocalTime.now();
+        LocalDateTime currentDateTime = LocalDateTime.now();
 
         Optional<Attendance> existingAttendance = attendanceRepository.findByEmployeeIdAndAttendanceDate(employeeId, today);
 
@@ -86,36 +81,107 @@ public class AttendanceService {
             return response;
         }
 
-        // CRITICAL FIX: Check if already checked out
+        // Check if already checked out
         if (attendance.getCheckOutTime() != null) {
             response.put("success", false);
             response.put("message", "You have already checked out today at " + attendance.getCheckOutTime());
             return response;
         }
 
-        attendance.setCheckOutTime(LocalTime.now());
-        attendance.calculateWorkHours();
+        // Calculate work hours
+        long minutes = java.time.Duration.between(attendance.getCheckInTime(), now).toMinutes();
+        Double workHours = minutes / 60.0;
 
-        if (notes != null && !notes.trim().isEmpty()) {
-            String existingNotes = attendance.getNotes();
-            if (existingNotes != null && !existingNotes.trim().isEmpty()) {
-                attendance.setNotes(existingNotes + "; " + notes);
-            } else {
-                attendance.setNotes(notes);
-            }
-        }
-
-        attendance.setUpdatedAt(LocalDateTime.now());
-        attendanceRepository.save(attendance);
+        // Update record using manual UPDATE query
+        attendanceRepository.updateCheckOut(employeeId, today, now, workHours,
+                notes != null && !notes.trim().isEmpty() ? notes : null, currentDateTime);
 
         response.put("success", true);
         response.put("message", "Check-out successful!");
-        response.put("checkOutTime", LocalTime.now().toString());
-        response.put("workHours", attendance.getWorkHours());
+        response.put("checkOutTime", now.toString());
+        response.put("workHours", workHours);
         return response;
     }
 
-    // Get today's attendance status
+    // Manual attendance marking (for corrections) - USING MANUAL QUERIES
+    @Transactional
+    public Map<String, Object> markManualAttendance(String employeeId, LocalDate date,
+                                                    LocalTime checkIn, LocalTime checkOut,
+                                                    String status, String notes) {
+        Map<String, Object> response = new HashMap<>();
+        LocalDateTime currentDateTime = LocalDateTime.now();
+
+        Optional<Attendance> existingAttendance = attendanceRepository.findByEmployeeIdAndAttendanceDate(employeeId, date);
+
+        if (existingAttendance.isPresent()) {
+            Attendance attendance = existingAttendance.get();
+            // Calculate work hours
+            Double workHours = null;
+            if (checkIn != null && checkOut != null) {
+                long minutes = java.time.Duration.between(checkIn, checkOut).toMinutes();
+                workHours = minutes / 60.0;
+            }
+
+            // Update existing record using manual UPDATE query
+            attendanceRepository.updateAttendance(attendance.getAttendanceId(), checkIn, checkOut,
+                    status, workHours, notes, currentDateTime);
+        } else {
+            // Calculate work hours
+            Double workHours = null;
+            if (checkIn != null && checkOut != null) {
+                long minutes = java.time.Duration.between(checkIn, checkOut).toMinutes();
+                workHours = minutes / 60.0;
+            }
+
+            // Create new record using manual INSERT query
+            attendanceRepository.insertAttendance(employeeId, date, checkIn, checkOut,
+                    status, workHours, notes, currentDateTime, currentDateTime);
+        }
+
+        response.put("success", true);
+        response.put("message", "Attendance marked successfully!");
+        return response;
+    }
+
+    // Delete attendance record - NEW METHOD USING MANUAL DELETE QUERY
+    @Transactional
+    public Map<String, Object> deleteAttendance(Long attendanceId) {
+        Map<String, Object> response = new HashMap<>();
+
+        Optional<Attendance> attendance = attendanceRepository.findAttendanceById(attendanceId);
+        if (attendance.isEmpty()) {
+            response.put("success", false);
+            response.put("message", "Attendance record not found!");
+            return response;
+        }
+
+        attendanceRepository.deleteAttendanceById(attendanceId);
+
+        response.put("success", true);
+        response.put("message", "Attendance record deleted successfully!");
+        return response;
+    }
+
+    // Delete attendance by employee and date - NEW METHOD USING MANUAL DELETE QUERY
+    @Transactional
+    public Map<String, Object> deleteAttendanceByEmployeeAndDate(String employeeId, LocalDate date) {
+        Map<String, Object> response = new HashMap<>();
+
+        Optional<Attendance> attendance = attendanceRepository.findByEmployeeIdAndAttendanceDate(employeeId, date);
+        if (attendance.isEmpty()) {
+            response.put("success", false);
+            response.put("message", "Attendance record not found!");
+            return response;
+        }
+
+        attendanceRepository.deleteAttendanceByEmployeeAndDate(employeeId, date);
+
+        response.put("success", true);
+        response.put("message", "Attendance record deleted successfully!");
+        return response;
+    }
+
+    // Get today's attendance status (unchanged, uses manual SELECT queries)
     public Map<String, Object> getTodayAttendance(String employeeId) {
         Map<String, Object> response = new HashMap<>();
         LocalDate today = LocalDate.now();
@@ -140,7 +206,7 @@ public class AttendanceService {
         return response;
     }
 
-    // Get attendance history
+    // Get attendance history (unchanged, uses manual SELECT queries)
     public List<Attendance> getAttendanceHistory(String employeeId, LocalDate startDate, LocalDate endDate) {
         if (startDate == null || endDate == null) {
             // Default to last 30 days
@@ -151,7 +217,7 @@ public class AttendanceService {
                 employeeId, startDate, endDate);
     }
 
-    // Get attendance statistics
+    // Get attendance statistics (unchanged, uses manual SELECT queries)
     public Map<String, Object> getAttendanceStatistics(String employeeId) {
         Map<String, Object> stats = new HashMap<>();
 
@@ -174,38 +240,7 @@ public class AttendanceService {
         return (present / totalWorkingDays.doubleValue()) * 100.0;
     }
 
-    // Mark manual attendance (for corrections)
-    public Map<String, Object> markManualAttendance(String employeeId, LocalDate date,
-                                                    LocalTime checkIn, LocalTime checkOut,
-                                                    String status, String notes) {
-        Map<String, Object> response = new HashMap<>();
-
-        Optional<Attendance> existingAttendance = attendanceRepository.findByEmployeeIdAndAttendanceDate(employeeId, date);
-        Attendance attendance;
-
-        if (existingAttendance.isPresent()) {
-            attendance = existingAttendance.get();
-        } else {
-            attendance = new Attendance();
-            attendance.setEmployeeId(employeeId);
-            attendance.setAttendanceDate(date);
-        }
-
-        attendance.setCheckInTime(checkIn);
-        attendance.setCheckOutTime(checkOut);
-        attendance.setStatus(status);
-        attendance.setNotes(notes);
-        attendance.calculateWorkHours();
-        attendance.setUpdatedAt(LocalDateTime.now());
-
-        attendanceRepository.save(attendance);
-
-        response.put("success", true);
-        response.put("message", "Attendance marked successfully!");
-        return response;
-    }
-
-    // Get monthly attendance summary
+    // Get monthly attendance summary (unchanged, uses manual SELECT queries)
     public List<Attendance> getMonthlyAttendance(String employeeId, int year, int month) {
         return attendanceRepository.findMonthlyAttendance(employeeId, year, month);
     }
