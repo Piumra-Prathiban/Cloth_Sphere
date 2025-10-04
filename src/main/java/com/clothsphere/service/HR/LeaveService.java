@@ -9,10 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class LeaveService {
@@ -137,7 +134,25 @@ public class LeaveService {
 
     // Get all leave requests for HR
     public List<Leave> getAllLeaveRequests() {
-        return leaveRepository.findAllByOrderByRequestDateDesc();
+        try {
+            List<Leave> leaves = leaveRepository.findAllByOrderByRequestDateDesc();
+            System.out.println("Repository returned " + leaves.size() + " leaves");
+
+            // Ensure employee data is loaded
+            for (Leave leave : leaves) {
+                if (leave.getEmployee() != null) {
+                    // This will force Hibernate to load the employee data
+                    leave.getEmployee().getId();
+                    leave.getEmployee().getFullName();
+                }
+            }
+
+            return leaves;
+        } catch (Exception e) {
+            System.out.println("Error in getAllLeaveRequests service: " + e.getMessage());
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
     }
 
     // Update leave status using manual UPDATE query

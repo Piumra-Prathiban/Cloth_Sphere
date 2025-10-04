@@ -18,28 +18,50 @@ public class HRLeaveController {
     @Autowired
     private LeaveService leaveService;
 
-    // Get all leave requests for HR management
     @GetMapping("/requests")
+    @ResponseBody
     public ResponseEntity<?> getAllLeaveRequests() {
         try {
+            System.out.println("=== HR Leave Requests Endpoint Called ===");
+
             List<Leave> allLeaves = leaveService.getAllLeaveRequests();
+
+            System.out.println("Total leaves from service: " + allLeaves.size());
+
+            // More detailed logging
+            for (Leave leave : allLeaves) {
+                System.out.println(String.format(
+                        "Leave: ID=%s, Status=%s, Employee=%s, StartDate=%s",
+                        leave.getLeaveId(),
+                        leave.getStatus(),
+                        leave.getEmployee() != null ? leave.getEmployee().getFullName() : "NULL",
+                        leave.getStartDate()
+                ));
+            }
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("leaves", allLeaves);
+            response.put("count", allLeaves.size());
 
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
+            System.out.println("=== ERROR in getAllLeaveRequests ===");
+            System.out.println("Error type: " + e.getClass().getName());
+            System.out.println("Error message: " + e.getMessage());
+            e.printStackTrace();
+
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
-            response.put("message", "Error fetching leave requests: " + e.getMessage());
-            return ResponseEntity.badRequest().body(response);
+            response.put("message", "Error: " + e.getMessage());
+            return ResponseEntity.status(500).body(response);
         }
     }
 
     // Update leave status (Approve/Reject)
     @PutMapping("/{leaveId}/status")
+    @ResponseBody
     public ResponseEntity<?> updateLeaveStatus(@PathVariable String leaveId,
                                                @RequestParam String status,
                                                @RequestParam(required = false) String comments) {
@@ -67,6 +89,7 @@ public class HRLeaveController {
 
     // Get leave requests by employee ID
     @GetMapping("/employee/{employeeId}")
+    @ResponseBody
     public ResponseEntity<?> getLeavesByEmployee(@PathVariable String employeeId) {
         try {
             List<Leave> leaves = leaveService.getLeavesByEmployee(employeeId);
@@ -87,6 +110,7 @@ public class HRLeaveController {
 
     // Get leave statistics for dashboard
     @GetMapping("/statistics")
+    @ResponseBody
     public ResponseEntity<?> getLeaveStatistics() {
         try {
             Map<String, Long> stats = leaveService.getHRLeaveStatistics();

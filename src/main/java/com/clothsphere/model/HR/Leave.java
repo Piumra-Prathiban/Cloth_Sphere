@@ -35,7 +35,7 @@ public class Leave {
 
     private String comments;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER) // Changed from LAZY to EAGER
     @JoinColumn(name = "employee_id", nullable = false)
     private Employee employee;
 
