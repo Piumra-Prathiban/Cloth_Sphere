@@ -7,15 +7,14 @@ import java.time.LocalTime;
 
 @Entity
 @Table(name = "attendance")
+@IdClass(AttendanceId.class)
 public class Attendance {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long attendanceId;
-
     @Column(name = "employee_id", nullable = false)
     private String employeeId;
 
+    @Id
     @Column(name = "attendance_date", nullable = false)
     private LocalDate attendanceDate;
 
@@ -54,9 +53,6 @@ public class Attendance {
     }
 
     // Getters and Setters
-    public Long getAttendanceId() { return attendanceId; }
-    public void setAttendanceId(Long attendanceId) { this.attendanceId = attendanceId; }
-
     public String getEmployeeId() { return employeeId; }
     public void setEmployeeId(String employeeId) { this.employeeId = employeeId; }
 
@@ -84,7 +80,6 @@ public class Attendance {
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 
-    // Helper method to calculate work hours
     public void calculateWorkHours() {
         if (checkInTime != null && checkOutTime != null) {
             long minutes = java.time.Duration.between(checkInTime, checkOutTime).toMinutes();
