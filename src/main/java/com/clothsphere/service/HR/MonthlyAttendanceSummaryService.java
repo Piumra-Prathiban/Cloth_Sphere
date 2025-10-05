@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.YearMonth;
-import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -30,13 +29,13 @@ public class MonthlyAttendanceSummaryService {
      */
     @Transactional
     public Map<String, Object> calculateAndGetMonthlySummary(int year, int month) {
-        Map<String, Object> result = new HashMap<>();
+        System.out.println("=== CALCULATING MONTHLY ATTENDANCE SUMMARY ===");
+        System.out.println("Year: " + year + ", Month: " + month);
 
         // Calculate summaries first
         calculateMonthlySummary(year, month);
 
         // Get the calculated summaries
-        String monthYear = String.format("%d-%02d", year, month);
         return getMonthlyAttendanceReport(year, month);
     }
 
@@ -49,12 +48,30 @@ public class MonthlyAttendanceSummaryService {
         YearMonth yearMonth = YearMonth.of(year, month);
         int totalDaysInMonth = yearMonth.lengthOfMonth();
 
+        System.out.println("Total days in month: " + totalDaysInMonth);
+        System.out.println("Month-Year format: " + monthYear);
+
         // Get all employees
         List<String> employeeIds = employeeRepository.findAllEmployeeIds();
+        System.out.println("Found " + employeeIds.size() + " employees to process");
+
+        int successCount = 0;
+        int failCount = 0;
 
         for (String employeeId : employeeIds) {
-            calculateEmployeeMonthlySummary(employeeId, year, month, monthYear, totalDaysInMonth);
+            try {
+                calculateEmployeeMonthlySummary(employeeId, year, month, monthYear, totalDaysInMonth);
+                successCount++;
+                System.out.println("✓ Summary calculated for: " + employeeId);
+            } catch (Exception e) {
+                failCount++;
+                System.err.println("✗ Failed for " + employeeId + ": " + e.getMessage());
+                e.printStackTrace();
+            }
         }
+
+        System.out.println("=== SUMMARY CALCULATION COMPLETE ===");
+        System.out.println("Success: " + successCount + " / Failures: " + failCount);
     }
 
     /**
@@ -63,54 +80,82 @@ public class MonthlyAttendanceSummaryService {
     @Transactional
     public void calculateEmployeeMonthlySummary(String employeeId, int year, int month,
                                                 String monthYear, int totalDaysInMonth) {
-        // Get all attendance records for the month
-        List<com.clothsphere.model.HR.Attendance> monthlyRecords =
-                attendanceRepository.findMonthlyAttendance(employeeId, year, month);
+        System.out.println("\n--- Processing employee: " + employeeId + " ---");
 
-        // Calculate present days (PRESENT, LATE, HALF_DAY count as present)
-        int presentDays = (int) monthlyRecords.stream()
-                .filter(a -> "PRESENT".equals(a.getStatus()) ||
-                        "LATE".equals(a.getStatus()) ||
-                        "HALF_DAY".equals(a.getStatus()))
-                .count();
+        try {
+            // Get all attendance records for the month
+            List<com.clothsphere.model.HR.Attendance> monthlyRecords =
+                    attendanceRepository.findMonthlyAttendance(employeeId, year, month);
 
-        // Calculate total work hours
-        double totalWorkHours = monthlyRecords.stream()
-                .mapToDouble(a -> a.getWorkHours() != null ? a.getWorkHours() : 0.0)
-                .sum();
+            System.out.println("Found " + monthlyRecords.size() + " attendance records");
 
-        // Calculate absent days
-        int absentDays = totalDaysInMonth - presentDays;
+            // Calculate present days (PRESENT, LATE, HALF_DAY count as present)
+            int presentDays = (int) monthlyRecords.stream()
+                    .filter(a -> "PRESENT".equals(a.getStatus()) ||
+                            "LATE".equals(a.getStatus()) ||
+                            "HALF_DAY".equals(a.getStatus()))
+                    .count();
 
-        // Calculate attendance rate
-        double attendanceRate = totalDaysInMonth > 0 ?
-                Math.round((presentDays * 100.0 / totalDaysInMonth) * 100.0) / 100.0 : 0.0;
+            // Calculate total work hours
+            double totalWorkHours = monthlyRecords.stream()
+                    .mapToDouble(a -> a.getWorkHours() != null ? a.getWorkHours() : 0.0)
+                    .sum();
 
-        // Check if record exists
-        Optional<MonthlyAttendanceSummary> existingOpt =
-                monthlySummaryRepository.findByEmployeeAndMonth(employeeId, monthYear);
+            // Calculate absent days
+            int absentDays = totalDaysInMonth - presentDays;
 
-        if (existingOpt.isPresent()) {
-            // Update existing record
-            monthlySummaryRepository.updateMonthlySummary(
-                    employeeId, monthYear, presentDays, absentDays,
-                    totalWorkHours, attendanceRate);
-        } else {
-            // Insert new record
-            monthlySummaryRepository.insertMonthlySummary(
-                    employeeId, monthYear, totalDaysInMonth, presentDays,
-                    absentDays, totalWorkHours, attendanceRate);
+            // Calculate attendance rate
+            double attendanceRate = totalDaysInMonth > 0 ?
+                    Math.round((presentDays * 100.0 / totalDaysInMonth) * 100.0) / 100.0 : 0.0;
+
+            System.out.println("Calculated values:");
+            System.out.println("  - Present Days: " + presentDays);
+            System.out.println("  - Absent Days: " + absentDays);
+            System.out.println("  - Total Work Hours: " + totalWorkHours);
+            System.out.println("  - Attendance Rate: " + attendanceRate + "%");
+
+            // Check if record exists
+            Optional<MonthlyAttendanceSummary> existingOpt =
+                    monthlySummaryRepository.findByEmployeeAndMonth(employeeId, monthYear);
+
+            if (existingOpt.isPresent()) {
+                System.out.println("Updating existing record...");
+                // Update existing record
+                monthlySummaryRepository.updateMonthlySummary(
+                        employeeId, monthYear, presentDays, absentDays,
+                        totalWorkHours, attendanceRate);
+                System.out.println("✓ Record updated successfully");
+            } else {
+                System.out.println("Inserting new record...");
+                // Insert new record
+                monthlySummaryRepository.insertMonthlySummary(
+                        employeeId, monthYear, totalDaysInMonth, presentDays,
+                        absentDays, totalWorkHours, attendanceRate);
+                System.out.println("✓ Record inserted successfully");
+            }
+
+        } catch (Exception e) {
+            System.err.println("ERROR processing employee " + employeeId);
+            System.err.println("Exception: " + e.getMessage());
+            e.printStackTrace();
+            throw e; // Re-throw to be caught by caller
         }
     }
 
     /**
      * Get monthly attendance report with absent employee identification
      */
+    @Transactional(readOnly = true)
     public Map<String, Object> getMonthlyAttendanceReport(int year, int month) {
         String monthYear = String.format("%d-%02d", year, month);
 
+        System.out.println("=== GENERATING ATTENDANCE REPORT ===");
+        System.out.println("Month-Year: " + monthYear);
+
         List<MonthlyAttendanceSummary> allSummaries =
                 monthlySummaryRepository.findAllByMonth(monthYear);
+
+        System.out.println("Found " + allSummaries.size() + " summary records");
 
         // Identify employees with low attendance
         List<MonthlyAttendanceSummary> lowAttendance =
@@ -123,7 +168,7 @@ public class MonthlyAttendanceSummaryService {
 
         // Identify employees with partial attendance but high absence
         List<MonthlyAttendanceSummary> highAbsence = allSummaries.stream()
-                .filter(s -> s.getAbsentDays() > 15 && s.getPresentDays() > 0) // More than 15 days absent
+                .filter(s -> s.getAbsentDays() > 15 && s.getPresentDays() > 0)
                 .collect(Collectors.toList());
 
         Map<String, Object> report = new HashMap<>();
@@ -139,12 +184,14 @@ public class MonthlyAttendanceSummaryService {
         report.put("totalPresentDays", calculateTotalPresentDays(allSummaries));
         report.put("totalAbsentDays", calculateTotalAbsentDays(allSummaries));
 
+        System.out.println("✓ Report generated successfully");
         return report;
     }
 
     /**
      * Get individual employee monthly summary
      */
+    @Transactional(readOnly = true)
     public Map<String, Object> getEmployeeMonthlySummary(String employeeId, int year, int month) {
         String monthYear = String.format("%d-%02d", year, month);
 
@@ -180,6 +227,7 @@ public class MonthlyAttendanceSummaryService {
     /**
      * Search employees by attendance criteria
      */
+    @Transactional(readOnly = true)
     public Map<String, Object> searchEmployeesByAttendance(int year, int month,
                                                            String criteria, Double threshold) {
         String monthYear = String.format("%d-%02d", year, month);
@@ -197,7 +245,7 @@ public class MonthlyAttendanceSummaryService {
                 break;
             case "HIGH_ABSENCE":
                 results = monthlySummaryRepository.findAllByMonth(monthYear).stream()
-                        .filter(s -> s.getAbsentDays() > 15) // More than 15 days absent
+                        .filter(s -> s.getAbsentDays() > 15)
                         .collect(Collectors.toList());
                 break;
             case "ALL":

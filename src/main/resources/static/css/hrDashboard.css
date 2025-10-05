@@ -1420,3 +1420,224 @@ body.zoomed-out td {
     color: #888;
     margin-top: 2px;
 }
+
+/* Payroll Management Styles */
+.payroll-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.payroll-controls {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border: 1px solid #e9ecef;
+}
+
+.payroll-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.payroll-summary-item {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid #007bff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.payroll-summary-item h4 {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.payroll-summary-value {
+    font-size: 24px;
+    font-weight: bold;
+    color: #343a40;
+    margin: 0;
+}
+
+.payroll-summary-value.positive {
+    color: #28a745;
+}
+
+.payroll-summary-value.negative {
+    color: #dc3545;
+}
+
+/* Payroll Status Badges */
+.status-badge-pending {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.status-badge-calculated {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
+.status-badge-paid {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+/* Payroll Details Styles */
+.payroll-details-section {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.payroll-details-section:last-child {
+    border-bottom: none;
+}
+
+.payroll-details-section h4 {
+    color: #495057;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #f8f9fa;
+    padding-bottom: 8px;
+}
+
+.payroll-details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+}
+
+.payroll-detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 5px;
+    margin-bottom: 8px;
+}
+
+.payroll-detail-label {
+    font-weight: 600;
+    color: #495057;
+}
+
+.payroll-detail-value {
+    font-weight: bold;
+    color: #343a40;
+}
+
+.payroll-detail-value.amount {
+    color: #28a745;
+}
+
+.payroll-detail-value.deduction {
+    color: #dc3545;
+}
+
+.payroll-breakdown {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 10px;
+}
+
+.payroll-breakdown-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.payroll-breakdown-item:last-child {
+    border-bottom: none;
+    font-weight: bold;
+    border-top: 2px solid #dee2e6;
+    margin-top: 5px;
+    padding-top: 10px;
+}
+
+/* Form Note Styles */
+.form-note {
+    background: #e7f3ff;
+    padding: 12px;
+    border-radius: 5px;
+    border-left: 4px solid #007bff;
+    margin: 15px 0;
+}
+
+.form-note p {
+    margin: 0;
+    color: #004085;
+    font-size: 14px;
+}
+
+/* Action Buttons Container */
+.action-buttons-payroll {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.action-buttons-payroll .btn-sm {
+    padding: 4px 8px;
+    font-size: 12px;
+    min-width: 70px;
+}
+
+/* Responsive Design for Payroll */
+@media (max-width: 768px) {
+    .payroll-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .payroll-actions .btn {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+
+    .payroll-summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .payroll-details-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .payroll-detail-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .payroll-detail-value {
+        margin-top: 5px;
+    }
+}
+
+/* Print Styles for Payroll */
+@media print {
+    .payroll-actions,
+    .payroll-controls,
+    .action-buttons-payroll {
+        display: none !important;
+    }
+
+    .payroll-summary-item {
+        break-inside: avoid;
+    }
+
+    .payroll-details-section {
+        break-inside: avoid;
+    }
+}

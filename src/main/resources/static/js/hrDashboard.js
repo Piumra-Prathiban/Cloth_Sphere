@@ -19,6 +19,9 @@ function showSection(sectionId) {
     } else if (sectionId === 'workload') {
         console.log('Switching to workload section, loading tasks...');
         loadProductionTasks();
+    }else if (sectionId === 'payroll') {
+        console.log('Switching to payroll section, loading payroll data...');
+        setTimeout(initPayroll, 100);
     }else if (sectionId === 'leaveManagement') {
         console.log('Switching to leave management section, loading leaves...');
         loadLeaveRequests();  // ADD THIS
