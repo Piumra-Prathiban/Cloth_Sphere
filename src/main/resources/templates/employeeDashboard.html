@@ -529,11 +529,215 @@
           <i class="fas fa-user-cog"></i> Go to Profile
         </button>
       </div>
+
       <div id="paysheet-content" th:style="${!firstLogin ? 'display: block;' : 'display: none;'}">
-        <p>Paysheet viewing functionality would go here.</p>
+        <!-- Payroll Statistics -->
+        <div class="payroll-stats-grid">
+          <div class="payroll-stat-card" style="background: #e3f2fd;">
+            <div class="payroll-stat-number" id="total-payrolls">0</div>
+            <div class="payroll-stat-label">Total Payslips</div>
+          </div>
+          <div class="payroll-stat-card" style="background: #e8f5e8;">
+            <div class="payroll-stat-number" id="paid-payrolls">0</div>
+            <div class="payroll-stat-label">Paid</div>
+          </div>
+          <div class="payroll-stat-card" style="background: #fff3e0;">
+            <div class="payroll-stat-number" id="pending-payrolls">0</div>
+            <div class="payroll-stat-label">Pending</div>
+          </div>
+          <div class="payroll-stat-card" style="background: #fce4ec;">
+            <div class="payroll-stat-number" id="total-net-salary">0</div>
+            <div class="payroll-stat-label">Total Net Salary</div>
+          </div>
+        </div>
+
+        <!-- Month Selection -->
+        <div class="card" style="margin-top: 20px;">
+          <h4>Select Payroll Month</h4>
+          <div class="filter-controls">
+            <div class="filter-group">
+              <label for="payroll-year">Year:</label>
+              <select id="payroll-year" class="form-control" onchange="loadPayrollData()">
+                <option value="2024">2024</option>
+                <option value="2025" selected>2025</option>
+                <option value="2026">2026</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label for="payroll-month">Month:</label>
+              <select id="payroll-month" class="form-control" onchange="loadPayrollData()">
+                <option value="1">January</option>
+                <option value="2">February</option>
+                <option value="3">March</option>
+                <option value="4">April</option>
+                <option value="5">May</option>
+                <option value="6">June</option>
+                <option value="7">July</option>
+                <option value="8">August</option>
+                <option value="9">September</option>
+                <option value="10" selected>October</option>
+                <option value="11">November</option>
+                <option value="12">December</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <button class="btn btn-primary" onclick="loadPayrollData()">
+                <i class="fas fa-sync-alt"></i> Refresh
+              </button>
+              <button class="btn btn-success" onclick="exportPayrollReport()" id="export-btn" disabled>
+                <i class="fas fa-download"></i> Export Report
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Current Month Paysheet Details -->
+        <div class="card" style="margin-top: 20px;">
+          <h4>Paysheet Details - <span id="current-payroll-month"></span></h4>
+
+          <div id="no-payroll-data" style="text-align: center; padding: 40px; display: none;">
+            <i class="fas fa-file-invoice-dollar" style="font-size: 48px; color: #6c757d; margin-bottom: 20px;"></i>
+            <h4>No Payroll Data</h4>
+            <p>No payroll data found for the selected month.</p>
+          </div>
+
+          <div id="payroll-details" style="display: none;">
+            <!-- Employee Information -->
+            <div class="profile-info-compact">
+              <div class="info-group-compact">
+                <label>Employee ID</label>
+                <div class="value" id="payroll-employee-id">-</div>
+              </div>
+              <div class="info-group-compact">
+                <label>Employee Name</label>
+                <div class="value" id="payroll-employee-name">-</div>
+              </div>
+              <div class="info-group-compact">
+                <label>Payroll Month</label>
+                <div class="value" id="payroll-month-display">-</div>
+              </div>
+              <div class="info-group-compact">
+                <label>Status</label>
+                <div class="value">
+                  <span class="status-badge" id="payroll-status">-</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Salary Breakdown -->
+            <div class="salary-breakdown">
+              <h5>Salary Breakdown</h5>
+              <div class="breakdown-grid">
+                <div class="breakdown-item">
+                  <label>Basic Salary</label>
+                  <div class="amount" id="basic-salary">LKR 0.00</div>
+                </div>
+                <div class="breakdown-item">
+                  <label>Actual Work Hours</label>
+                  <div class="amount" id="actual-work-hours">0.0 hrs</div>
+                </div>
+                <div class="breakdown-item">
+                  <label>Overtime Hours</label>
+                  <div class="amount" id="ot-hours">0.0 hrs</div>
+                </div>
+                <div class="breakdown-item">
+                  <label>Overtime Amount</label>
+                  <div class="amount" id="ot-amount">LKR 0.00</div>
+                </div>
+                <div class="breakdown-item total">
+                  <label>Gross Salary</label>
+                  <div class="amount" id="gross-salary">LKR 0.00</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Deductions -->
+            <div class="deductions-section">
+              <h5>Deductions</h5>
+              <div class="deductions-grid">
+                <div class="deduction-item">
+                  <label>EPF (<span id="epf-rate">8.0</span>%)</label>
+                  <div class="amount" id="epf-amount">LKR 0.00</div>
+                </div>
+                <div class="deduction-item">
+                  <label>ETF (<span id="etf-rate">3.0</span>%)</label>
+                  <div class="amount" id="etf-amount">LKR 0.00</div>
+                </div>
+                <div class="deduction-item total">
+                  <label>Total Deductions</label>
+                  <div class="amount" id="total-deductions">LKR 0.00</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Net Salary -->
+            <div class="net-salary-section">
+              <div class="net-salary-card">
+                <label>Net Salary</label>
+                <div class="net-salary-amount" id="net-salary">LKR 0.00</div>
+                <div class="net-salary-label">Amount Payable</div>
+              </div>
+            </div>
+
+            <!-- Attendance Information -->
+            <div class="attendance-info">
+              <h5>Attendance Summary</h5>
+              <div class="attendance-grid">
+                <div class="attendance-item">
+                  <label>Attendance Rate</label>
+                  <div class="value" id="attendance-rate">0.0%</div>
+                </div>
+                <div class="attendance-item">
+                  <label>Max Work Hours</label>
+                  <div class="value" id="max-work-hours">180.0 hrs</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Loading Spinner -->
+          <div id="payroll-loading" style="text-align: center; padding: 20px;">
+            <i class="fas fa-spinner fa-spin"></i> Loading payroll data...
+          </div>
+        </div>
+
+        <!-- Payroll History -->
+        <div class="card" style="margin-top: 20px;">
+          <h4>Payroll History</h4>
+
+          <div class="table-responsive">
+            <table class="table" id="payroll-history-table">
+              <thead>
+              <tr>
+                <th>Payroll Month</th>
+                <th>Basic Salary</th>
+                <th>Gross Salary</th>
+                <th>Deductions</th>
+                <th>Net Salary</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+              </thead>
+              <tbody id="payroll-history-body">
+              <!-- Payroll history will be loaded here -->
+              </tbody>
+            </table>
+          </div>
+
+          <div id="no-payroll-history" style="text-align: center; padding: 40px; display: none;">
+            <i class="fas fa-history" style="font-size: 48px; color: #6c757d; margin-bottom: 20px;"></i>
+            <h4>No Payroll History</h4>
+            <p>No previous payroll records found.</p>
+          </div>
+
+          <div id="payroll-history-loading" style="text-align: center; padding: 20px;">
+            <i class="fas fa-spinner fa-spin"></i> Loading payroll history...
+          </div>
+        </div>
       </div>
     </div>
   </div>
+
 </div>
 
 <script src="/js/employeeDashboard.js"></script>

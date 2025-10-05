@@ -1533,3 +1533,327 @@
          initializeAttendanceSection();
      }
  };
+
+ // ========================= PAYROLL MANAGEMENT =========================
+ let currentPayrollData = null;
+
+ // Initialize payroll section when shown
+ function initializePayrollSection() {
+     if (!isFirstLogin) {
+         loadPayrollStatistics();
+         loadPayrollData();
+         loadPayrollHistory();
+     }
+ }
+
+ // Load payroll statistics
+ function loadPayrollStatistics() {
+     fetch('/employee/payroll/my-statistics', {
+         method: 'GET',
+         credentials: 'include'
+     })
+         .then(response => response.json())
+         .then(data => {
+             if (data.success) {
+                 updatePayrollStatistics(data.statistics);
+             } else {
+                 console.error('Error loading payroll statistics:', data.message);
+             }
+         })
+         .catch(error => {
+             console.error('Error loading payroll statistics:', error);
+             showMessage('Error loading payroll statistics', 'error');
+         });
+ }
+
+ // Update payroll statistics UI
+ function updatePayrollStatistics(stats) {
+     if (!stats) return;
+
+     document.getElementById('total-payrolls').textContent = stats.totalPayrolls || 0;
+     document.getElementById('paid-payrolls').textContent = stats.paidCount || 0;
+     document.getElementById('pending-payrolls').textContent = stats.pendingCount || 0;
+
+     const totalNetSalary = stats.totalNetSalary || 0;
+     document.getElementById('total-net-salary').textContent = 'LKR ' + totalNetSalary.toLocaleString('en-US', {
+         minimumFractionDigits: 2,
+         maximumFractionDigits: 2
+     });
+ }
+
+ // Load payroll data for selected month
+ function loadPayrollData() {
+     const year = document.getElementById('payroll-year').value;
+     const month = document.getElementById('payroll-month').value;
+
+     const loadingElement = document.getElementById('payroll-loading');
+     const detailsElement = document.getElementById('payroll-details');
+     const noDataElement = document.getElementById('no-payroll-data');
+     const exportBtn = document.getElementById('export-btn');
+
+     if (loadingElement) loadingElement.style.display = 'block';
+     if (detailsElement) detailsElement.style.display = 'none';
+     if (noDataElement) noDataElement.style.display = 'none';
+     if (exportBtn) exportBtn.disabled = true;
+
+     // Update current month display
+     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+         'July', 'August', 'September', 'October', 'November', 'December'];
+     document.getElementById('current-payroll-month').textContent =
+         `${monthNames[parseInt(month) - 1]} ${year}`;
+
+     fetch(`/employee/payroll/my-paysheet?year=${year}&month=${month}`, {
+         method: 'GET',
+         credentials: 'include'
+     })
+         .then(response => response.json())
+         .then(data => {
+             if (data.success && data.payroll) {
+                 currentPayrollData = data;
+                 displayPayrollDetails(data);
+                 if (detailsElement) detailsElement.style.display = 'block';
+                 if (exportBtn) exportBtn.disabled = false;
+             } else {
+                 if (noDataElement) noDataElement.style.display = 'block';
+                 currentPayrollData = null;
+             }
+         })
+         .catch(error => {
+             console.error('Error loading payroll data:', error);
+             showMessage('Error loading payroll data', 'error');
+             if (noDataElement) noDataElement.style.display = 'block';
+             currentPayrollData = null;
+         })
+         .finally(() => {
+             if (loadingElement) loadingElement.style.display = 'none';
+         });
+ }
+
+ // Display payroll details
+ function displayPayrollDetails(data) {
+     const payroll = data.payroll;
+
+     // Employee Information
+     document.getElementById('payroll-employee-id').textContent = payroll.employeeId;
+     document.getElementById('payroll-employee-name').textContent = data.employeeName || 'N/A';
+     document.getElementById('payroll-month-display').textContent = formatPayrollMonth(payroll.payrollMonth);
+
+     // Status
+     const statusElement = document.getElementById('payroll-status');
+     statusElement.textContent = payroll.status || 'PENDING';
+     statusElement.className = 'status-badge status-' + (payroll.status ? payroll.status.toLowerCase() : 'pending');
+
+     // Salary Breakdown
+     document.getElementById('basic-salary').textContent = formatCurrency(payroll.basicSalary);
+     document.getElementById('actual-work-hours').textContent = (payroll.actualWorkHours || 0).toFixed(1) + ' hrs';
+     document.getElementById('ot-hours').textContent = (payroll.otHours || 0).toFixed(1) + ' hrs';
+     document.getElementById('ot-amount').textContent = formatCurrency(payroll.otAmount);
+     document.getElementById('gross-salary').textContent = formatCurrency(payroll.grossSalary);
+
+     // Deductions
+     document.getElementById('epf-rate').textContent = (payroll.epfRate || 8).toString();
+     document.getElementById('etf-rate').textContent = (payroll.etfRate || 3).toString();
+     document.getElementById('epf-amount').textContent = formatCurrency(payroll.epfAmount);
+     document.getElementById('etf-amount').textContent = formatCurrency(payroll.etfAmount);
+     document.getElementById('total-deductions').textContent = formatCurrency(payroll.deductions);
+
+     // Net Salary
+     document.getElementById('net-salary').textContent = formatCurrency(payroll.netSalary);
+
+     // Attendance Information
+     document.getElementById('attendance-rate').textContent = (payroll.attendanceRate || 0).toFixed(1) + '%';
+     document.getElementById('max-work-hours').textContent = (payroll.maxWorkHours || 180).toFixed(1) + ' hrs';
+ }
+
+ // Load payroll history
+ function loadPayrollHistory() {
+     const loadingElement = document.getElementById('payroll-history-loading');
+     const tableBody = document.getElementById('payroll-history-body');
+     const noHistoryElement = document.getElementById('no-payroll-history');
+
+     if (loadingElement) loadingElement.style.display = 'block';
+     if (tableBody) tableBody.innerHTML = '';
+     if (noHistoryElement) noHistoryElement.style.display = 'none';
+
+     fetch('/employee/payroll/my-paysheets', {
+         method: 'GET',
+         credentials: 'include'
+     })
+         .then(response => response.json())
+         .then(data => {
+             if (data.success && data.payrolls && data.payrolls.length > 0) {
+                 displayPayrollHistory(data.payrolls);
+             } else {
+                 if (noHistoryElement) noHistoryElement.style.display = 'block';
+             }
+         })
+         .catch(error => {
+             console.error('Error loading payroll history:', error);
+             showMessage('Error loading payroll history', 'error');
+             if (noHistoryElement) noHistoryElement.style.display = 'block';
+         })
+         .finally(() => {
+             if (loadingElement) loadingElement.style.display = 'none';
+         });
+ }
+
+ // Display payroll history
+ function displayPayrollHistory(payrolls) {
+     const tableBody = document.getElementById('payroll-history-body');
+
+     const historyHtml = payrolls.map(item => {
+         const payroll = item.payroll;
+
+         return `
+            <tr>
+                <td>${formatPayrollMonth(payroll.payrollMonth)}</td>
+                <td>${formatCurrency(payroll.basicSalary)}</td>
+                <td>${formatCurrency(payroll.grossSalary)}</td>
+                <td>${formatCurrency(payroll.deductions)}</td>
+                <td>${formatCurrency(payroll.netSalary)}</td>
+                <td>
+                    <span class="status-badge status-${payroll.status ? payroll.status.toLowerCase() : 'pending'}">
+                        ${payroll.status || 'PENDING'}
+                    </span>
+                </td>
+                <td>
+                    <button class="btn btn-info btn-sm" onclick="viewPayrollDetails('${payroll.payrollMonth}')">
+                        <i class="fas fa-eye"></i> View
+                    </button>
+                </td>
+            </tr>
+        `;
+     }).join('');
+
+     tableBody.innerHTML = historyHtml;
+ }
+
+ // View payroll details from history
+ function viewPayrollDetails(payrollMonth) {
+     // Extract year and month from payrollMonth (format: "2024-10")
+     const [year, month] = payrollMonth.split('-');
+
+     document.getElementById('payroll-year').value = year;
+     document.getElementById('payroll-month').value = parseInt(month);
+
+     loadPayrollData();
+     showSection('paysheet');
+ }
+
+ // Export payroll report
+ function exportPayrollReport() {
+     if (!currentPayrollData) {
+         showMessage('No payroll data available to export', 'error');
+         return;
+     }
+
+     const year = document.getElementById('payroll-year').value;
+     const month = document.getElementById('payroll-month').value;
+
+     // Show loading state
+     const exportBtn = document.getElementById('export-btn');
+     const originalText = exportBtn.innerHTML;
+     exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
+     exportBtn.disabled = true;
+
+     fetch(`/employee/payroll/export?year=${year}&month=${month}`, {
+         method: 'GET',
+         credentials: 'include'
+     })
+         .then(response => response.json())
+         .then(data => {
+             if (data.success) {
+                 showMessage('Payroll report exported successfully!', 'success');
+
+                 // In a real application, you would download the file
+                 // For now, we'll simulate download
+                 simulatePDFDownload(currentPayrollData);
+             } else {
+                 showMessage('Error exporting report: ' + data.message, 'error');
+             }
+         })
+         .catch(error => {
+             console.error('Error exporting payroll:', error);
+             showMessage('Error exporting payroll report', 'error');
+         })
+         .finally(() => {
+             exportBtn.innerHTML = originalText;
+             exportBtn.disabled = false;
+         });
+ }
+
+ // Simulate PDF download (replace with actual implementation)
+ function simulatePDFDownload(payrollData) {
+     const payroll = payrollData.payroll;
+
+     // Create a simple text representation (replace with actual PDF generation)
+     const content = `
+        CLOTHSPHERE - PAYSLIP
+        =====================
+        
+        Employee: ${payrollData.employeeName || 'N/A'}
+        Employee ID: ${payroll.employeeId}
+        Payroll Month: ${formatPayrollMonth(payroll.payrollMonth)}
+        Status: ${payroll.status}
+        
+        SALARY BREAKDOWN:
+        ----------------
+        Basic Salary: ${formatCurrency(payroll.basicSalary)}
+        Actual Work Hours: ${payroll.actualWorkHours} hrs
+        Overtime Hours: ${payroll.otHours} hrs
+        Overtime Amount: ${formatCurrency(payroll.otAmount)}
+        Gross Salary: ${formatCurrency(payroll.grossSalary)}
+        
+        DEDUCTIONS:
+        ----------
+        EPF (${payroll.epfRate}%): ${formatCurrency(payroll.epfAmount)}
+        ETF (${payroll.etfRate}%): ${formatCurrency(payroll.etfAmount)}
+        Total Deductions: ${formatCurrency(payroll.deductions)}
+        
+        NET SALARY: ${formatCurrency(payroll.netSalary)}
+        
+        Generated on: ${new Date().toLocaleString()}
+    `;
+
+     // Create and download text file (replace with PDF in production)
+     const blob = new Blob([content], { type: 'text/plain' });
+     const url = window.URL.createObjectURL(blob);
+     const a = document.createElement('a');
+     a.href = url;
+     a.download = `payslip-${payroll.employeeId}-${payroll.payrollMonth}.txt`;
+     document.body.appendChild(a);
+     a.click();
+     document.body.removeChild(a);
+     window.URL.revokeObjectURL(url);
+ }
+
+ // Utility functions
+ function formatPayrollMonth(payrollMonth) {
+     if (!payrollMonth) return 'N/A';
+
+     const [year, month] = payrollMonth.split('-');
+     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+         'July', 'August', 'September', 'October', 'November', 'December'];
+
+     return `${monthNames[parseInt(month) - 1]} ${year}`;
+ }
+
+ function formatCurrency(amount) {
+     if (!amount) return 'LKR 0.00';
+
+     const value = typeof amount === 'object' ? amount.toString() : amount;
+     return 'LKR ' + parseFloat(value).toLocaleString('en-US', {
+         minimumFractionDigits: 2,
+         maximumFractionDigits: 2
+     });
+ }
+
+ // Add to the existing showSection override
+ const originalShowSectionForPayroll = showSection;
+ showSection = function(sectionId) {
+     originalShowSectionForPayroll(sectionId);
+
+     if (sectionId === 'paysheet') {
+         initializePayrollSection();
+     }
+ };
