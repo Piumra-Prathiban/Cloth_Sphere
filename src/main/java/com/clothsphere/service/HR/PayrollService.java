@@ -146,6 +146,10 @@ public class PayrollService {
                         payroll.getOtHours(),
                         payroll.getOtAmount().doubleValue(),
                         payroll.getGrossSalary().doubleValue(),
+                        payroll.getEpfRate().doubleValue(),
+                        payroll.getEtfRate().doubleValue(),
+                        payroll.getEpfAmount().doubleValue(),
+                        payroll.getEtfAmount().doubleValue(),
                         payroll.getDeductions().doubleValue(),
                         payroll.getNetSalary().doubleValue(),
                         payroll.getAttendanceRate(),
@@ -164,6 +168,10 @@ public class PayrollService {
                         payroll.getOtHours(),
                         payroll.getOtAmount().doubleValue(),
                         payroll.getGrossSalary().doubleValue(),
+                        payroll.getEpfRate().doubleValue(),
+                        payroll.getEtfRate().doubleValue(),
+                        payroll.getEpfAmount().doubleValue(),
+                        payroll.getEtfAmount().doubleValue(),
                         payroll.getDeductions().doubleValue(),
                         payroll.getNetSalary().doubleValue(),
                         payroll.getAttendanceRate(),
@@ -202,10 +210,10 @@ public class PayrollService {
                         Double salaryBudget = deptOpt.get().getSalaryBudget();
                         System.out.println("  - Department salary budget: " + salaryBudget);
                         if (salaryBudget != null && salaryBudget > 0) {
-                            // Calculate basic salary (monthly from annual budget)
-                            BigDecimal monthlySalary = BigDecimal.valueOf(salaryBudget / 12);
-                            System.out.println("  - Calculated monthly salary: " + monthlySalary);
-                            return monthlySalary;
+                            // Return FULL salary budget as basic salary (NOT divided by 12)
+                            BigDecimal basicSalary = BigDecimal.valueOf(salaryBudget);
+                            System.out.println("  - Basic salary (full budget): " + basicSalary);
+                            return basicSalary;
                         }
                     }
                 }
@@ -334,6 +342,10 @@ public class PayrollService {
                         payroll.getOtHours(),
                         payroll.getOtAmount().doubleValue(),
                         payroll.getGrossSalary().doubleValue(),
+                        payroll.getEpfRate().doubleValue(),
+                        payroll.getEtfRate().doubleValue(),
+                        payroll.getEpfAmount().doubleValue(),
+                        payroll.getEtfAmount().doubleValue(),
                         payroll.getDeductions().doubleValue(),
                         payroll.getNetSalary().doubleValue(),
                         payroll.getAttendanceRate(),
@@ -394,4 +406,38 @@ public class PayrollService {
             return "Unknown Employee";
         }
     }
+
+    /**
+     * Get all payroll records across all months
+     */
+    @Transactional(readOnly = true)
+    public Map<String, Object> getAllPayrolls() {
+        Map<String, Object> result = new HashMap<>();
+
+        try {
+            // Use the injected repository instance
+            List<Payroll> allPayrolls = payrollRepository.findAll();
+
+            List<Map<String, Object>> payrollDetails = new ArrayList<>();
+
+            for (Payroll payroll : allPayrolls) {
+                Map<String, Object> detail = new HashMap<>();
+                detail.put("payroll", payroll);
+                detail.put("employeeName", getEmployeeName(payroll.getEmployeeId()));
+                payrollDetails.add(detail);
+            }
+
+            result.put("success", true);
+            result.put("payrolls", payrollDetails);
+            result.put("totalRecords", allPayrolls.size());
+
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "Error fetching all payrolls: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return result;
+    }
+
 }

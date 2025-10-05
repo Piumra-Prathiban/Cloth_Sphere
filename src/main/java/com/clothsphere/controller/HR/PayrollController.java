@@ -92,4 +92,13 @@ public class PayrollController {
     public String payrollManagementPage() {
         return "hr/payroll-management"; // You'll need to create this HTML template
     }
+
+    // In PayrollController.java
+    @GetMapping("/all")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> getAllPayrolls() {
+        Map<String, Object> result = payrollService.getAllPayrolls();
+        return ResponseEntity.ok(result);
+    }
+
 }

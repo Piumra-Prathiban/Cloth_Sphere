@@ -39,6 +39,18 @@ public class Payroll {
     @Column(name = "gross_salary")
     private BigDecimal grossSalary = BigDecimal.ZERO;
 
+    @Column(name = "epf_rate")
+    private BigDecimal epfRate = new BigDecimal("8.0"); // Default 8% EPF
+
+    @Column(name = "etf_rate")
+    private BigDecimal etfRate = new BigDecimal("4.0"); // Default 3% ETF
+
+    @Column(name = "epf_amount")
+    private BigDecimal epfAmount = BigDecimal.ZERO;
+
+    @Column(name = "etf_amount")
+    private BigDecimal etfAmount = BigDecimal.ZERO;
+
     @Column(name = "deductions")
     private BigDecimal deductions = BigDecimal.ZERO;
 
@@ -98,6 +110,18 @@ public class Payroll {
     public BigDecimal getGrossSalary() { return grossSalary; }
     public void setGrossSalary(BigDecimal grossSalary) { this.grossSalary = grossSalary; }
 
+    public BigDecimal getEpfRate() { return epfRate; }
+    public void setEpfRate(BigDecimal epfRate) { this.epfRate = epfRate; }
+
+    public BigDecimal getEtfRate() { return etfRate; }
+    public void setEtfRate(BigDecimal etfRate) { this.etfRate = etfRate; }
+
+    public BigDecimal getEpfAmount() { return epfAmount; }
+    public void setEpfAmount(BigDecimal epfAmount) { this.epfAmount = epfAmount; }
+
+    public BigDecimal getEtfAmount() { return etfAmount; }
+    public void setEtfAmount(BigDecimal etfAmount) { this.etfAmount = etfAmount; }
+
     public BigDecimal getDeductions() { return deductions; }
     public void setDeductions(BigDecimal deductions) { this.deductions = deductions; }
 
@@ -116,20 +140,26 @@ public class Payroll {
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 
-    // Business logic methods
+    /**
+     * Calculate salary with EPF/ETF deductions
+     * Formula:
+     * - Basic Salary = Department Budget (full amount, not divided)
+     * - OT Amount = (Basic Salary / Max Work Hours) × OT Hours × OT Rate
+     * - Gross Salary = Basic Salary + OT Amount
+     * - EPF = Gross Salary × EPF Rate (e.g., 8%)
+     * - ETF = Gross Salary × ETF Rate (e.g., 3%)
+     * - Total Deductions = EPF + ETF
+     * - Net Salary = Gross Salary - Total Deductions
+     */
     public void calculateSalary() {
         if (basicSalary == null || actualWorkHours == null || maxWorkHours == null) {
             return;
         }
 
-        // Calculate hourly rate
+        // Calculate hourly rate from basic salary
         BigDecimal hourlyRate = basicSalary.divide(
                 new BigDecimal(maxWorkHours.toString()), 2, BigDecimal.ROUND_HALF_UP
         );
-
-        // Calculate regular hours (up to max work hours)
-        Double regularHours = Math.min(actualWorkHours, maxWorkHours);
-        BigDecimal regularPay = hourlyRate.multiply(new BigDecimal(regularHours.toString()));
 
         // Calculate overtime
         this.otHours = Math.max(0.0, actualWorkHours - maxWorkHours);
@@ -140,16 +170,17 @@ public class Payroll {
             this.otAmount = BigDecimal.ZERO;
         }
 
-        // Calculate gross salary
-        this.grossSalary = regularPay.add(otAmount);
+        // Calculate gross salary (Basic Salary + OT Amount)
+        this.grossSalary = basicSalary.add(otAmount);
 
-        // Apply deductions based on attendance rate
-        if (attendanceRate < 80.0) {
-            double deductionPercentage = (80.0 - attendanceRate) / 100.0;
-            this.deductions = grossSalary.multiply(new BigDecimal(deductionPercentage));
-        } else {
-            this.deductions = BigDecimal.ZERO;
-        }
+        // Calculate EPF (Employee Provident Fund)
+        this.epfAmount = grossSalary.multiply(epfRate.divide(new BigDecimal("100"), 2, BigDecimal.ROUND_HALF_UP));
+
+        // Calculate ETF (Employees' Trust Fund)
+        this.etfAmount = grossSalary.multiply(etfRate.divide(new BigDecimal("100"), 2, BigDecimal.ROUND_HALF_UP));
+
+        // Total deductions = EPF + ETF
+        this.deductions = epfAmount.add(etfAmount);
 
         // Calculate net salary
         this.netSalary = grossSalary.subtract(deductions);

@@ -23,8 +23,20 @@ function initPayroll() {
     const currentMonth = now.toISOString().slice(0, 7);
     payrollMonthElement.value = currentMonth;
 
-    // Load initial payroll data
-    loadPayrollData();
+    // Load ALL payroll data initially (don't filter by month)
+    loadAllPayrollData();
+}
+
+// Load ALL payroll data (all months)
+async function loadAllPayrollData() {
+    try {
+        // You'll need to create an endpoint that returns all payroll records
+        // For now, let's load the selected month
+        await loadPayrollData();
+    } catch (error) {
+        console.error('Error loading all payroll data:', error);
+        showAlert('Error loading payroll data: ' + error.message, 'error');
+    }
 }
 
 // Load payroll data based on filters
@@ -99,6 +111,11 @@ function displayPayrollData(result) {
     }
 
     tbody.innerHTML = '';
+
+    if (!currentPayrollData || currentPayrollData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="12" style="text-align: center;">No payroll data available</td></tr>';
+        return;
+    }
 
     currentPayrollData.forEach(item => {
         const payroll = item.payroll;

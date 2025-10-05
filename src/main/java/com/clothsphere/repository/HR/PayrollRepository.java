@@ -15,15 +15,17 @@ import java.util.Optional;
 @Repository
 public interface PayrollRepository extends JpaRepository<Payroll, PayrollId> {
 
-    // Manual INSERT query
+    // Manual INSERT query with EPF/ETF
     @Modifying
     @Query(value = "INSERT INTO payroll (" +
             "employee_id, payroll_month, basic_salary, actual_work_hours, max_work_hours, " +
-            "ot_rate, ot_hours, ot_amount, gross_salary, deductions, net_salary, " +
+            "ot_rate, ot_hours, ot_amount, gross_salary, " +
+            "epf_rate, etf_rate, epf_amount, etf_amount, deductions, net_salary, " +
             "attendance_rate, status, created_at, updated_at" +
             ") VALUES (" +
             ":employeeId, :payrollMonth, :basicSalary, :actualWorkHours, :maxWorkHours, " +
-            ":otRate, :otHours, :otAmount, :grossSalary, :deductions, :netSalary, " +
+            ":otRate, :otHours, :otAmount, :grossSalary, " +
+            ":epfRate, :etfRate, :epfAmount, :etfAmount, :deductions, :netSalary, " +
             ":attendanceRate, :status, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP" +
             ")", nativeQuery = true)
     void insertPayroll(@Param("employeeId") String employeeId,
@@ -35,12 +37,16 @@ public interface PayrollRepository extends JpaRepository<Payroll, PayrollId> {
                        @Param("otHours") Double otHours,
                        @Param("otAmount") Double otAmount,
                        @Param("grossSalary") Double grossSalary,
+                       @Param("epfRate") Double epfRate,
+                       @Param("etfRate") Double etfRate,
+                       @Param("epfAmount") Double epfAmount,
+                       @Param("etfAmount") Double etfAmount,
                        @Param("deductions") Double deductions,
                        @Param("netSalary") Double netSalary,
                        @Param("attendanceRate") Double attendanceRate,
                        @Param("status") String status);
 
-    // Manual UPDATE query
+    // Manual UPDATE query with EPF/ETF
     @Modifying
     @Query(value = "UPDATE payroll SET " +
             "basic_salary = :basicSalary, " +
@@ -50,6 +56,10 @@ public interface PayrollRepository extends JpaRepository<Payroll, PayrollId> {
             "ot_hours = :otHours, " +
             "ot_amount = :otAmount, " +
             "gross_salary = :grossSalary, " +
+            "epf_rate = :epfRate, " +
+            "etf_rate = :etfRate, " +
+            "epf_amount = :epfAmount, " +
+            "etf_amount = :etfAmount, " +
             "deductions = :deductions, " +
             "net_salary = :netSalary, " +
             "attendance_rate = :attendanceRate, " +
@@ -65,6 +75,10 @@ public interface PayrollRepository extends JpaRepository<Payroll, PayrollId> {
                        @Param("otHours") Double otHours,
                        @Param("otAmount") Double otAmount,
                        @Param("grossSalary") Double grossSalary,
+                       @Param("epfRate") Double epfRate,
+                       @Param("etfRate") Double etfRate,
+                       @Param("epfAmount") Double epfAmount,
+                       @Param("etfAmount") Double etfAmount,
                        @Param("deductions") Double deductions,
                        @Param("netSalary") Double netSalary,
                        @Param("attendanceRate") Double attendanceRate,
