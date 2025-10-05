@@ -40,10 +40,10 @@ public class Payroll {
     private BigDecimal grossSalary = BigDecimal.ZERO;
 
     @Column(name = "epf_rate")
-    private BigDecimal epfRate = new BigDecimal("8.0"); // Default 8% EPF
+    private BigDecimal epfRate = new BigDecimal("8.0");
 
     @Column(name = "etf_rate")
-    private BigDecimal etfRate = new BigDecimal("4.0"); // Default 3% ETF
+    private BigDecimal etfRate = new BigDecimal("4.0");
 
     @Column(name = "epf_amount")
     private BigDecimal epfAmount = BigDecimal.ZERO;
@@ -140,12 +140,15 @@ public class Payroll {
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 
+    // In Payroll.java - Update the calculateSalary method to clarify OT rate usage
     /**
      * Calculate salary with EPF/ETF deductions
      * Formula:
      * - Basic Salary = Department Budget (full amount, not divided)
-     * - OT Amount = (Basic Salary / Max Work Hours) × OT Hours × OT Rate
-     * - Gross Salary = Basic Salary + OT Amount
+     * - Hourly Rate = Basic Salary / Max Work Hours
+     * - Regular Hours Pay = Hourly Rate × Min(Actual Hours, Max Hours)
+     * - OT Amount = Hourly Rate × OT Hours × OT Rate (OT Rate is multiplier, e.g., 1.5 for time-and-a-half)
+     * - Gross Salary = Regular Hours Pay + OT Amount
      * - EPF = Gross Salary × EPF Rate (e.g., 8%)
      * - ETF = Gross Salary × ETF Rate (e.g., 3%)
      * - Total Deductions = EPF + ETF
@@ -161,17 +164,22 @@ public class Payroll {
                 new BigDecimal(maxWorkHours.toString()), 2, BigDecimal.ROUND_HALF_UP
         );
 
+        // Calculate regular hours (up to max work hours)
+        Double regularHours = Math.min(actualWorkHours, maxWorkHours);
+        BigDecimal regularPay = hourlyRate.multiply(new BigDecimal(regularHours.toString()));
+
         // Calculate overtime
         this.otHours = Math.max(0.0, actualWorkHours - maxWorkHours);
         if (otHours > 0) {
+            // OT Rate is a multiplier (e.g., 1.5 means time-and-a-half)
             BigDecimal otHourlyRate = hourlyRate.multiply(otRate);
             this.otAmount = otHourlyRate.multiply(new BigDecimal(otHours.toString()));
         } else {
             this.otAmount = BigDecimal.ZERO;
         }
 
-        // Calculate gross salary (Basic Salary + OT Amount)
-        this.grossSalary = basicSalary.add(otAmount);
+        // Calculate gross salary (Regular Pay + OT Amount)
+        this.grossSalary = regularPay.add(otAmount);
 
         // Calculate EPF (Employee Provident Fund)
         this.epfAmount = grossSalary.multiply(epfRate.divide(new BigDecimal("100"), 2, BigDecimal.ROUND_HALF_UP));

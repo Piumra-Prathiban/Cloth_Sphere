@@ -498,7 +498,6 @@
   </div>
 
 
-  <!-- Update the existing payroll section in hrDashboard.html -->
   <div id="payroll" class="content-section">
     <div class="card">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -530,13 +529,13 @@
             </select>
           </div>
           <div class="filter-group">
-            <label for="payrollEmployee">Employee:</label>
-            <input type="text" id="payrollEmployee" placeholder="Filter by employee ID" onkeyup="filterPayrollTable()">
+            <label for="payrollEmployee">Employee Search:</label>
+            <input type="text" id="payrollEmployee" placeholder="Filter by ID or name" onkeyup="filterPayrollTable()">
           </div>
         </div>
       </div>
 
-      <!-- Payroll Summary -->
+      <!-- Payroll Summary Card -->
       <div id="payrollSummary" class="summary-card" style="display: none;">
         <h4>Payroll Summary - <span id="summaryMonth">Month</span></h4>
         <div class="summary-grid">
@@ -568,7 +567,7 @@
         <i class="fas fa-file-invoice-dollar"></i>
         <p>No payroll records found for the selected criteria</p>
         <button class="btn btn-primary" onclick="showGeneratePayrollModal()">
-          Generate Payroll
+          <i class="fas fa-plus"></i> Generate Payroll
         </button>
       </div>
 
@@ -579,20 +578,20 @@
           <tr>
             <th>Employee ID</th>
             <th>Employee Name</th>
-            <th>Basic Salary</th>
+            <th>Monthly Salary</th>
             <th>Work Hours</th>
             <th>OT Hours</th>
-            <th>OT Amount</th>
+            <th>OT Payment</th>
             <th>Gross Salary</th>
             <th>Deductions</th>
             <th>Net Salary</th>
-            <th>Attendance Rate</th>
+            <th>Attendance %</th>
             <th>Status</th>
             <th>Actions</th>
           </tr>
           </thead>
           <tbody>
-          <!-- Payroll data will be loaded here -->
+          <!-- Payroll data will be loaded here by JavaScript -->
           </tbody>
         </table>
       </div>
@@ -603,31 +602,47 @@
   <div id="generatePayrollModal" class="modal">
     <div class="modal-content">
       <span class="close" onclick="closeGeneratePayrollModal()">&times;</span>
-      <h3>Generate Payroll</h3>
+      <h3>Generate Monthly Payroll</h3>
 
       <form id="generatePayrollForm">
         <fieldset>
-          <legend>Payroll Generation Details</legend>
+          <legend>Payroll Generation Settings</legend>
 
           <div class="form-group">
             <label for="generateMonth">Select Month:</label>
             <input type="month" id="generateMonth" required>
+            <small>Choose the month to generate payroll for</small>
           </div>
 
           <div class="form-group">
-            <label for="defaultOtRate">Default OT Rate:</label>
+            <label for="defaultOtRate">Overtime Multiplier:</label>
             <input type="number" id="defaultOtRate" step="0.1" min="1.0" max="3.0" value="1.5" required>
-            <small>Multiplier for overtime hours (e.g., 1.5 for time-and-a-half)</small>
+            <small style="display: block; margin-top: 5px; color: #666;">
+              <strong>How it works:</strong><br>
+              • <strong>1.0x</strong> = Regular pay rate (no overtime bonus)<br>
+              • <strong>1.5x</strong> = Time and a half (standard overtime)<br>
+              • <strong>2.0x</strong> = Double time (premium overtime)<br>
+              <em>Example: If hourly rate is $10, with 1.5x multiplier, overtime pays $15/hour</em>
+            </small>
           </div>
 
           <div class="form-group">
-            <label for="maxWorkHours">Maximum Work Hours:</label>
+            <label for="maxWorkHours">Maximum Regular Hours:</label>
             <input type="number" id="maxWorkHours" step="1" min="1" max="300" value="180" required>
-            <small>Maximum regular work hours per month</small>
+            <small>Hours beyond this count as overtime (default: 180 hours/month)</small>
           </div>
 
-          <div class="form-note">
-            <p><strong>Note:</strong> This will generate payroll for all employees based on their attendance data for the selected month.</p>
+          <div class="form-note" style="background: #e7f3ff; padding: 15px; border-radius: 5px; border-left: 4px solid #2196F3; margin: 15px 0;">
+            <strong>Calculation Method:</strong><br>
+            1. <strong>Hourly Rate</strong> = Monthly Salary ÷ Max Regular Hours<br>
+            2. <strong>Regular Pay</strong> = Hourly Rate × (Actual Hours up to Max)<br>
+            3. <strong>OT Pay</strong> = (Hourly Rate × OT Multiplier) × OT Hours<br>
+            4. <strong>Gross Salary</strong> = Regular Pay + OT Pay<br>
+            5. <strong>Net Salary</strong> = Gross - Deductions (EPF 8% + ETF 4%)
+          </div>
+
+          <div class="form-note" style="background: #fff3cd; padding: 12px; border-radius: 5px; border-left: 4px solid #ffc107;">
+            <strong>Note:</strong> This will generate payroll for ALL employees based on their attendance data for the selected month. Make sure attendance has been recorded before generating payroll.
           </div>
         </fieldset>
 
@@ -650,7 +665,7 @@
       <h3>Payroll Details</h3>
 
       <div class="payroll-details-content" id="payrollDetailsContent">
-        <!-- Payroll details will be populated here -->
+        <!-- Payroll details will be populated here by JavaScript -->
       </div>
 
       <div style="text-align: right; margin-top: 20px;">
@@ -665,27 +680,39 @@
   <div id="editOtRateModal" class="modal">
     <div class="modal-content">
       <span class="close" onclick="closeEditOtRateModal()">&times;</span>
-      <h3>Edit OT Rate</h3>
+      <h3>Edit Overtime Multiplier</h3>
 
       <form id="editOtRateForm">
         <input type="hidden" id="editOtEmployeeId">
         <input type="hidden" id="editOtPayrollMonth">
 
         <fieldset>
-          <legend>Overtime Rate Adjustment</legend>
+          <legend>Adjust Overtime Rate</legend>
 
-          <div class="employee-details" id="editOtEmployeeDetails" style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
-            <!-- Employee details will be populated here -->
+          <div class="employee-details" id="editOtEmployeeDetails" style="margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 5px;">
+            <!-- Employee details will be populated here by JavaScript -->
           </div>
 
           <div class="form-group">
-            <label for="editOtRate">OT Rate Multiplier:</label>
+            <label for="editOtRate">Overtime Multiplier:</label>
             <input type="number" id="editOtRate" step="0.1" min="1.0" max="3.0" required>
-            <small>Current standard rate: 1.5x (time-and-a-half)</small>
+            <small style="display: block; margin-top: 5px; color: #666;">
+              <strong>Common rates:</strong><br>
+              • <strong>1.5x</strong> - Standard overtime (time and a half)<br>
+              • <strong>2.0x</strong> - Premium overtime (double time)<br>
+              • <strong>1.0x</strong> - Regular rate (no overtime bonus)
+            </small>
           </div>
 
-          <div class="form-note">
-            <p><strong>Note:</strong> Changing the OT rate will recalculate the payroll for this employee.</p>
+          <div class="form-note" style="background: #fff3cd; padding: 10px; border-radius: 5px; margin-top: 10px; border-left: 4px solid #ffc107;">
+            <strong>Important:</strong> Changing this will automatically recalculate ALL salary amounts for this employee, including gross salary and net salary.
+          </div>
+
+          <div class="calculation-example" style="background: #e7f3ff; padding: 12px; border-radius: 5px; margin-top: 10px; font-family: 'Courier New', monospace; font-size: 13px; border-left: 4px solid #2196F3;">
+            <strong>Example Calculation:</strong><br>
+            If hourly rate = $10/hour and OT hours = 20:<br>
+            • At <strong>1.5x</strong>: OT Pay = $10 × 1.5 × 20 = <strong>$300</strong><br>
+            • At <strong>2.0x</strong>: OT Pay = $10 × 2.0 × 20 = <strong>$400</strong>
           </div>
         </fieldset>
 
@@ -694,12 +721,77 @@
             <i class="fas fa-times"></i> Cancel
           </button>
           <button type="submit" class="btn btn-primary">
-            <i class="fas fa-save"></i> Update OT Rate
+            <i class="fas fa-save"></i> Update & Recalculate
           </button>
         </div>
       </form>
     </div>
   </div>
+
+  <!-- Mark as Paid Modal -->
+  <div id="markAsPaidModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeMarkAsPaidModal()">&times;</span>
+      <h3>Mark Payroll as Paid</h3>
+
+      <form id="markAsPaidForm">
+        <input type="hidden" id="markPaidEmployeeId">
+        <input type="hidden" id="markPaidPayrollMonth">
+
+        <fieldset>
+          <legend>Payment Confirmation</legend>
+
+          <div class="employee-details" id="markPaidEmployeeDetails" style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 5px;">
+            <!-- Employee payment details will be populated here by JavaScript -->
+          </div>
+
+          <div class="form-group">
+            <label for="paymentNotes">Payment Notes (Optional):</label>
+            <textarea
+                    id="paymentNotes"
+                    name="paymentNotes"
+                    rows="3"
+                    placeholder="Add any notes about this payment (e.g., payment method, reference number, remarks...)"
+                    style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-family: inherit; resize: vertical;"
+            ></textarea>
+            <small style="color: #666;">These notes are for record keeping purposes only.</small>
+          </div>
+
+          <div class="form-note" style="background: #fff3cd; padding: 12px; border-radius: 5px; border-left: 4px solid #ffc107; margin: 15px 0;">
+            <strong>⚠️ Important:</strong> This action will mark the payroll as PAID and cannot be undone. Make sure the payment has been processed before confirming.
+          </div>
+
+          <div class="form-note" style="background: #d4edda; padding: 12px; border-radius: 5px; border-left: 4px solid #28a745;">
+            <strong>✓ Confirmation:</strong> By clicking "Confirm Payment" below, you confirm that:
+            <ul style="margin: 8px 0 0 20px; padding: 0;">
+              <li>The payment has been successfully processed</li>
+              <li>The employee will receive the net salary amount</li>
+              <li>This record will be marked as PAID in the system</li>
+            </ul>
+          </div>
+        </fieldset>
+
+        <div style="text-align: right; margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
+          <button type="button" class="btn btn-secondary" onclick="closeMarkAsPaidModal()">
+            <i class="fas fa-times"></i> Cancel
+          </button>
+          <button type="submit" class="btn btn-success">
+            <i class="fas fa-check"></i> Confirm Payment
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Payment Processing Overlay -->
+  <div id="processingOverlay" class="processing-overlay" style="display: none;">
+    <div class="processing-content">
+      <div class="spinner"></div>
+      <h3>Processing Payment...</h3>
+      <p id="processingMessage">Please wait while we process the payment</p>
+    </div>
+  </div>
+
 </div>
 
 <!-- Add/Edit Employee Modal -->

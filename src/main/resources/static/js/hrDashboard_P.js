@@ -1,45 +1,71 @@
-// hrDashboard_Payroll.js
+// hrDashboard_Payroll.js - FIXED VERSION
 // Payroll Management Functionality
 
 let currentPayrollData = [];
 let currentPayrollMonth = '';
+let allPayrollData = []; // Store all payroll data
 
 // Initialize payroll when section is shown
 function initPayroll() {
-    console.log('Initializing payroll management...');
+    console.log('=== INITIALIZING PAYROLL SECTION ===');
 
-    // Check if elements exist before accessing them
     const payrollMonthElement = document.getElementById('payrollMonth');
     const payrollTableElement = document.getElementById('payrollTable');
 
     if (!payrollMonthElement || !payrollTableElement) {
-        console.error('Payroll elements not found in DOM. Retrying...');
+        console.error('Payroll elements not found, retrying...');
         setTimeout(initPayroll, 500);
         return;
     }
 
-    // Set default month to current month
+    // Set current month as default
     const now = new Date();
     const currentMonth = now.toISOString().slice(0, 7);
     payrollMonthElement.value = currentMonth;
+    currentPayrollMonth = currentMonth;
 
-    // Load ALL payroll data initially (don't filter by month)
+    console.log('Current month set to:', currentMonth);
+
+    // Load ALL payroll data first to check what exists
     loadAllPayrollData();
 }
 
-// Load ALL payroll data (all months)
+// Load ALL payroll records (for checking existing data)
 async function loadAllPayrollData() {
     try {
-        // You'll need to create an endpoint that returns all payroll records
-        // For now, let's load the selected month
-        await loadPayrollData();
+        console.log('Loading all payroll records...');
+        const response = await fetchWithAuth('/payroll/all');
+
+        if (response.ok) {
+            const result = await response.json();
+
+            if (result.success && result.payrolls) {
+                allPayrollData = result.payrolls;
+                console.log(`Found ${allPayrollData.length} total payroll records`);
+
+                // Get unique months
+                const months = [...new Set(allPayrollData.map(p => p.payroll.payrollMonth))];
+                console.log('Available months:', months);
+
+                // Now load data for selected month
+                await loadPayrollData();
+            } else {
+                console.log('No existing payroll data found');
+                showNoDataMessage();
+            }
+        } else {
+            console.warn('Could not fetch all payroll data');
+            // Still try to load current month data
+            await loadPayrollData();
+        }
     } catch (error) {
         console.error('Error loading all payroll data:', error);
-        showAlert('Error loading payroll data: ' + error.message, 'error');
+        // Continue anyway and try to load current month
+        await loadPayrollData();
     }
 }
 
-// Load payroll data based on filters
+// Load payroll data for selected month
 async function loadPayrollData() {
     const monthElement = document.getElementById('payrollMonth');
     const statusElement = document.getElementById('payrollStatus');
@@ -58,252 +84,512 @@ async function loadPayrollData() {
     }
 
     try {
-        showLoading('payrollTable');
+        console.log(`=== LOADING PAYROLL DATA FOR ${month} ===`);
 
         const [year, monthNum] = month.split('-');
         const response = await fetchWithAuth(`/payroll/monthly-report?year=${year}&month=${monthNum}`);
 
         if (response.ok) {
             const result = await response.json();
+            console.log('Payroll response:', result);
 
-            if (result.success) {
-                currentPayrollData = result.payrolls || [];
+            if (result.success && result.payrolls && result.payrolls.length > 0) {
+                // Store ALL data first
+                currentPayrollData = result.payrolls;
                 currentPayrollMonth = month;
 
-                displayPayrollData(result);
+                console.log(`✓ Loaded ${currentPayrollData.length} payroll records`);
+
+                // Apply status filter if needed (but keep original data)
+                let dataToDisplay = currentPayrollData;
+                if (status !== 'ALL') {
+                    dataToDisplay = currentPayrollData.filter(item =>
+                        item.payroll.status === status
+                    );
+                    console.log(`Filtered to ${dataToDisplay.length} records with status ${status}`);
+                }
+
+                displayPayrollData({ payrolls: dataToDisplay });
                 updatePayrollSummary(result);
 
-                // Show/hide no data message
-                const noDataDiv = document.getElementById('noPayrollData');
-                const summaryDiv = document.getElementById('payrollSummary');
-                const tableContainer = document.querySelector('.table-container');
+                // Show table and summary
+                document.getElementById('noPayrollData').style.display = 'none';
+                document.getElementById('payrollSummary').style.display = 'block';
+                document.querySelector('.table-container').style.display = 'block';
 
-                if (currentPayrollData.length === 0) {
-                    if (noDataDiv) noDataDiv.style.display = 'block';
-                    if (summaryDiv) summaryDiv.style.display = 'none';
-                    if (tableContainer) tableContainer.style.display = 'none';
-                } else {
-                    if (noDataDiv) noDataDiv.style.display = 'none';
-                    if (summaryDiv) summaryDiv.style.display = 'block';
-                    if (tableContainer) tableContainer.style.display = 'block';
+                // Clear search box
+                const searchBox = document.getElementById('payrollEmployee');
+                if (searchBox && searchBox.value) {
+                    console.log('Search term detected, applying filter...');
+                    filterPayrollTable();
                 }
 
             } else {
-                showAlert(result.message || 'Failed to load payroll data', 'error');
+                console.log('No payroll data for selected month');
+                currentPayrollData = [];
                 showNoDataMessage();
             }
         } else {
-            throw new Error('Failed to fetch payroll data');
+            console.log('Server returned error:', response.status);
+            currentPayrollData = [];
+            showNoDataMessage();
         }
     } catch (error) {
-        console.error('Error loading payroll data:', error);
-        showAlert('Error loading payroll data: ' + error.message, 'error');
+        console.error('Error loading payroll:', error);
+        showAlert('Error loading payroll: ' + error.message, 'error');
         showNoDataMessage();
     }
 }
 
+
 // Display payroll data in table
 function displayPayrollData(result) {
     const tbody = document.querySelector('#payrollTable tbody');
-    if (!tbody) {
-        console.error('Payroll table body not found');
-        return;
-    }
+    if (!tbody) return;
 
     tbody.innerHTML = '';
 
-    if (!currentPayrollData || currentPayrollData.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="12" style="text-align: center;">No payroll data available</td></tr>';
+    const dataToDisplay = result.payrolls || [];
+
+    if (dataToDisplay.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="12" style="text-align: center; padding: 20px;">No payroll records found</td></tr>';
         return;
     }
 
-    currentPayrollData.forEach(item => {
-        const payroll = item.payroll;
+    console.log(`Displaying ${dataToDisplay.length} payroll records`);
+
+    dataToDisplay.forEach(item => {
+        const p = item.payroll;
         const row = document.createElement('tr');
 
+        // Determine which buttons to show based on status
+        let actionButtons = '';
+
+        if (p.status === 'PAID') {
+            // PAID status: Only show View button
+            actionButtons = `
+                <button class="btn btn-info btn-sm" onclick="viewPayrollDetails('${p.employeeId}', '${p.payrollMonth}')" title="View Details">
+                    <i class="fas fa-eye"></i> View
+                </button>
+            `;
+        } else if (p.status === 'CALCULATED') {
+            // CALCULATED status: Show View, Edit, and Pay buttons
+            actionButtons = `
+                <button class="btn btn-info btn-sm" onclick="viewPayrollDetails('${p.employeeId}', '${p.payrollMonth}')" title="View Details">
+                    <i class="fas fa-eye"></i> View
+                </button>
+                <button class="btn btn-warning btn-sm" onclick="editOtRate('${p.employeeId}', '${p.payrollMonth}', ${p.otRate})" title="Edit OT Rate">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+                <button class="btn btn-success btn-sm" onclick="showMarkAsPaidModal('${p.employeeId}', '${p.payrollMonth}', '${item.employeeName}')" title="Mark as Paid">
+                    <i class="fas fa-check"></i> Pay
+                </button>
+            `;
+        } else {
+            // PENDING or other status: Show View and Edit only
+            actionButtons = `
+                <button class="btn btn-info btn-sm" onclick="viewPayrollDetails('${p.employeeId}', '${p.payrollMonth}')" title="View Details">
+                    <i class="fas fa-eye"></i> View
+                </button>
+                <button class="btn btn-warning btn-sm" onclick="editOtRate('${p.employeeId}', '${p.payrollMonth}', ${p.otRate})" title="Edit OT Rate">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+            `;
+        }
+
         row.innerHTML = `
-            <td>${payroll.employeeId}</td>
+            <td>${p.employeeId}</td>
             <td>${item.employeeName || 'N/A'}</td>
-            <td>$${formatCurrency(payroll.basicSalary)}</td>
-            <td>${formatNumber(payroll.actualWorkHours)}h</td>
-            <td>${formatNumber(payroll.otHours)}h</td>
-            <td>$${formatCurrency(payroll.otAmount)}</td>
-            <td>$${formatCurrency(payroll.grossSalary)}</td>
-            <td>$${formatCurrency(payroll.deductions)}</td>
-            <td><strong>$${formatCurrency(payroll.netSalary)}</strong></td>
-            <td>${formatNumber(payroll.attendanceRate)}%</td>
-            <td><span class="status-badge status-badge-${payroll.status.toLowerCase()}">${payroll.status}</span></td>
+            <td>$${formatCurrency(p.basicSalary)}</td>
+            <td>${formatNumber(p.actualWorkHours)}h</td>
+            <td>${formatNumber(p.otHours)}h</td>
+            <td>$${formatCurrency(p.otAmount)}</td>
+            <td>$${formatCurrency(p.grossSalary)}</td>
+            <td>$${formatCurrency(p.deductions)}</td>
+            <td><strong>$${formatCurrency(p.netSalary)}</strong></td>
+            <td>${formatNumber(p.attendanceRate)}%</td>
+            <td><span class="status-badge status-badge-${p.status.toLowerCase()}">${p.status}</span></td>
             <td>
                 <div class="action-buttons-payroll">
-                    <button class="btn btn-info btn-sm" onclick="viewPayrollDetails('${payroll.employeeId}', '${payroll.payrollMonth}')" title="View Details">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                    <button class="btn btn-warning btn-sm" onclick="editOtRate('${payroll.employeeId}', '${payroll.payrollMonth}', ${payroll.otRate})" title="Edit OT Rate">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    ${payroll.status === 'CALCULATED' ? `
-                    <button class="btn btn-success btn-sm" onclick="markAsPaid('${payroll.employeeId}', '${payroll.payrollMonth}')" title="Mark as Paid">
-                        <i class="fas fa-check"></i>
-                    </button>
-                    ` : ''}
+                    ${actionButtons}
                 </div>
             </td>
         `;
 
         tbody.appendChild(row);
     });
+
+    console.log('✓ Table populated successfully');
 }
+
+// NEW: Show Mark as Paid Modal instead of confirm()
+function showMarkAsPaidModal(employeeId, payrollMonth, employeeName) {
+    // Find the payroll data for this employee
+    const payrollItem = currentPayrollData.find(item =>
+        item.payroll.employeeId === employeeId &&
+        item.payroll.payrollMonth === payrollMonth
+    );
+
+    if (!payrollItem) {
+        showAlert('Payroll data not found', 'error');
+        return;
+    }
+
+    const p = payrollItem.payroll;
+
+    // Populate modal content
+    document.getElementById('markPaidEmployeeId').value = employeeId;
+    document.getElementById('markPaidPayrollMonth').value = payrollMonth;
+
+    document.getElementById('markPaidEmployeeDetails').innerHTML = `
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div>
+                <strong>Employee:</strong><br>
+                ${employeeName} (${employeeId})
+            </div>
+            <div>
+                <strong>Month:</strong><br>
+                ${formatMonthYear(payrollMonth)}
+            </div>
+            <div>
+                <strong>Gross Salary:</strong><br>
+                <span style="font-size: 18px; color: #333;">$${formatCurrency(p.grossSalary)}</span>
+            </div>
+            <div>
+                <strong>Deductions:</strong><br>
+                <span style="font-size: 18px; color: #dc3545;">-$${formatCurrency(p.deductions)}</span>
+            </div>
+            <div style="grid-column: 1 / -1; padding: 10px; background: #e7f3ff; border-radius: 4px; border-left: 4px solid #2196F3;">
+                <strong>Net Salary to be Paid:</strong><br>
+                <span style="font-size: 24px; color: #28a745; font-weight: bold;">$${formatCurrency(p.netSalary)}</span>
+            </div>
+        </div>
+    `;
+
+    // Show modal
+    document.getElementById('markAsPaidModal').style.display = 'block';
+}
+
+// Close Mark as Paid Modal
+function closeMarkAsPaidModal() {
+    document.getElementById('markAsPaidModal').style.display = 'none';
+    document.getElementById('paymentNotes').value = ''; // Clear notes
+}
+
+// Handle Mark as Paid form submission
+// Handle Mark as Paid form submission - FIXED VERSION
+const markPaidForm = document.getElementById('markAsPaidForm');
+if (markPaidForm) {
+    markPaidForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const employeeId = document.getElementById('markPaidEmployeeId').value;
+        const payrollMonth = document.getElementById('markPaidPayrollMonth').value;
+
+        try {
+            // Step 1: Close the modal
+            closeMarkAsPaidModal();
+
+            // Step 2: Show processing overlay
+            showProcessingOverlay('Processing payment for ' + employeeId + '...');
+
+            // Wait 1 second to show processing state
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Step 3: Make API call
+            const response = await fetchWithAuth(
+                `/payroll/mark-paid?employeeId=${employeeId}&payrollMonth=${payrollMonth}`,
+                { method: 'PUT' }
+            );
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Step 4: Show success state for 2 seconds
+                showProcessingSuccess();
+
+                // Step 5: Wait 2 seconds
+                await new Promise(resolve => setTimeout(resolve, 2000));
+
+                // Step 6: Hide overlay
+                hideProcessingOverlay();
+
+                // Step 7: Show success alert
+                showAlert(`✓ Payroll marked as PAID for ${employeeId}`, 'success');
+
+                // Step 8: Reload table data
+                await loadPayrollData();
+
+                // Step 9: Highlight the updated row
+                highlightPayrollRow(employeeId);
+
+            } else {
+                // Hide overlay and show error
+                hideProcessingOverlay();
+                showAlert(result.message || 'Failed to mark as paid', 'error');
+            }
+
+        } catch (error) {
+            console.error('Error:', error);
+            hideProcessingOverlay();
+            showAlert('Error marking as paid: ' + error.message, 'error');
+        }
+    });
+}
+
+// Highlight the updated row after payment
+function highlightPayrollRow(employeeId) {
+    setTimeout(() => {
+        const rows = document.querySelectorAll('#payrollTable tbody tr');
+        rows.forEach(row => {
+            const empIdCell = row.cells[0];
+            if (empIdCell && empIdCell.textContent === employeeId) {
+                row.style.backgroundColor = '#d4edda';
+                row.style.transition = 'background-color 0.5s';
+
+                // Remove highlight after 3 seconds
+                setTimeout(() => {
+                    row.style.backgroundColor = '';
+                }, 3000);
+            }
+        });
+    }, 100);
+}
+
+
 
 // Update payroll summary
 function updatePayrollSummary(result) {
-    const elements = {
-        summaryMonth: document.getElementById('summaryMonth'),
-        summaryEmployeeCount: document.getElementById('summaryEmployeeCount'),
-        summaryGrossSalary: document.getElementById('summaryGrossSalary'),
-        summaryDeductions: document.getElementById('summaryDeductions'),
-        summaryNetSalary: document.getElementById('summaryNetSalary'),
-        summaryStatus: document.getElementById('summaryStatus')
-    };
+    document.getElementById('summaryMonth').textContent = formatMonthYear(currentPayrollMonth);
+    document.getElementById('summaryEmployeeCount').textContent = result.employeeCount || 0;
+    document.getElementById('summaryGrossSalary').textContent = `$${formatCurrency(result.totalGrossSalary || 0)}`;
+    document.getElementById('summaryDeductions').textContent = `$${formatCurrency(result.totalDeductions || 0)}`;
+    document.getElementById('summaryNetSalary').textContent = `$${formatCurrency(result.totalNetSalary || 0)}`;
 
-    // Check if elements exist before setting values
-    if (elements.summaryMonth) elements.summaryMonth.textContent = formatMonthYear(currentPayrollMonth);
-    if (elements.summaryEmployeeCount) elements.summaryEmployeeCount.textContent = result.employeeCount || 0;
-    if (elements.summaryGrossSalary) elements.summaryGrossSalary.textContent = `$${formatCurrency(result.totalGrossSalary || 0)}`;
-    if (elements.summaryDeductions) elements.summaryDeductions.textContent = `$${formatCurrency(result.totalDeductions || 0)}`;
-    if (elements.summaryNetSalary) elements.summaryNetSalary.textContent = `$${formatCurrency(result.totalNetSalary || 0)}`;
-
-    // Determine overall status
     const allPaid = currentPayrollData.every(item => item.payroll.status === 'PAID');
     const anyCalculated = currentPayrollData.some(item => item.payroll.status === 'CALCULATED');
 
-    let status = 'MIXED';
-    if (allPaid) status = 'COMPLETED';
-    else if (anyCalculated) status = 'READY FOR PAYMENT';
-    else status = 'PENDING CALCULATION';
-
-    if (elements.summaryStatus) elements.summaryStatus.textContent = status;
+    let status = allPaid ? 'COMPLETED' : anyCalculated ? 'READY FOR PAYMENT' : 'PENDING';
+    document.getElementById('summaryStatus').textContent = status;
 }
 
-// Filter payroll table
+// FIXED: Employee filter function
+// Update the filter function to use the new display logic
 function filterPayrollTable() {
-    const searchElement = document.getElementById('payrollEmployee');
-    const statusElement = document.getElementById('payrollStatus');
+    const searchInput = document.getElementById('payrollEmployee');
+    const statusSelect = document.getElementById('payrollStatus');
 
-    if (!searchElement) return;
+    if (!searchInput) {
+        console.error('Search input not found');
+        return;
+    }
 
-    const searchTerm = searchElement.value.toLowerCase();
-    const statusFilter = statusElement ? statusElement.value : 'ALL';
+    const searchTerm = searchInput.value.toLowerCase().trim();
+    const statusFilter = statusSelect ? statusSelect.value : 'ALL';
 
-    const tbody = document.querySelector('#payrollTable tbody');
-    if (!tbody) return;
+    console.log('=== FILTERING PAYROLL TABLE ===');
+    console.log('Search term:', searchTerm);
+    console.log('Status filter:', statusFilter);
 
-    const rows = tbody.getElementsByTagName('tr');
+    // If no filters, show all data
+    if (searchTerm === '' && statusFilter === 'ALL') {
+        displayPayrollData({ payrolls: currentPayrollData });
+        return;
+    }
 
-    for (let row of rows) {
-        const employeeId = row.cells[0].textContent.toLowerCase();
-        const employeeName = row.cells[1].textContent.toLowerCase();
-        const status = row.cells[10].textContent;
+    // Filter the data
+    const filteredData = currentPayrollData.filter(item => {
+        const p = item.payroll;
+        const employeeId = (p.employeeId || '').toLowerCase();
+        const employeeName = (item.employeeName || '').toLowerCase();
+        const status = p.status || '';
 
-        const matchesSearch = employeeId.includes(searchTerm) || employeeName.includes(searchTerm);
+        const matchesSearch = searchTerm === '' ||
+            employeeId.includes(searchTerm) ||
+            employeeName.includes(searchTerm);
+
         const matchesStatus = statusFilter === 'ALL' || status === statusFilter;
 
-        row.style.display = matchesSearch && matchesStatus ? '' : 'none';
-    }
+        return matchesSearch && matchesStatus;
+    });
+
+    console.log('Filtered records:', filteredData.length);
+
+    // Display filtered data
+    displayPayrollData({ payrolls: filteredData });
 }
 
-// Show generate payroll modal
+// Generate payroll modal
 function showGeneratePayrollModal() {
     const now = new Date();
     const currentMonth = now.toISOString().slice(0, 7);
-    const generateMonthElement = document.getElementById('generateMonth');
-
-    if (generateMonthElement) {
-        generateMonthElement.value = currentMonth;
-    }
-
-    const modal = document.getElementById('generatePayrollModal');
-    if (modal) {
-        modal.style.display = 'block';
-    }
+    document.getElementById('generateMonth').value = currentMonth;
+    document.getElementById('generatePayrollModal').style.display = 'block';
 }
 
-// Close generate payroll modal
 function closeGeneratePayrollModal() {
-    const modal = document.getElementById('generatePayrollModal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
+    document.getElementById('generatePayrollModal').style.display = 'none';
 }
 
-// Generate payroll
-const generateFormElement = document.getElementById('generatePayrollForm');
-if (generateFormElement) {
-    generateFormElement.addEventListener('submit', async function(e) {
+// Generate payroll form submission
+const generateForm = document.getElementById('generatePayrollForm');
+if (generateForm) {
+    generateForm.addEventListener('submit', async function(e) {
         e.preventDefault();
 
         const month = document.getElementById('generateMonth').value;
-
         if (!month) {
             showAlert('Please select a month', 'error');
             return;
         }
 
+        const [year, monthNum] = month.split('-');
+
+        console.log('=== STARTING PAYROLL GENERATION ===');
+        console.log('Year:', year, 'Month:', monthNum);
+        console.log('Month format:', month);
+
         try {
-            const [year, monthNum] = month.split('-');
+            // Show loading state
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
 
-            showLoading('generatePayrollModal');
-
-            console.log('=== STARTING PAYROLL GENERATION PROCESS ===');
+            // STEP 1: Calculate attendance summary
             console.log('Step 1: Calculating attendance summary...');
+            console.log('API URL:', `/attendance-summary/calculate?year=${year}&month=${monthNum}`);
 
-            // STEP 1: Calculate attendance summary first
-            const summaryResponse = await fetchWithAuth(`/attendance-summary/calculate?year=${year}&month=${monthNum}`, {
-                method: 'POST'
-            });
+            const summaryResp = await fetchWithAuth(
+                `/attendance-summary/calculate?year=${year}&month=${monthNum}`,
+                { method: 'POST' }
+            );
 
-            const summaryResult = await summaryResponse.json();
-            console.log('Summary calculation result:', summaryResult);
+            console.log('Summary response status:', summaryResp.status);
 
-            if (!summaryResult.success && summaryResult.totalEmployees === 0) {
-                showAlert('Failed to calculate attendance summary. Please ensure attendance data exists.', 'error');
+            // Get response text first for debugging
+            const summaryText = await summaryResp.text();
+            console.log('Summary raw response:', summaryText);
+
+            let summaryResult;
+            try {
+                summaryResult = JSON.parse(summaryText);
+                console.log('Summary parsed result:', summaryResult);
+            } catch (parseError) {
+                console.error('Failed to parse summary response:', parseError);
+                showAlert('Server returned invalid response for attendance calculation', 'error');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
+                return;
+            }
+
+            // Check if attendance summary calculation was successful
+            if (!summaryResult || !summaryResult.success) {
+                const errorMsg = summaryResult?.message || 'No attendance data found for this month';
+                console.error('Attendance calculation failed:', errorMsg);
+
+                // Show detailed error
+                showAlert(
+                    `Cannot generate payroll: ${errorMsg}\n\n` +
+                    `Please ensure:\n` +
+                    `1. Attendance has been recorded for ${month}\n` +
+                    `2. Employees have checked in/out during this month\n` +
+                    `3. The month you selected has attendance data`,
+                    'error'
+                );
+
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
                 return;
             }
 
             console.log('✓ Attendance summary calculated successfully');
+            console.log('Summary details:', summaryResult);
+
+            // STEP 2: Generate payroll
             console.log('Step 2: Generating payroll...');
+            console.log('API URL:', `/payroll/generate?year=${year}&month=${monthNum}`);
 
-            // STEP 2: Generate payroll using the calculated summaries
-            const response = await fetchWithAuth(`/payroll/generate?year=${year}&month=${monthNum}`, {
-                method: 'POST'
-            });
+            const payrollResp = await fetchWithAuth(
+                `/payroll/generate?year=${year}&month=${monthNum}`,
+                { method: 'POST' }
+            );
 
-            const result = await response.json();
-            console.log('Payroll generation result:', result);
+            console.log('Payroll response status:', payrollResp.status);
 
-            if (result.success) {
-                const message = `Payroll generated successfully!\n` +
-                    `Generated for ${result.generatedPayrolls?.length || 0} employees`;
+            const payrollText = await payrollResp.text();
+            console.log('Payroll raw response:', payrollText);
 
-                if (result.errors && result.errors.length > 0) {
-                    console.warn('Some errors occurred:', result.errors);
+            let payrollResult;
+            try {
+                payrollResult = JSON.parse(payrollText);
+                console.log('Payroll parsed result:', payrollResult);
+            } catch (parseError) {
+                console.error('Failed to parse payroll response:', parseError);
+                showAlert('Server returned invalid response for payroll generation', 'error');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
+                return;
+            }
+
+            // Check payroll generation result
+            if (payrollResult.success) {
+                const count = payrollResult.generatedPayrolls?.length || 0;
+                const errors = payrollResult.errors?.length || 0;
+
+                let message = `✓ Payroll generated successfully!\n\n`;
+                message += `Generated: ${count} employees\n`;
+
+                if (errors > 0) {
+                    message += `Errors: ${errors} employees\n\n`;
+                    message += 'Some employees had issues:\n';
+                    payrollResult.errors.slice(0, 3).forEach(err => {
+                        message += `• ${err}\n`;
+                    });
+                    if (errors > 3) {
+                        message += `... and ${errors - 3} more`;
+                    }
                 }
 
                 showAlert(message, 'success');
+
                 closeGeneratePayrollModal();
 
-                // Reload payroll data
-                const payrollMonthElement = document.getElementById('payrollMonth');
-                if (payrollMonthElement) {
-                    payrollMonthElement.value = month;
-                }
-                loadPayrollData();
+                // Reload data
+                document.getElementById('payrollMonth').value = month;
+                await loadAllPayrollData();
 
             } else {
-                showAlert(result.message || 'Failed to generate payroll', 'error');
+                const errorMsg = payrollResult.message || 'Failed to generate payroll';
+                console.error('Payroll generation failed:', errorMsg);
+                showAlert(`Payroll generation failed: ${errorMsg}`, 'error');
             }
+
+            // Reset button
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
+
         } catch (error) {
-            console.error('Error generating payroll:', error);
-            showAlert('Error generating payroll: ' + error.message, 'error');
+            console.error('=== ERROR IN PAYROLL GENERATION ===');
+            console.error('Error type:', error.name);
+            console.error('Error message:', error.message);
+            console.error('Error stack:', error.stack);
+
+            showAlert(
+                `Error generating payroll: ${error.message}\n\n` +
+                `Please check:\n` +
+                `1. You are logged in\n` +
+                `2. The server is running\n` +
+                `3. Attendance data exists for this month`,
+                'error'
+            );
+
+            // Reset button
+            const submitBtn = this.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
+            }
         }
     });
 }
@@ -312,172 +598,100 @@ if (generateFormElement) {
 async function viewPayrollDetails(employeeId, payrollMonth) {
     try {
         const [year, month] = payrollMonth.split('-');
-
-        const response = await fetchWithAuth(`/payroll/employee?employeeId=${employeeId}&year=${year}&month=${month}`);
+        const response = await fetchWithAuth(
+            `/payroll/employee?employeeId=${employeeId}&year=${year}&month=${month}`
+        );
         const result = await response.json();
 
         if (result.success) {
             displayPayrollDetails(result);
         } else {
-            showAlert(result.message || 'Failed to load payroll details', 'error');
+            showAlert('Failed to load details', 'error');
         }
     } catch (error) {
-        console.error('Error loading payroll details:', error);
-        showAlert('Error loading payroll details: ' + error.message, 'error');
+        console.error('Error:', error);
+        showAlert('Error loading details: ' + error.message, 'error');
     }
 }
 
-// Display payroll details in modal
+// Display payroll details modal
 function displayPayrollDetails(result) {
-    const payroll = result.payroll;
-    const content = document.getElementById('payrollDetailsContent');
+    const p = result.payroll;
+    const hourlyRate = (p.basicSalary / p.maxWorkHours).toFixed(2);
+    const regularPay = (p.grossSalary - p.otAmount).toFixed(2);
 
-    if (!content) {
-        console.error('Payroll details content element not found');
-        return;
-    }
-
-    content.innerHTML = `
+    document.getElementById('payrollDetailsContent').innerHTML = `
         <div class="payroll-details-section">
             <h4>Employee Information</h4>
             <div class="payroll-details-grid">
-                <div class="payroll-detail-item">
-                    <span class="payroll-detail-label">Employee ID:</span>
-                    <span class="payroll-detail-value">${payroll.employeeId}</span>
-                </div>
-                <div class="payroll-detail-item">
-                    <span class="payroll-detail-label">Employee Name:</span>
-                    <span class="payroll-detail-value">${result.employeeName}</span>
-                </div>
-                <div class="payroll-detail-item">
-                    <span class="payroll-detail-label">Payroll Month:</span>
-                    <span class="payroll-detail-value">${formatMonthYear(payroll.payrollMonth)}</span>
-                </div>
-                <div class="payroll-detail-item">
-                    <span class="payroll-detail-label">Status:</span>
-                    <span class="payroll-detail-value status-badge status-badge-${payroll.status.toLowerCase()}">${payroll.status}</span>
-                </div>
+                <div><span>Employee:</span><span><strong>${result.employeeName}</strong> (${p.employeeId})</span></div>
+                <div><span>Month:</span><span>${formatMonthYear(p.payrollMonth)}</span></div>
+                <div><span>Status:</span><span class="status-badge status-badge-${p.status.toLowerCase()}">${p.status}</span></div>
             </div>
         </div>
-        
+
         <div class="payroll-details-section">
-            <h4>Attendance Summary</h4>
+            <h4>Work Summary</h4>
             <div class="payroll-details-grid">
-                <div class="payroll-detail-item">
-                    <span class="payroll-detail-label">Actual Work Hours:</span>
-                    <span class="payroll-detail-value">${formatNumber(payroll.actualWorkHours)} hours</span>
-                </div>
-                <div class="payroll-detail-item">
-                    <span class="payroll-detail-label">Max Work Hours:</span>
-                    <span class="payroll-detail-value">${formatNumber(payroll.maxWorkHours)} hours</span>
-                </div>
-                <div class="payroll-detail-item">
-                    <span class="payroll-detail-label">Overtime Hours:</span>
-                    <span class="payroll-detail-value">${formatNumber(payroll.otHours)} hours</span>
-                </div>
-                <div class="payroll-detail-item">
-                    <span class="payroll-detail-label">Attendance Rate:</span>
-                    <span class="payroll-detail-value">${formatNumber(payroll.attendanceRate)}%</span>
-                </div>
+                <div><span>Actual Hours:</span><span>${formatNumber(p.actualWorkHours)}h</span></div>
+                <div><span>Max Regular Hours:</span><span>${formatNumber(p.maxWorkHours)}h</span></div>
+                <div><span>Overtime Hours:</span><span>${formatNumber(p.otHours)}h</span></div>
+                <div><span>Attendance Rate:</span><span>${formatNumber(p.attendanceRate)}%</span></div>
             </div>
         </div>
-        
+
         <div class="payroll-details-section">
-            <h4>Salary Calculation</h4>
+            <h4>Salary Breakdown</h4>
             <div class="payroll-breakdown">
-                <div class="payroll-breakdown-item">
-                    <span>Basic Salary:</span>
-                    <span>$${formatCurrency(payroll.basicSalary)}</span>
-                </div>
-                <div class="payroll-breakdown-item">
-                    <span>Regular Hours Pay (${Math.min(payroll.actualWorkHours, payroll.maxWorkHours)} hours):</span>
-                    <span>$${formatCurrency(payroll.grossSalary - payroll.otAmount)}</span>
-                </div>
-                <div class="payroll-breakdown-item">
-                    <span>Overtime Pay (${payroll.otHours} hours × ${payroll.otRate}x):</span>
-                    <span>$${formatCurrency(payroll.otAmount)}</span>
-                </div>
-                <div class="payroll-breakdown-item">
-                    <span>Gross Salary:</span>
-                    <span class="payroll-detail-value amount">$${formatCurrency(payroll.grossSalary)}</span>
-                </div>
-                <div class="payroll-breakdown-item">
-                    <span>Deductions (Attendance ${formatNumber(payroll.attendanceRate)}%):</span>
-                    <span class="payroll-detail-value deduction">-$${formatCurrency(payroll.deductions)}</span>
-                </div>
-                <div class="payroll-breakdown-item">
+                <div><span>Monthly Salary (Base):</span><span>$${formatCurrency(p.basicSalary)}</span></div>
+                <div><span>Hourly Rate:</span><span>$${hourlyRate}/hour</span></div>
+                <div><span>Regular Pay (${Math.min(p.actualWorkHours, p.maxWorkHours).toFixed(1)}h):</span><span>$${regularPay}</span></div>
+                <div><span>OT Multiplier:</span><span>${p.otRate}x</span></div>
+                <div><span>OT Pay (${p.otHours}h × ${p.otRate}x):</span><span>$${formatCurrency(p.otAmount)}</span></div>
+                <div><span><strong>Gross Salary:</strong></span><span><strong>$${formatCurrency(p.grossSalary)}</strong></span></div>
+                <div><span>Deductions (EPF/ETF):</span><span class="deduction">-$${formatCurrency(p.deductions)}</span></div>
+                <div style="border-top: 2px solid #000; margin-top: 8px; padding-top: 8px;">
                     <span><strong>Net Salary:</strong></span>
-                    <span><strong>$${formatCurrency(payroll.netSalary)}</strong></span>
-                </div>
-            </div>
-        </div>
-        
-        <div class="payroll-details-section">
-            <h4>Payroll Parameters</h4>
-            <div class="payroll-details-grid">
-                <div class="payroll-detail-item">
-                    <span class="payroll-detail-label">OT Rate Multiplier:</span>
-                    <span class="payroll-detail-value">${payroll.otRate}x</span>
-                </div>
-                <div class="payroll-detail-item">
-                    <span class="payroll-detail-label">Calculation Date:</span>
-                    <span class="payroll-detail-value">${new Date(payroll.updatedAt).toLocaleDateString()}</span>
+                    <span><strong style="color: #28a745;">$${formatCurrency(p.netSalary)}</strong></span>
                 </div>
             </div>
         </div>
     `;
 
-    const modal = document.getElementById('payrollDetailsModal');
-    if (modal) {
-        modal.style.display = 'block';
-    }
+    document.getElementById('payrollDetailsModal').style.display = 'block';
 }
 
-// Close payroll details modal
 function closePayrollDetailsModal() {
-    const modal = document.getElementById('payrollDetailsModal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
+    document.getElementById('payrollDetailsModal').style.display = 'none';
 }
 
-// Edit OT rate
+// Edit OT Rate (actually OT multiplier)
 function editOtRate(employeeId, payrollMonth, currentRate) {
+    const employee = currentPayrollData.find(item => item.payroll.employeeId === employeeId);
+    const employeeName = employee ? employee.employeeName : 'Unknown';
+
     document.getElementById('editOtEmployeeId').value = employeeId;
     document.getElementById('editOtPayrollMonth').value = payrollMonth;
     document.getElementById('editOtRate').value = currentRate;
 
-    // Find employee name
-    const employee = currentPayrollData.find(item => item.payroll.employeeId === employeeId);
-    const employeeName = employee ? employee.employeeName : 'Unknown Employee';
+    document.getElementById('editOtEmployeeDetails').innerHTML = `
+        <strong>Employee:</strong> ${employeeName} (${employeeId})<br>
+        <strong>Month:</strong> ${formatMonthYear(payrollMonth)}<br>
+        <strong>Current OT Multiplier:</strong> ${currentRate}x<br>
+        <small style="color: #666;">This multiplier is applied to the hourly rate for overtime hours.</small>
+    `;
 
-    const detailsElement = document.getElementById('editOtEmployeeDetails');
-    if (detailsElement) {
-        detailsElement.innerHTML = `
-            <strong>Employee:</strong> ${employeeName} (${employeeId})<br>
-            <strong>Payroll Month:</strong> ${formatMonthYear(payrollMonth)}<br>
-            <strong>Current OT Rate:</strong> ${currentRate}x
-        `;
-    }
-
-    const modal = document.getElementById('editOtRateModal');
-    if (modal) {
-        modal.style.display = 'block';
-    }
+    document.getElementById('editOtRateModal').style.display = 'block';
 }
 
-// Close edit OT rate modal
 function closeEditOtRateModal() {
-    const modal = document.getElementById('editOtRateModal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
+    document.getElementById('editOtRateModal').style.display = 'none';
 }
 
 // Update OT rate
-const editOtFormElement = document.getElementById('editOtRateForm');
-if (editOtFormElement) {
-    editOtFormElement.addEventListener('submit', async function(e) {
+const editOtForm = document.getElementById('editOtRateForm');
+if (editOtForm) {
+    editOtForm.addEventListener('submit', async function(e) {
         e.preventDefault();
 
         const employeeId = document.getElementById('editOtEmployeeId').value;
@@ -485,118 +699,76 @@ if (editOtFormElement) {
         const otRate = document.getElementById('editOtRate').value;
 
         try {
-            const response = await fetchWithAuth(`/payroll/ot-rate?employeeId=${employeeId}&payrollMonth=${payrollMonth}&otRate=${otRate}`, {
-                method: 'PUT'
-            });
-
+            const response = await fetchWithAuth(
+                `/payroll/ot-rate?employeeId=${employeeId}&payrollMonth=${payrollMonth}&otRate=${otRate}`,
+                { method: 'PUT' }
+            );
             const result = await response.json();
 
             if (result.success) {
-                showAlert('OT rate updated successfully!', 'success');
+                showAlert('OT multiplier updated!', 'success');
                 closeEditOtRateModal();
-
-                // Reload payroll data
                 loadPayrollData();
-
             } else {
-                showAlert(result.message || 'Failed to update OT rate', 'error');
+                showAlert(result.message || 'Update failed', 'error');
             }
         } catch (error) {
-            console.error('Error updating OT rate:', error);
-            showAlert('Error updating OT rate: ' + error.message, 'error');
+            console.error('Error:', error);
+            showAlert('Error updating OT multiplier: ' + error.message, 'error');
         }
     });
 }
 
 // Mark as paid
 async function markAsPaid(employeeId, payrollMonth) {
-    if (!confirm(`Mark payroll for ${employeeId} as paid? This action cannot be undone.`)) {
-        return;
-    }
+    if (!confirm(`Mark payroll as PAID for ${employeeId}? This cannot be undone.`)) return;
 
     try {
-        const response = await fetchWithAuth(`/payroll/mark-paid?employeeId=${employeeId}&payrollMonth=${payrollMonth}`, {
-            method: 'PUT'
-        });
-
+        const response = await fetchWithAuth(
+            `/payroll/mark-paid?employeeId=${employeeId}&payrollMonth=${payrollMonth}`,
+            { method: 'PUT' }
+        );
         const result = await response.json();
 
         if (result.success) {
-            showAlert('Payroll marked as paid!', 'success');
+            showAlert('Marked as paid!', 'success');
             loadPayrollData();
         } else {
-            showAlert(result.message || 'Failed to mark as paid', 'error');
+            showAlert(result.message || 'Failed', 'error');
         }
     } catch (error) {
-        console.error('Error marking as paid:', error);
-        showAlert('Error marking as paid: ' + error.message, 'error');
+        console.error('Error:', error);
+        showAlert('Error: ' + error.message, 'error');
     }
 }
 
-// Export payroll report
+// Export report
 async function exportPayrollReport() {
     if (currentPayrollData.length === 0) {
-        showAlert('No payroll data to export', 'error');
+        showAlert('No data to export', 'error');
         return;
     }
 
-    try {
-        const [year, month] = currentPayrollMonth.split('-');
+    let csv = `Payroll Report - ${formatMonthYear(currentPayrollMonth)}\n\n`;
+    csv += `Employee ID,Name,Basic Salary,Hours,OT Hours,OT Amount,Gross,Deductions,Net,Attendance%,Status\n`;
 
-        const response = await fetchWithAuth(`/payroll/monthly-report?year=${year}&month=${month}`);
-        const result = await response.json();
-
-        if (result.success) {
-            exportToExcel(result);
-        } else {
-            showAlert('Failed to export payroll report', 'error');
-        }
-    } catch (error) {
-        console.error('Error exporting payroll:', error);
-        showAlert('Error exporting payroll: ' + error.message, 'error');
-    }
-}
-
-// Export to Excel format
-function exportToExcel(result) {
-    // Create CSV content
-    let csvContent = "Payroll Report - " + formatMonthYear(currentPayrollMonth) + "\n\n";
-
-    // Add summary
-    csvContent += "SUMMARY\n";
-    csvContent += `Total Employees,${result.employeeCount}\n`;
-    csvContent += `Total Gross Salary,$${formatCurrency(result.totalGrossSalary)}\n`;
-    csvContent += `Total Deductions,$${formatCurrency(result.totalDeductions)}\n`;
-    csvContent += `Total Net Salary,$${formatCurrency(result.totalNetSalary)}\n\n`;
-
-    // Add details
-    csvContent += "DETAILS\n";
-    csvContent += "Employee ID,Employee Name,Basic Salary,Work Hours,OT Hours,OT Amount,Gross Salary,Deductions,Net Salary,Attendance Rate,Status\n";
-
-    result.payrolls.forEach(item => {
+    currentPayrollData.forEach(item => {
         const p = item.payroll;
-        csvContent += `${p.employeeId},"${item.employeeName}",${p.basicSalary},${p.actualWorkHours},${p.otHours},${p.otAmount},${p.grossSalary},${p.deductions},${p.netSalary},${p.attendanceRate},${p.status}\n`;
+        csv += `${p.employeeId},"${item.employeeName}",${p.basicSalary},${p.actualWorkHours},${p.otHours},${p.otAmount},${p.grossSalary},${p.deductions},${p.netSalary},${p.attendanceRate},${p.status}\n`;
     });
 
-    // Create and download file
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([csv], { type: 'text/csv' });
     const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-
-    link.setAttribute('href', url);
-    link.setAttribute('download', `payroll-report-${currentPayrollMonth}.csv`);
-    link.style.visibility = 'hidden';
-
-    document.body.appendChild(link);
+    link.href = URL.createObjectURL(blob);
+    link.download = `payroll-${currentPayrollMonth}.csv`;
     link.click();
-    document.body.removeChild(link);
 
-    showAlert('Payroll report exported successfully!', 'success');
+    showAlert('Report exported!', 'success');
 }
 
 // Utility functions
-function formatCurrency(amount) {
-    return parseFloat(amount).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+function formatCurrency(amt) {
+    return parseFloat(amt).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
 }
 
 function formatNumber(num) {
@@ -605,30 +777,56 @@ function formatNumber(num) {
 
 function formatMonthYear(monthYear) {
     const [year, month] = monthYear.split('-');
-    const date = new Date(year, month - 1);
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
-}
-
-function showLoading(elementId) {
-    const element = document.getElementById(elementId);
-    if (element) {
-        element.innerHTML = '<div class="loading">Loading...</div>';
-    }
+    return new Date(year, month - 1).toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
 }
 
 function showNoDataMessage() {
-    const noDataElement = document.getElementById('noPayrollData');
-    const summaryElement = document.getElementById('payrollSummary');
-    const tableElement = document.querySelector('.table-container');
+    document.getElementById('noPayrollData').style.display = 'block';
+    document.getElementById('payrollSummary').style.display = 'none';
+    document.querySelector('.table-container').style.display = 'none';
+}
 
-    if (noDataElement) noDataElement.style.display = 'block';
-    if (summaryElement) summaryElement.style.display = 'none';
-    if (tableElement) tableElement.style.display = 'none';
+// Show processing overlay
+function showProcessingOverlay(message = 'Processing Payment...') {
+    const overlay = document.getElementById('processingOverlay');
+    const messageEl = document.getElementById('processingMessage');
+    if (overlay) {
+        messageEl.textContent = message;
+        overlay.style.display = 'flex';
+    }
+}
+
+// Hide processing overlay
+function hideProcessingOverlay() {
+    const overlay = document.getElementById('processingOverlay');
+    if (overlay) {
+        overlay.style.display = 'none';
+    }
+}
+
+// Show success state in overlay
+function showProcessingSuccess() {
+    const overlay = document.getElementById('processingOverlay');
+    const content = overlay.querySelector('.processing-content');
+
+    content.innerHTML = `
+        <div style="width: 80px; height: 80px; margin: 0 auto 20px; background: #28a745; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+            <i class="fas fa-check" style="font-size: 40px; color: white;"></i>
+        </div>
+        <h3 style="color: #28a745;">Payment Successful!</h3>
+        <p>The payroll has been marked as PAID</p>
+    `;
 }
 
 // Make functions globally accessible
+window.showProcessingOverlay = showProcessingOverlay;
+window.hideProcessingOverlay = hideProcessingOverlay;
+window.showProcessingSuccess = showProcessingSuccess;
+
+// Export functions globally
 window.initPayroll = initPayroll;
 window.loadPayrollData = loadPayrollData;
+window.highlightPayrollRow = highlightPayrollRow;
 window.filterPayrollTable = filterPayrollTable;
 window.showGeneratePayrollModal = showGeneratePayrollModal;
 window.closeGeneratePayrollModal = closeGeneratePayrollModal;
@@ -638,3 +836,6 @@ window.editOtRate = editOtRate;
 window.closeEditOtRateModal = closeEditOtRateModal;
 window.markAsPaid = markAsPaid;
 window.exportPayrollReport = exportPayrollReport;
+window.showMarkAsPaidModal = showMarkAsPaidModal;
+window.closeMarkAsPaidModal = closeMarkAsPaidModal;
+window.displayPayrollData = displayPayrollData;

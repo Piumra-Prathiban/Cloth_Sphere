@@ -190,24 +190,25 @@ public class PayrollService {
         }
     }
 
-    /**
-     * Get employee's basic salary from their department
-     */
+    // In PayrollService.java - Update the getEmployeeBasicSalary method
     private BigDecimal getEmployeeBasicSalary(String employeeId) {
         try {
             System.out.println("  - Looking up employee: " + employeeId);
-            // Get employee's department
+
+            // Get employee's department directly from employee object
             Optional<com.clothsphere.model.HR.Employee> employeeOpt = employeeRepository.findEmployeeById(employeeId);
             if (employeeOpt.isPresent()) {
-                String departmentName = String.valueOf(employeeOpt.get().getDepartment());
+                com.clothsphere.model.HR.Employee employee = employeeOpt.get();
+                String departmentName = employee.getDepartment() != null ?
+                        employee.getDepartment().getDepartmentName() : null;
+
                 System.out.println("  - Employee department: " + departmentName);
 
                 if (departmentName != null && !departmentName.trim().isEmpty() && !"null".equals(departmentName)) {
                     // Get department's salary budget
-                    Optional<com.clothsphere.model.HR.Department> deptOpt =
-                            Optional.ofNullable(departmentRepository.findByDepartmentName(departmentName));
-                    if (deptOpt.isPresent()) {
-                        Double salaryBudget = deptOpt.get().getSalaryBudget();
+                    com.clothsphere.model.HR.Department department = departmentRepository.findByDepartmentName(departmentName);
+                    if (department != null) {
+                        Double salaryBudget = department.getSalaryBudget();
                         System.out.println("  - Department salary budget: " + salaryBudget);
                         if (salaryBudget != null && salaryBudget > 0) {
                             // Return FULL salary budget as basic salary (NOT divided by 12)
