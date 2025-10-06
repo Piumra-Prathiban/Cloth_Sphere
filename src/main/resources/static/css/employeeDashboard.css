@@ -3,7 +3,7 @@ body {background:#f4f6f9; min-height:100vh; display:flex;}
 
 /* Sidebar */
 .sidebar {
-    width:250px; background: linear-gradient(to bottom, #000000, #523232); color: white; min-height:100vh; padding:20px;
+    width:250px; background: linear-gradient(to bottom, #000000, #008000); color: white; min-height:100vh; padding:20px;
     position: fixed; left: 0; top: 0; height: 100%;box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
 }
 .sidebar h2 {text-align:center; margin-bottom:30px;}

@@ -30,17 +30,16 @@ public class CommunicationController {
      */
     @GetMapping("/internal")
     public String communicationPage(HttpSession session, Model model) {
-        String userEmail = (String) session.getAttribute("userEmail");
+        SystemUser currentUser = (SystemUser) session.getAttribute("currentUser");
 
-        if (userEmail == null) {
+        if (currentUser == null) {
             return "redirect:/systemUserLogin";
         }
 
-        Optional<SystemUser> currentUser = systemUserRepository.findByEmail(userEmail);
-        if (currentUser.isPresent()) {
-            model.addAttribute("currentUser", currentUser.get());
-            model.addAttribute("currentUserEmail", userEmail);
-        }
+        // Set user email in session
+        session.setAttribute("userEmail", currentUser.getEmail());
+        model.addAttribute("currentUser", currentUser);
+        model.addAttribute("currentUserEmail", currentUser.getEmail());
 
         return "communication/internal-communication";
     }

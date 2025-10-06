@@ -28,11 +28,11 @@ public class Communication {
     @Column(name = "sent_date")
     private LocalDateTime sentDate;
 
-    @Column(name = "is_read")
-    private Boolean isRead = false;
+    @Column(name = "is_read", nullable = false)
+    private Boolean isRead = false;  // Ensure default is false
 
-    @Column(name = "is_deleted")
-    private Boolean isDeleted = false;
+    @Column(name = "is_deleted", nullable = false)
+    private Boolean isDeleted = false;  // Ensure default is false
 
     // Relationships
     @ManyToOne(fetch = FetchType.LAZY)

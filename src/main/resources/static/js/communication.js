@@ -30,8 +30,19 @@ function initializeCommunication() {
 function setupFormHandlers() {
     const composeForm = document.getElementById('compose-form');
     if (composeForm) {
-        composeForm.addEventListener('submit', function(e) {
+        // Remove any existing event listeners to prevent duplicates
+        composeForm.replaceWith(composeForm.cloneNode(true));
+        const newComposeForm = document.getElementById('compose-form');
+
+        newComposeForm.addEventListener('submit', function(e) {
             e.preventDefault();
+
+            const submitBtn = this.querySelector('button[type="submit"]');
+            if (submitBtn.disabled) {
+                console.log('⚠️ Form submission already in progress');
+                return;
+            }
+
             const receiverEmail = document.getElementById('receiver-select').value;
             const subject = document.getElementById('message-subject').value;
             const messageText = document.getElementById('message-text').value;
@@ -40,6 +51,7 @@ function setupFormHandlers() {
                 showMessage('Please fill in all fields', 'error');
                 return;
             }
+
             sendMessage(receiverEmail, subject, messageText);
         });
     }
@@ -56,26 +68,34 @@ function showSection(sectionId, event) {
     console.log('📂 Showing section:', sectionId);
     if (event) event.preventDefault();
 
-    document.querySelectorAll('.communication-section').forEach(section => {
+    // Hide all sections
+    document.querySelectorAll('.content-section').forEach(section => {
         section.classList.remove('active');
         section.style.display = 'none';
     });
 
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.remove('active');
+    // Remove active class from all nav links
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
     });
 
+    // Show target section
     const targetSection = document.getElementById(sectionId);
     if (targetSection) {
         targetSection.classList.add('active');
         targetSection.style.display = 'block';
     }
 
+    // Add active class to clicked nav link
+    if (event && event.target.tagName === 'A') {
+        event.target.classList.add('active');
+    }
+
     currentSection = sectionId;
 
+    // Load section-specific content
     switch(sectionId) {
         case 'compose':
-            // Ensure the compose form is ready
             setTimeout(() => {
                 loadAvailableUsers();
                 setupFormHandlers();
@@ -83,7 +103,9 @@ function showSection(sectionId, event) {
             break;
         case 'inbox': loadInbox(); break;
         case 'sent': loadSentMessages(); break;
-        case 'statistics': loadStatistics(); break;
+        case 'guide':
+            // Guide content is static, no need to load anything
+            break;
     }
 }
 
@@ -121,44 +143,71 @@ function sendMessage(receiverEmail, subject, messageText) {
     const submitBtn = document.querySelector('#compose-form button[type="submit"]');
     const originalText = submitBtn.innerHTML;
 
+    // PREVENT MULTIPLE SUBMISSIONS
+    if (submitBtn.disabled) {
+        console.log('⚠️ Send already in progress, ignoring duplicate click');
+        return;
+    }
+
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
     submitBtn.disabled = true;
 
     const formData = new URLSearchParams();
     formData.append('senderEmail', currentUserEmail);
     formData.append('receiverEmail', receiverEmail);
-    formData.append('subject', subject);
-    formData.append('messageText', messageText);
+    formData.append('subject', subject.trim());
+    formData.append('messageText', messageText.trim());
 
     fetch('/communication/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: formData
     })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
             console.log('✉️ Send response:', data);
             if (data.success) {
                 showMessage('Message sent successfully!', 'success');
                 clearComposeForm();
-                if (currentSection === 'sent') loadSentMessages();
+                // Refresh sent messages if we're in that section
+                if (currentSection === 'sent') {
+                    setTimeout(() => loadSentMessages(), 1000);
+                }
             } else {
                 showMessage(data.message || 'Failed to send message', 'error');
             }
         })
         .catch(error => {
             console.error('❌ Send error:', error);
-            showMessage('Error sending message', 'error');
+            showMessage('Network error sending message', 'error');
         })
         .finally(() => {
-            submitBtn.innerHTML = originalText;
-            submitBtn.disabled = false;
+            // Re-enable button after a delay to prevent rapid clicking
+            setTimeout(() => {
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Message';
+                submitBtn.disabled = false;
+            }, 2000);
         });
 }
 
 function clearComposeForm() {
-    document.getElementById('compose-form')?.reset();
+    const form = document.getElementById('compose-form');
+    if (form) {
+        form.reset();
+    }
     document.getElementById('char-count').textContent = '0';
+
+    // Ensure send button is enabled
+    const submitBtn = document.querySelector('#compose-form button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Message';
+    }
 }
 
 function loadInbox() {
@@ -331,12 +380,12 @@ function displaySentMessages(messages) {
                     <strong>${escapeHtml(receiverName)}</strong>
                     <br><small>${escapeHtml(receiverEmail)}</small>
                 </td>
-                <td><span class="badge role-${receiverRole.toLowerCase().replace(/ /g, '-')}">${escapeHtml(receiverRole)}</span></td>
+                <td><span class="role-badge role-${receiverRole.toLowerCase().replace(/ /g, '-')}">${escapeHtml(receiverRole)}</span></td>
                 <td><strong>${escapeHtml(subject)}</strong></td>
                 <td>${escapeHtml(preview)}</td>
                 <td>${formatDateTime(sentDate)}</td>
                 <td>
-                    <span class="status-badge status-${isRead ? 'read' : 'unread'}">
+                    <span class="status-badge ${isRead ? 'status-read' : 'status-unread'}">
                         ${isRead ? 'Read' : 'Unread'}
                     </span>
                 </td>
@@ -462,12 +511,33 @@ function viewMessage(messageId, source) {
         .then(data => {
             if (data.success && data.message) {
                 displayMessageModal(data.message, source);
-                if (source === 'inbox' && !data.message.is_read) {
+                // MARK AS READ IMMEDIATELY when viewing from inbox
+                if (source === 'inbox') {
                     markMessageAsRead(messageId);
                 }
             }
         })
         .catch(error => console.error('❌ View message error:', error));
+}
+
+// Update the markMessageAsRead function to refresh inbox
+function markMessageAsRead(messageId) {
+    fetch('/communication/mark-read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `messageId=${messageId}`
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log('✅ Message marked as read');
+                // Refresh inbox to update the UI
+                if (currentSection === 'inbox') {
+                    loadInbox();
+                }
+            }
+        })
+        .catch(error => console.error('❌ Mark read error:', error));
 }
 
 function displayMessageModal(message, source) {
@@ -530,58 +600,55 @@ function deleteCurrentMessage() {
 function replyToMessage() {
     if (!currentMessageId) return;
 
-    fetch(`/communication/message/${currentMessageId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const msg = data.message;
-                showSection('compose');
+    // First close the modal
+    closeMessageModal();
 
-                // Wait a brief moment for the compose section to be fully rendered
-                setTimeout(() => {
+    // Switch to compose section
+    showSection('compose');
+
+    // Wait for compose section to render
+    setTimeout(() => {
+        fetch(`/communication/message/${currentMessageId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.message) {
+                    const msg = data.message;
+
                     const receiverSelect = document.getElementById('receiver-select');
                     const subjectInput = document.getElementById('message-subject');
                     const messageTextarea = document.getElementById('message-text');
 
                     if (receiverSelect && subjectInput && messageTextarea) {
-                        // Set the receiver email
+                        // Set receiver to the original sender
                         receiverSelect.value = msg.sender_email;
 
-                        // Set the subject with "Re: " prefix
-                        subjectInput.value = `Re: ${msg.subject}`;
+                        // Set subject with Re: prefix (avoid duplicates)
+                        const currentSubject = msg.subject || '';
+                        if (!currentSubject.startsWith('Re: ')) {
+                            subjectInput.value = `Re: ${currentSubject}`;
+                        } else {
+                            subjectInput.value = currentSubject;
+                        }
 
-                        // Set the message text with original content
-                        messageTextarea.value = `\n\n--- Original ---\nFrom: ${msg.sender_name}\n\n${msg.message_text}`;
+                        // Set message content with original message
+                        const originalMessage = `\n\n--- Original Message ---\nFrom: ${msg.sender_name} (${msg.sender_role})\nDate: ${formatDateTime(msg.sent_date)}\nSubject: ${msg.subject}\n\n${msg.message_text}`;
+                        messageTextarea.value = originalMessage;
 
                         // Update character count
                         document.getElementById('char-count').textContent = messageTextarea.value.length;
 
+                        // Scroll to message area
+                        messageTextarea.focus();
+
                         console.log('✅ Reply form populated successfully');
-                    } else {
-                        console.error('❌ Form elements not found');
-                        // Retry after a longer delay if elements aren't found
-                        setTimeout(() => {
-                            const retryReceiverSelect = document.getElementById('receiver-select');
-                            const retrySubjectInput = document.getElementById('message-subject');
-                            const retryMessageTextarea = document.getElementById('message-text');
-
-                            if (retryReceiverSelect && retrySubjectInput && retryMessageTextarea) {
-                                retryReceiverSelect.value = msg.sender_email;
-                                retrySubjectInput.value = `Re: ${msg.subject}`;
-                                retryMessageTextarea.value = `\n\n--- Original ---\nFrom: ${msg.sender_name}\n\n${msg.message_text}`;
-                                document.getElementById('char-count').textContent = retryMessageTextarea.value.length;
-                            }
-                        }, 500);
                     }
-                }, 100);
-
-                closeMessageModal();
-            }
-        })
-        .catch(error => {
-            console.error('❌ Error fetching message for reply:', error);
-            showMessage('Error loading message for reply', 'error');
-        });
+                }
+            })
+            .catch(error => {
+                console.error('❌ Error fetching message for reply:', error);
+                showMessage('Error loading message for reply', 'error');
+            });
+    }, 300); // Increased delay to ensure DOM is ready
 }
 
 function updateUnreadBadge(count) {

@@ -66,24 +66,26 @@ public interface CommunicationRepository extends JpaRepository<Communication, In
      * Get available users for dropdown (excluding current user and applying restrictions)
      */
     @Query(value = """
-        SELECT 
-            su.email,
-            su.user_name as user_name,
-            su.role,
-            su.phone_number
-        FROM system_user_login_details su
-        WHERE su.email != :currentUserEmail
-        AND (
-            :currentUserRole != 'Employee' 
-            OR su.role != 'Factory Manager'
-        )
-        ORDER BY su.role, su.user_name
-        """, nativeQuery = true)
+    SELECT 
+        su.email,
+        su.user_name as user_name,
+        su.role,
+        su.phone_number
+    FROM system_user_login_details su
+    WHERE su.email != :currentUserEmail
+    AND (
+        :currentUserRole != 'Employee' 
+        OR su.role != 'Factory Manager'
+    )
+    AND su.email IS NOT NULL
+    AND su.user_name IS NOT NULL
+    ORDER BY su.role, su.user_name
+    """, nativeQuery = true)
     List<Map<String, Object>> getAvailableUsers(@Param("currentUserEmail") String currentUserEmail,
                                                 @Param("currentUserRole") String currentUserRole);
 
     /**
-     * Get inbox messages with sender details - FIXED VERSION
+     * Get inbox messages - UPDATED to handle NULL values
      */
     @Query(value = """
     SELECT 
@@ -99,17 +101,17 @@ public interface CommunicationRepository extends JpaRepository<Communication, In
             ELSE ic.message_text
         END as message_preview,
         ic.sent_date as sent_date,
-        ic.is_read as is_read
+        COALESCE(ic.is_read, 0) as is_read  -- Handle NULL values
     FROM internal_communications ic
     INNER JOIN system_user_login_details su_sender ON ic.sender_email = su_sender.email
     WHERE ic.receiver_email = :userEmail
-       AND (ic.is_deleted = 0 OR ic.is_deleted IS NULL)
+       AND COALESCE(ic.is_deleted, 0) = 0  -- Handle NULL values
     ORDER BY ic.sent_date DESC
     """, nativeQuery = true)
     List<Map<String, Object>> getInboxMessages(@Param("userEmail") String userEmail);
 
     /**
-     * Get sent messages with receiver details - FIXED VERSION
+     * Get sent messages - UPDATED to handle NULL values
      */
     @Query(value = """
     SELECT 
@@ -125,36 +127,37 @@ public interface CommunicationRepository extends JpaRepository<Communication, In
             ELSE ic.message_text
         END as message_preview,
         ic.sent_date as sent_date,
-        ic.is_read as is_read
+        COALESCE(ic.is_read, 0) as is_read  -- Handle NULL values
     FROM internal_communications ic
     INNER JOIN system_user_login_details su_receiver ON ic.receiver_email = su_receiver.email
     WHERE ic.sender_email = :userEmail
-      AND (ic.is_deleted = 0 OR ic.is_deleted IS NULL)
+      AND COALESCE(ic.is_deleted, 0) = 0  -- Handle NULL values
     ORDER BY ic.sent_date DESC
     """, nativeQuery = true)
     List<Map<String, Object>> getSentMessages(@Param("userEmail") String userEmail);
+
     /**
-     * Get message details by ID
+     * Get message details by ID - UPDATED to handle NULL values
      */
     @Query(value = """
-        SELECT 
-            ic.message_id,
-            ic.sender_email,
-            su_sender.user_name as sender_name,
-            su_sender.role as sender_role,
-            ic.receiver_email,
-            su_receiver.user_name as receiver_name,
-            su_receiver.role as receiver_role,
-            ic.subject,
-            ic.message_text,
-            ic.sent_date,
-            ic.is_read
-        FROM internal_communications ic
-        INNER JOIN system_user_login_details su_sender ON ic.sender_email = su_sender.email
-        INNER JOIN system_user_login_details su_receiver ON ic.receiver_email = su_receiver.email
-        WHERE ic.message_id = :messageId
-          AND ic.is_deleted = 0
-        """, nativeQuery = true)
+    SELECT 
+        ic.message_id,
+        ic.sender_email,
+        su_sender.user_name as sender_name,
+        su_sender.role as sender_role,
+        ic.receiver_email,
+        su_receiver.user_name as receiver_name,
+        su_receiver.role as receiver_role,
+        ic.subject,
+        ic.message_text,
+        ic.sent_date,
+        COALESCE(ic.is_read, 0) as is_read  -- Handle NULL values
+    FROM internal_communications ic
+    INNER JOIN system_user_login_details su_sender ON ic.sender_email = su_sender.email
+    INNER JOIN system_user_login_details su_receiver ON ic.receiver_email = su_receiver.email
+    WHERE ic.message_id = :messageId
+      AND COALESCE(ic.is_deleted, 0) = 0  -- Handle NULL values
+    """, nativeQuery = true)
     Map<String, Object> getMessageById(@Param("messageId") int messageId);
 
     /**
@@ -164,14 +167,14 @@ public interface CommunicationRepository extends JpaRepository<Communication, In
     Integer getUnreadMessageCount(@Param("userEmail") String userEmail);
 
     /**
-     * DIRECT QUERY: Get unread message count (fallback)
+     * DIRECT QUERY: Get unread message count - UPDATED to handle NULL values
      */
     @Query(value = """
         SELECT COUNT(*) 
         FROM internal_communications 
         WHERE receiver_email = :userEmail 
-        AND is_read = 0 
-        AND is_deleted = 0
+        AND COALESCE(is_read, 0) = 0  -- Handle NULL values
+        AND COALESCE(is_deleted, 0) = 0  -- Handle NULL values
         """, nativeQuery = true)
     int getUnreadMessageCountDirect(@Param("userEmail") String userEmail);
 
@@ -224,7 +227,7 @@ public interface CommunicationRepository extends JpaRepository<Communication, In
     void deleteMessage(@Param("messageId") int messageId);
 
     /**
-     * Get conversation between two users
+     * Get conversation between two users - UPDATED to handle NULL values
      */
     @Query(value = """
         SELECT 
@@ -236,13 +239,13 @@ public interface CommunicationRepository extends JpaRepository<Communication, In
             ic.subject,
             ic.message_text,
             ic.sent_date,
-            ic.is_read
+            COALESCE(ic.is_read, 0) as is_read  -- Handle NULL values
         FROM internal_communications ic
         INNER JOIN system_user_login_details su_sender ON ic.sender_email = su_sender.email
         INNER JOIN system_user_login_details su_receiver ON ic.receiver_email = su_receiver.email
         WHERE ((ic.sender_email = :user1 AND ic.receiver_email = :user2)
             OR (ic.sender_email = :user2 AND ic.receiver_email = :user1))
-          AND ic.is_deleted = 0
+          AND COALESCE(ic.is_deleted, 0) = 0  -- Handle NULL values
         ORDER BY ic.sent_date ASC
         """, nativeQuery = true)
     List<Map<String, Object>> getConversation(@Param("user1") String user1,

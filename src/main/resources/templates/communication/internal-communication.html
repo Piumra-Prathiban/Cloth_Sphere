@@ -8,38 +8,50 @@
     <link rel="stylesheet" href="/css/communication.css">
 </head>
 <body>
-<div class="communication-container">
-    <!-- Hidden field for JavaScript to access current user email -->
-    <input type="hidden" id="current-user-email" th:value="${currentUserEmail}">
 
-    <!-- Header -->
-    <div class="communication-header">
-        <h1><i class="fas fa-comments"></i> Internal Communication</h1>
+<!-- Sidebar -->
+<div class="sidebar">
+    <h2>Internal Communication</h2>
+    <ul>
+        <li>
+            <a th:href="@{${currentUser != null ?
+        (currentUser.role == 'employee' ? '/employeeDashboard' :
+         currentUser.role == 'hr-manager' ? '/hrDashboard' :
+         currentUser.role == 'factory-manager' ? '/factoryDashboard' :
+         currentUser.role == 'inventory-manager' ? '/inventoryDashboard' :
+         currentUser.role == 'sales-and-order-manager' ? '/salesDashboard' : '/'
+        ) : '/systemUserLogin'}}"
+               class="nav-link">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </li>
+        <li><a href="#" onclick="showSection('compose', event)" class="nav-link active">
+            <i class="fas fa-edit"></i> Compose</a></li>
+        <li><a href="#" onclick="showSection('inbox', event)" class="nav-link">
+            <i class="fas fa-inbox"></i> Inbox
+            <span class="badge" id="unread-badge">0</span></a></li>
+        <li><a href="#" onclick="showSection('sent', event)" class="nav-link">
+            <i class="fas fa-paper-plane"></i> Sent</a></li>
+        <li><a href="#" onclick="showSection('guide', event)" class="nav-link">
+            <i class="fas fa-book"></i> Communication Guide</a></li>
+    </ul>
+</div>
+
+<!-- Main content -->
+<div class="main">
+    <div class="dashboard-header">
+        <h1>Internal Communication System</h1>
         <div class="user-info">
             <span id="current-user" th:text="${currentUser != null ? currentUser.userName : 'User'}">User</span>
             <span class="user-role" id="current-role" th:text="${currentUser != null ? currentUser.role : 'Role'}">Role</span>
         </div>
     </div>
 
-    <!-- Navigation -->
-    <div class="communication-nav">
-        <button class="nav-btn active" onclick="showSection('compose')">
-            <i class="fas fa-edit"></i> Compose
-        </button>
-        <button class="nav-btn" onclick="showSection('inbox')">
-            <i class="fas fa-inbox"></i> Inbox
-            <span class="badge" id="unread-badge">0</span>
-        </button>
-        <button class="nav-btn" onclick="showSection('sent')">
-            <i class="fas fa-paper-plane"></i> Sent
-        </button>
-        <button class="nav-btn" onclick="showSection('statistics')">
-            <i class="fas fa-chart-bar"></i> Statistics
-        </button>
-    </div>
+    <!-- Hidden field for JavaScript to access current user email -->
+    <input type="hidden" id="current-user-email" th:value="${currentUserEmail}">
 
     <!-- Compose Section -->
-    <div id="compose" class="communication-section active">
+    <div id="compose" class="content-section active">
         <div class="card">
             <h3>Compose New Message</h3>
             <form id="compose-form">
@@ -79,7 +91,7 @@
     </div>
 
     <!-- Inbox Section -->
-    <div id="inbox" class="communication-section">
+    <div id="inbox" class="content-section">
         <div class="card">
             <h3>Inbox <span class="subtitle" id="inbox-subtitle"></span></h3>
 
@@ -127,7 +139,7 @@
     </div>
 
     <!-- Sent Section -->
-    <div id="sent" class="communication-section">
+    <div id="sent" class="content-section">
         <div class="card">
             <h3>Sent Messages</h3>
 
@@ -174,69 +186,124 @@
         </div>
     </div>
 
-    <!-- Statistics Section -->
-    <div id="statistics" class="communication-section">
+    <!-- Communication Guide Section -->
+    <div id="guide" class="content-section">
         <div class="card">
-            <h3>Communication Statistics</h3>
+            <h3>Internal Communication Guide</h3>
 
-            <!-- Message Statistics -->
-            <div class="stats-grid">
-                <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                    <div class="stat-number" id="total-messages">0</div>
-                    <div class="stat-label">Total Messages Sent</div>
+            <div class="guide-content">
+                <!-- Communication Rules -->
+                <div class="guide-section">
+                    <h4><i class="fas fa-exclamation-circle text-warning"></i> Communication Rules</h4>
+                    <div class="rules-list">
+                        <div class="rule-item">
+                            <i class="fas fa-ban text-danger"></i>
+                            <div class="rule-content">
+                                <strong>Employees cannot message Factory Manager directly</strong>
+                                <p>For any communication with Factory Manager, please go through your department head.</p>
+                            </div>
+                        </div>
+                        <div class="rule-item">
+                            <i class="fas fa-check-circle text-success"></i>
+                            <div class="rule-content">
+                                <strong>All other communications are allowed</strong>
+                                <p>You can message HR Manager, Inventory Manager, Sales Manager, and other employees freely.</p>
+                            </div>
+                        </div>
+                        <div class="rule-item">
+                            <i class="fas fa-clock text-info"></i>
+                            <div class="rule-content">
+                                <strong>Response Time Expectations</strong>
+                                <p>Please allow 24-48 hours for responses during working days.</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-                    <div class="stat-number" id="unread-messages">0</div>
-                    <div class="stat-label">Unread Messages</div>
-                </div>
-                <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-                    <div class="stat-number" id="avg-message-length">0</div>
-                    <div class="stat-label">Avg Message Length</div>
-                </div>
-            </div>
 
-            <!-- Role-based Statistics (GROUPING WITH HAVING) -->
-            <h4 style="margin-top: 30px; color: #333;">Messages by Role (Grouping with HAVING)</h4>
-            <p style="color: #6c757d; font-size: 14px; margin-bottom: 15px;">
-                Shows statistics for roles that have sent at least 1 message
-            </p>
-            <div class="table-responsive">
-                <table class="table" id="stats-table">
-                    <thead>
-                    <tr>
-                        <th>Role</th>
-                        <th>Total Messages</th>
-                        <th>Average Length</th>
-                    </tr>
-                    </thead>
-                    <tbody id="stats-body">
-                    <tr>
-                        <td colspan="3" class="text-center">Loading statistics...</td>
-                    </tr>
-                    </tbody>
-                </table>
-            </div>
+                <!-- Best Practices -->
+                <div class="guide-section">
+                    <h4><i class="fas fa-lightbulb text-primary"></i> Best Practices</h4>
+                    <div class="practices-grid">
+                        <div class="practice-card">
+                            <i class="fas fa-edit"></i>
+                            <h5>Clear Subject Lines</h5>
+                            <p>Use descriptive subject lines that summarize your message content.</p>
+                        </div>
+                        <div class="practice-card">
+                            <i class="fas fa-bullhorn"></i>
+                            <h5>Professional Tone</h5>
+                            <p>Maintain professional and respectful communication at all times.</p>
+                        </div>
+                        <div class="practice-card">
+                            <i class="fas fa-file-alt"></i>
+                            <h5>Concise Messages</h5>
+                            <p>Keep messages clear and to the point for better understanding.</p>
+                        </div>
+                        <div class="practice-card">
+                            <i class="fas fa-reply"></i>
+                            <h5>Use Reply Feature</h5>
+                            <p>Use the reply button to maintain conversation context.</p>
+                        </div>
+                    </div>
+                </div>
 
-            <!-- Active Communicators (SUBQUERY) -->
-            <h4 style="margin-top: 30px; color: #333;">Active Communicators (Subquery)</h4>
-            <p style="color: #6c757d; font-size: 14px; margin-bottom: 15px;">
-                Users who have sent more than 5 messages
-            </p>
-            <div class="table-responsive">
-                <table class="table" id="active-users-table">
-                    <thead>
-                    <tr>
-                        <th>User Name</th>
-                        <th>Role</th>
-                        <th>Messages Sent</th>
-                    </tr>
-                    </thead>
-                    <tbody id="active-users-body">
-                    <tr>
-                        <td colspan="3" class="text-center">Loading active communicators...</td>
-                    </tr>
-                    </tbody>
-                </table>
+                <!-- Quick Tips -->
+                <div class="guide-section">
+                    <h4><i class="fas fa-rocket text-success"></i> Quick Tips</h4>
+                    <div class="tips-list">
+                        <div class="tip-item">
+                            <span class="tip-number">1</span>
+                            <div class="tip-content">
+                                <strong>Check your inbox regularly</strong>
+                                <p>Stay updated with important communications from your colleagues.</p>
+                            </div>
+                        </div>
+                        <div class="tip-item">
+                            <span class="tip-number">2</span>
+                            <div class="tip-content">
+                                <strong>Use the search feature</strong>
+                                <p>Quickly find specific messages using the search functionality.</p>
+                            </div>
+                        </div>
+                        <div class="tip-item">
+                            <span class="tip-number">3</span>
+                            <div class="tip-content">
+                                <strong>Organize your sent messages</strong>
+                                <p>Keep track of your communications in the Sent folder.</p>
+                            </div>
+                        </div>
+                        <div class="tip-item">
+                            <span class="tip-number">4</span>
+                            <div class="tip-content">
+                                <strong>Report issues immediately</strong>
+                                <p>Contact IT support if you encounter any technical problems.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contact Information -->
+                <div class="guide-section">
+                    <h4><i class="fas fa-headset text-info"></i> Need Help?</h4>
+                    <div class="help-section">
+                        <div class="help-item">
+                            <i class="fas fa-envelope"></i>
+                            <div class="help-content">
+                                <strong>IT Support</strong>
+                                <p>Email: it-support@clothsphere.com</p>
+                                <p>Phone: Ext. 1234</p>
+                            </div>
+                        </div>
+                        <div class="help-item">
+                            <i class="fas fa-users"></i>
+                            <div class="help-content">
+                                <strong>HR Department</strong>
+                                <p>Email: hr@clothsphere.com</p>
+                                <p>Phone: Ext. 1001</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
