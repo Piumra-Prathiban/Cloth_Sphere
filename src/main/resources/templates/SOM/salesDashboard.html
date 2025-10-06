@@ -226,25 +226,27 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="productType">Product Type:</label>
-                            <select id="productType" name="productType" required onchange="calculateTotal()">
+                            <select id="productType" name="productType" required>
                                 <option value="">Select Product Type</option>
-                                <option value="T-Shirt">T-Shirt</option>
-                                <option value="Shirt">Shirt</option>
-                                <option value="Pants">Pants</option>
-                                <option value="Jacket">Jacket</option>
-                                <option value="Dress">Dress</option>
+                                <!-- Products will be loaded dynamically from database -->
                             </select>
+                            <small style="color: #666; font-size: 12px; display: block; margin-top: 5px;">
+                                Select a product to auto-fill the price
+                            </small>
                         </div>
                         <div class="form-group">
                             <label for="quantity">Quantity:</label>
-                            <input type="number" id="quantity" name="quantity" min="1" required onchange="calculateTotal()">
+                            <input type="number" id="quantity" name="quantity" min="1" value="1" required onchange="calculateTotal()">
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
                             <label for="unitPrice">Unit Price ($):</label>
-                            <input type="number" id="unitPrice" name="unitPrice" step="0.01" min="0" required onchange="calculateTotal()">
+                            <input type="number" id="unitPrice" name="unitPrice" step="0.01" min="0" required onchange="calculateTotal()" readonly style="background-color: #f8f9fa;">
+                            <small style="color: #666; font-size: 12px; display: block; margin-top: 5px;">
+                                Auto-filled when product is selected
+                            </small>
                         </div>
                         <div class="form-group">
                             <label for="discountPercentage">Discount (%):</label>
@@ -255,17 +257,19 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="subtotalAmount">Subtotal ($):</label>
-                            <input type="number" id="subtotalAmount" name="subtotalAmount" step="0.01" readonly>
+                            <input type="number" id="subtotalAmount" name="subtotalAmount" step="0.01" readonly style="background-color: #f8f9fa;">
                         </div>
                         <div class="form-group">
                             <label for="totalAmount">Total Amount ($):</label>
-                            <input type="number" id="totalAmount" name="totalAmount" step="0.01" readonly>
+                            <input type="number" id="totalAmount" name="totalAmount" step="0.01" readonly style="background-color: #f8f9fa;">
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="orderNotes">Order Notes:</label>
-                        <textarea id="orderNotes" name="orderNotes" rows="3" placeholder="Additional notes or special requirements"></textarea>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="orderNotes">Order Notes:</label>
+                            <textarea id="orderNotes" name="orderNotes" rows="3" placeholder="Additional notes about the order..."></textarea>
+                        </div>
                     </div>
                 </fieldset>
 

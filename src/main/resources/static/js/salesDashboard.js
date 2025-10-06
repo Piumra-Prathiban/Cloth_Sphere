@@ -21,6 +21,7 @@ function showSection(sectionId) {
         loadAllBuyers();
     } else if (sectionId === 'createOrder') {
         loadBuyersForSelection();
+        loadProducts(); // Load products when create order section is shown
     }
 }
 
@@ -39,6 +40,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Load buyers for selection
     loadBuyersForSelection();
+
+    // Load products for product dropdown
+    loadProducts();
+    setupProductSelection();
 });
 
 // Sales Chart
@@ -116,6 +121,110 @@ function setupFormListeners() {
         e.preventDefault();
         sendMessage();
     });
+}
+
+// Load products for product type dropdown
+async function loadProducts() {
+    try {
+        const response = await fetch('/api/products');
+        if (!response.ok) throw new Error('Failed to load products');
+
+        const products = await response.json();
+        populateProductDropdown(products);
+
+    } catch (error) {
+        console.error('Error loading products:', error);
+        showAlert('Error loading products: ' + error.message, 'error');
+        // Fallback to static products if API fails
+        loadFallbackProducts();
+    }
+}
+
+// Fallback product data in case API fails
+function loadFallbackProducts() {
+    const fallbackProducts = [
+        { name: "Classic Cotton T-Shirt", category: "Shirts", price: 19.99, code: "75001", productId: "P01" },
+        { name: "Premium V-Neck Tee", category: "Shirts", price: 24.99, code: "75002", productId: "P02" },
+        { name: "Graphic Print T-Shirt", category: "Shirts", price: 29.99, code: "75003", productId: "P03" },
+        { name: "Slim Fit Jeans", category: "Jeans", price: 59.99, code: "JN001", productId: "P04" },
+        { name: "Relaxed Fit Jeans", category: "Jeans", price: 49.99, code: "JN002", productId: "P05" },
+        { name: "Designer Ripped Jeans", category: "Jeans", price: 79.99, code: "JN003", productId: "P06" },
+        { name: "Summer Floral Dress", category: "Dresses", price: 45.99, code: "DR001", productId: "P07" },
+        { name: "Elegant Cocktail Dress", category: "Dresses", price: 89.99, code: "DR002", productId: "P08" },
+        { name: "Denim Jacket", category: "Jackets", price: 65.99, code: "JK001", productId: "P09" },
+        { name: "Bomber Jacket", category: "Jackets", price: 75.99, code: "JK002", productId: "P10" }
+    ];
+
+    populateProductDropdown(fallbackProducts);
+    showAlert('Using fallback product data. Some features may be limited.', 'warning');
+}
+
+// Populate product type dropdown with actual products
+function populateProductDropdown(products) {
+    const productTypeSelect = document.getElementById('productType');
+    if (!productTypeSelect) return;
+
+    // Clear existing options except the first one
+    productTypeSelect.innerHTML = '<option value="">Select Product Type</option>';
+
+    // Group products by category
+    const productsByCategory = {};
+    products.forEach(product => {
+        if (!productsByCategory[product.category]) {
+            productsByCategory[product.category] = [];
+        }
+        productsByCategory[product.category].push(product);
+    });
+
+    // Add products organized by category
+    Object.keys(productsByCategory).forEach(category => {
+        const optgroup = document.createElement('optgroup');
+        optgroup.label = category;
+
+        productsByCategory[category].forEach(product => {
+            const option = document.createElement('option');
+            option.value = product.name;
+            option.textContent = `${product.name} - $${product.price} (Code: ${product.code})`;
+            option.setAttribute('data-product', JSON.stringify(product));
+            optgroup.appendChild(option);
+        });
+
+        productTypeSelect.appendChild(optgroup);
+    });
+}
+
+// Setup product selection handler
+function setupProductSelection() {
+    const productTypeSelect = document.getElementById('productType');
+    if (productTypeSelect) {
+        productTypeSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            if (selectedOption.value && selectedOption.getAttribute('data-product')) {
+                const product = JSON.parse(selectedOption.getAttribute('data-product'));
+                autoFillProductDetails(product);
+            } else {
+                // Clear product details if no product selected
+                document.getElementById('unitPrice').value = '';
+                calculateTotal();
+            }
+        });
+    }
+}
+
+// Auto-fill product details when product is selected
+function autoFillProductDetails(product) {
+    document.getElementById('unitPrice').value = product.price;
+
+    // Set quantity to 1 by default if empty
+    const quantityInput = document.getElementById('quantity');
+    if (!quantityInput.value || quantityInput.value === '0') {
+        quantityInput.value = '1';
+    }
+
+    // Trigger calculation
+    calculateTotal();
+
+    showAlert(`Product "${product.name}" selected. Price: $${product.price}`, 'success');
 }
 
 // Calculate order total with discount
@@ -200,19 +309,40 @@ function filterOrders() {
 async function createOrder() {
     try {
         const formData = new FormData(document.getElementById('orderForm'));
+        const productTypeSelect = document.getElementById('productType');
+        const selectedProduct = productTypeSelect.options[productTypeSelect.selectedIndex];
+
+        if (!selectedProduct.value) {
+            showAlert('Please select a product', 'error');
+            return;
+        }
+
+        const productData = JSON.parse(selectedProduct.getAttribute('data-product'));
+
         const orderData = {
             customerName: formData.get('customerName'),
             customerEmail: formData.get('customerEmail'),
             customerPhone: formData.get('customerPhone'),
             customerAddress: formData.get('customerAddress'),
-            productType: formData.get('productType'),
+            productType: productData.name,
             quantity: parseInt(formData.get('quantity')),
             unitPrice: parseFloat(formData.get('unitPrice')),
             discountPercentage: parseFloat(formData.get('discountPercentage')) || 0,
             totalAmount: parseFloat(formData.get('totalAmount')),
-            orderNotes: formData.get('orderNotes'),
-            orderType: 'PHYSICAL' // Sales Manager can only create physical orders
+            orderType: 'PHYSICAL',
+            orderNotes: `Product: ${productData.name}, Code: ${productData.code}, Category: ${productData.category}`
         };
+
+        // Validation
+        if (!orderData.customerName || !orderData.customerEmail || !orderData.customerPhone) {
+            showAlert('Please fill in all required customer fields', 'error');
+            return;
+        }
+
+        if (orderData.quantity <= 0) {
+            showAlert('Please enter a valid quantity', 'error');
+            return;
+        }
 
         const response = await fetch('/api/orders?createdBy=SalesManager', {
             method: 'POST',
@@ -611,8 +741,6 @@ async function loadBuyersForSelection() {
 
         // Clear the Customer Information form
         clearCustomerForm();
-
-        //showAlert('Customer list refreshed and form cleared!', 'success');
 
     } catch (error) {
         console.error('Error loading buyers for selection:', error);
