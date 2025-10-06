@@ -43,7 +43,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Sales Chart
 function initializeSalesChart() {
-    const ctx = document.getElementById('salesChart').getContext('2d');
+    const ctx = document.getElementById('salesChart')?.getContext('2d');
+    if (!ctx) return;
+
     const salesChart = new Chart(ctx, {
         type: 'line',
         data: {
@@ -81,18 +83,20 @@ function initializeSalesChart() {
 // Quick Stats
 async function loadQuickStats() {
     try {
-        // Simulate API call
-        const stats = {
-            totalOrders: 15,
-            pendingOrders: 3,
-            completedOrders: 12,
-            successRate: '85%'
-        };
+        const response = await fetch('/api/orders');
+        if (!response.ok) throw new Error('Failed to load orders');
 
-        document.getElementById('totalOrders').textContent = stats.totalOrders;
-        document.getElementById('pendingOrders').textContent = stats.pendingOrders;
-        document.getElementById('completedOrders').textContent = stats.completedOrders;
-        document.getElementById('successRate').textContent = stats.successRate;
+        const orders = await response.json();
+
+        const totalOrders = orders.length;
+        const pendingOrders = orders.filter(order => order.status === 'PENDING').length;
+        const completedOrders = orders.filter(order => order.status === 'READY_TO_SHIP').length;
+        const successRate = totalOrders > 0 ? Math.round((completedOrders / totalOrders) * 100) : 0;
+
+        document.getElementById('totalOrders').textContent = totalOrders;
+        document.getElementById('pendingOrders').textContent = pendingOrders;
+        document.getElementById('completedOrders').textContent = completedOrders;
+        document.getElementById('successRate').textContent = successRate + '%';
 
     } catch (error) {
         console.error('Error loading quick stats:', error);
@@ -101,21 +105,6 @@ async function loadQuickStats() {
 
 // Form setup
 function setupFormListeners() {
-    // Order form calculations
-    const quantityInput = document.getElementById('quantity');
-    const unitPriceInput = document.getElementById('unitPrice');
-    const totalAmountInput = document.getElementById('totalAmount');
-
-    function calculateTotal() {
-        const quantity = parseInt(quantityInput.value) || 0;
-        const unitPrice = parseFloat(unitPriceInput.value) || 0;
-        const total = quantity * unitPrice;
-        totalAmountInput.value = total.toFixed(2);
-    }
-
-    quantityInput.addEventListener('input', calculateTotal);
-    unitPriceInput.addEventListener('input', calculateTotal);
-
     // Order form submission
     document.getElementById('orderForm').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -129,40 +118,27 @@ function setupFormListeners() {
     });
 }
 
+// Calculate order total with discount
+function calculateTotal() {
+    const quantity = parseInt(document.getElementById('quantity').value) || 0;
+    const unitPrice = parseFloat(document.getElementById('unitPrice').value) || 0;
+    const discountPercentage = parseFloat(document.getElementById('discountPercentage').value) || 0;
+
+    const subtotal = quantity * unitPrice;
+    const discountAmount = subtotal * (discountPercentage / 100);
+    const total = subtotal - discountAmount;
+
+    document.getElementById('subtotalAmount').value = subtotal.toFixed(2);
+    document.getElementById('totalAmount').value = total.toFixed(2);
+}
+
 // Order Management
 async function loadOrders() {
     try {
-        // Simulate API call to get orders
-        const orders = [
-            {
-                id: 'ORD-001',
-                customerName: 'John Doe',
-                productType: 'T-Shirt',
-                quantity: 50,
-                totalAmount: 1250.00,
-                orderDate: '2024-01-15',
-                status: 'COMPLETED'
-            },
-            {
-                id: 'ORD-002',
-                customerName: 'Jane Smith',
-                productType: 'Shirt',
-                quantity: 30,
-                totalAmount: 900.00,
-                orderDate: '2024-01-16',
-                status: 'IN_PROGRESS'
-            },
-            {
-                id: 'ORD-003',
-                customerName: 'Bob Johnson',
-                productType: 'Pants',
-                quantity: 25,
-                totalAmount: 750.00,
-                orderDate: '2024-01-17',
-                status: 'PENDING'
-            }
-        ];
+        const response = await fetch('/api/orders');
+        if (!response.ok) throw new Error('Failed to load orders');
 
+        const orders = await response.json();
         refreshOrdersTable(orders);
 
     } catch (error) {
@@ -173,29 +149,37 @@ async function loadOrders() {
 
 function refreshOrdersTable(orders) {
     const tbody = document.querySelector('#ordersTable tbody');
+    if (!tbody) return;
+
     tbody.innerHTML = '';
 
     if (orders.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No orders found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="11" style="text-align: center;">No orders found</td></tr>';
         return;
     }
 
     orders.forEach(order => {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${order.id}</td>
+            <td>${order.orderId}</td>
+            <td>${order.orderType}</td>
             <td>${order.customerName}</td>
             <td>${order.productType}</td>
             <td>${order.quantity}</td>
+            <td>$${order.unitPrice.toFixed(2)}</td>
+            <td>${order.discountPercentage || 0}%</td>
             <td>$${order.totalAmount.toFixed(2)}</td>
-            <td>${new Date(order.orderDate).toLocaleDateString()}</td>
+            <td>${new Date(order.placeDate).toLocaleDateString()}</td>
             <td><span class="status-badge status-${order.status.toLowerCase().replace('_', '-')}">${order.status.replace('_', ' ')}</span></td>
             <td>
-                <button class="btn btn-warning btn-sm" onclick="viewOrder('${order.id}')">
+                <button class="btn btn-warning btn-sm" onclick="viewOrder('${order.orderType}', '${order.orderId}')">
                     <i class="fas fa-eye"></i> View
                 </button>
-                <button class="btn btn-primary btn-sm" onclick="editOrder('${order.id}')">
-                    <i class="fas fa-edit"></i> Edit
+                <button class="btn btn-primary btn-sm" onclick="updateOrderStatus('${order.orderType}', '${order.orderId}')">
+                    <i class="fas fa-edit"></i> Update Status
+                </button>
+                <button class="btn btn-info btn-sm" onclick="updateOrderDiscount('${order.orderType}', '${order.orderId}')">
+                    <i class="fas fa-percent"></i> Discount
                 </button>
             </td>
         `;
@@ -224,14 +208,27 @@ async function createOrder() {
             productType: formData.get('productType'),
             quantity: parseInt(formData.get('quantity')),
             unitPrice: parseFloat(formData.get('unitPrice')),
+            discountPercentage: parseFloat(formData.get('discountPercentage')) || 0,
             totalAmount: parseFloat(formData.get('totalAmount')),
-            orderNotes: formData.get('orderNotes')
+            orderNotes: formData.get('orderNotes'),
+            orderType: 'PHYSICAL' // Sales Manager can only create physical orders
         };
 
-        // Simulate API call
-        console.log('Creating order:', orderData);
+        const response = await fetch('/api/orders?createdBy=SalesManager', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(orderData)
+        });
 
-        showAlert('Order created successfully!', 'success');
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to create order');
+        }
+
+        const createdOrder = await response.json();
+        showAlert('Order created successfully! Order ID: ' + createdOrder.orderId, 'success');
         resetOrderForm();
 
         // Refresh orders list if on order view
@@ -239,72 +236,187 @@ async function createOrder() {
             loadOrders();
         }
 
+        // Refresh quick stats
+        loadQuickStats();
+
     } catch (error) {
         console.error('Error creating order:', error);
-        showAlert('Error creating order', 'error');
+        showAlert('Error creating order: ' + error.message, 'error');
     }
 }
 
 function resetOrderForm() {
     document.getElementById('orderForm').reset();
+    document.getElementById('subtotalAmount').value = '';
     document.getElementById('totalAmount').value = '';
+    document.getElementById('existingCustomer').value = '';
 }
 
-function viewOrder(orderId) {
-    alert(`View order: ${orderId}`);
-    // In a real application, you would show order details in a modal
+async function viewOrder(orderType, orderId) {
+    try {
+        const response = await fetch(`/api/orders/${orderType}/${orderId}`);
+        if (!response.ok) throw new Error('Failed to load order details');
+
+        const order = await response.json();
+
+        // Show order details in a modal or alert
+        const orderDetails = `
+Order ID: ${order.orderId}
+Order Type: ${order.orderType}
+Customer: ${order.customerName}
+Product: ${order.productType}
+Quantity: ${order.quantity}
+Unit Price: $${order.unitPrice}
+Discount: ${order.discountPercentage || 0}%
+Total Amount: $${order.totalAmount}
+Status: ${order.status}
+Order Date: ${new Date(order.placeDate).toLocaleDateString()}
+Notes: ${order.orderNotes || 'None'}
+        `;
+
+        alert(orderDetails);
+    } catch (error) {
+        console.error('Error viewing order:', error);
+        showAlert('Error loading order details', 'error');
+    }
 }
 
-function editOrder(orderId) {
-    alert(`Edit order: ${orderId}`);
-    // In a real application, you would load order data into the form for editing
+async function updateOrderStatus(orderType, orderId) {
+    try {
+        const response = await fetch(`/api/orders/${orderType}/${orderId}`);
+        if (!response.ok) throw new Error('Failed to load order details');
+
+        const order = await response.json();
+
+        // Determine available status transitions
+        let availableStatuses = [];
+        if (order.status === 'PENDING') {
+            availableStatuses = ['IN_PRODUCTION', 'READY_TO_SHIP'];
+        } else if (order.status === 'IN_PRODUCTION') {
+            availableStatuses = ['READY_TO_SHIP'];
+        } else {
+            showAlert('Order status cannot be changed from ' + order.status, 'error');
+            return;
+        }
+
+        const newStatus = prompt(
+            `Current Status: ${order.status}\nAvailable statuses: ${availableStatuses.join(', ')}\nEnter new status:`,
+            availableStatuses[0]
+        );
+
+        if (!newStatus || !availableStatuses.includes(newStatus)) {
+            showAlert('Invalid status selected', 'error');
+            return;
+        }
+
+        const updateResponse = await fetch(`/api/orders/${orderType}/${orderId}/status?newStatus=${newStatus}&updatedBy=SalesManager`, {
+            method: 'PUT'
+        });
+
+        if (!updateResponse.ok) {
+            const errorData = await updateResponse.json();
+            throw new Error(errorData.error || 'Failed to update order status');
+        }
+
+        showAlert('Order status updated successfully!', 'success');
+        loadOrders(); // Refresh the table
+
+    } catch (error) {
+        console.error('Error updating order status:', error);
+        showAlert('Error updating order status: ' + error.message, 'error');
+    }
+}
+
+async function updateOrderDiscount(orderType, orderId) {
+    try {
+        const response = await fetch(`/api/orders/${orderType}/${orderId}`);
+        if (!response.ok) throw new Error('Failed to load order details');
+
+        const order = await response.json();
+
+        const newDiscount = prompt(
+            `Current Discount: ${order.discountPercentage || 0}%\nEnter new discount percentage (0-100):`,
+            order.discountPercentage || 0
+        );
+
+        if (newDiscount === null) return;
+
+        const discountPercentage = parseFloat(newDiscount);
+        if (isNaN(discountPercentage) || discountPercentage < 0 || discountPercentage > 100) {
+            showAlert('Please enter a valid discount percentage between 0 and 100', 'error');
+            return;
+        }
+
+        const updateResponse = await fetch(`/api/orders/${orderType}/${orderId}/discount?discountPercentage=${discountPercentage}&updatedBy=SalesManager`, {
+            method: 'PUT'
+        });
+
+        if (!updateResponse.ok) {
+            const errorData = await updateResponse.json();
+            throw new Error(errorData.error || 'Failed to update order discount');
+        }
+
+        showAlert('Order discount updated successfully!', 'success');
+        loadOrders(); // Refresh the table
+
+    } catch (error) {
+        console.error('Error updating order discount:', error);
+        showAlert('Error updating order discount: ' + error.message, 'error');
+    }
 }
 
 // Summary Report
 async function loadSummaryReport() {
     try {
-        // Simulate API call for report data
-        const reportData = {
-            totalSales: 12450,
-            ordersCount: 45,
-            customersCount: 28,
-            successRate: '92%'
-        };
+        const response = await fetch('/api/orders');
+        if (!response.ok) throw new Error('Failed to load orders');
 
-        document.getElementById('totalSales').textContent = '$' + reportData.totalSales.toLocaleString();
-        document.getElementById('ordersCount').textContent = reportData.ordersCount;
-        document.getElementById('customersCount').textContent = reportData.customersCount;
-        document.getElementById('successRateReport').textContent = reportData.successRate;
+        const orders = await response.json();
 
-        initializeReportChart();
-        loadTopProducts();
+        const totalSales = orders.reduce((sum, order) => sum + order.totalAmount, 0);
+        const ordersCount = orders.length;
+        const customersCount = new Set(orders.map(order => order.customerEmail)).size;
+        const successRate = ordersCount > 0 ? Math.round((orders.filter(order => order.status === 'READY_TO_SHIP').length / ordersCount) * 100) : 0;
+
+        document.getElementById('totalSales').textContent = '$' + totalSales.toLocaleString();
+        document.getElementById('ordersCount').textContent = ordersCount;
+        document.getElementById('customersCount').textContent = customersCount;
+        document.getElementById('successRateReport').textContent = successRate + '%';
+
+        initializeReportChart(orders);
+        loadTopProducts(orders);
 
     } catch (error) {
         console.error('Error loading summary report:', error);
     }
 }
 
-function initializeReportChart() {
-    const ctx = document.getElementById('reportChart').getContext('2d');
+function initializeReportChart(orders) {
+    const ctx = document.getElementById('reportChart')?.getContext('2d');
+    if (!ctx) return;
+
+    // Group orders by month for chart data
+    const monthlySales = {};
+    orders.forEach(order => {
+        const month = new Date(order.placeDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        if (!monthlySales[month]) {
+            monthlySales[month] = 0;
+        }
+        monthlySales[month] += order.totalAmount;
+    });
+
+    const labels = Object.keys(monthlySales);
+    const data = Object.values(monthlySales);
+
     const reportChart = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+            labels: labels,
             datasets: [{
                 label: 'Sales ($)',
-                data: [2800, 3200, 4100, 2350],
-                backgroundColor: [
-                    'rgba(76, 175, 80, 0.8)',
-                    'rgba(33, 150, 243, 0.8)',
-                    'rgba(255, 193, 7, 0.8)',
-                    'rgba(156, 39, 176, 0.8)'
-                ],
-                borderColor: [
-                    'rgba(76, 175, 80, 1)',
-                    'rgba(33, 150, 243, 1)',
-                    'rgba(255, 193, 7, 1)',
-                    'rgba(156, 39, 176, 1)'
-                ],
+                data: data,
+                backgroundColor: 'rgba(76, 175, 80, 0.8)',
+                borderColor: 'rgba(76, 175, 80, 1)',
                 borderWidth: 1
             }]
         },
@@ -324,26 +436,30 @@ function initializeReportChart() {
     });
 }
 
-function loadTopProducts() {
-    const products = [
-        { name: 'T-Shirt', sales: 12500, units: 250 },
-        { name: 'Shirt', sales: 9800, units: 140 },
-        { name: 'Pants', sales: 7500, units: 100 },
-        { name: 'Jacket', sales: 5200, units: 65 }
-    ];
+function loadTopProducts(orders) {
+    const products = {};
+    orders.forEach(order => {
+        if (!products[order.productType]) {
+            products[order.productType] = { sales: 0, units: 0 };
+        }
+        products[order.productType].sales += order.totalAmount;
+        products[order.productType].units += order.quantity;
+    });
 
     const productsList = document.querySelector('.products-list');
+    if (!productsList) return;
+
     productsList.innerHTML = '';
 
-    products.forEach(product => {
+    Object.entries(products).forEach(([productName, data]) => {
         const productItem = document.createElement('div');
         productItem.className = 'product-item';
         productItem.innerHTML = `
             <div>
-                <strong>${product.name}</strong>
-                <div style="font-size: 12px; color: #666;">${product.units} units sold</div>
+                <strong>${productName}</strong>
+                <div style="font-size: 12px; color: #666;">${data.units} units sold</div>
             </div>
-            <div style="font-weight: bold; color: #4caf50;">$${product.sales.toLocaleString()}</div>
+            <div style="font-weight: bold; color: #4caf50;">$${data.sales.toLocaleString()}</div>
         `;
         productsList.appendChild(productItem);
     });
@@ -365,20 +481,20 @@ function generateReport() {
 // Customer Messaging
 async function loadCustomers() {
     try {
-        // Simulate API call to get customers
-        const customers = [
-            { id: 1, name: 'John Doe', email: 'john@example.com' },
-            { id: 2, name: 'Jane Smith', email: 'jane@example.com' },
-            { id: 3, name: 'Bob Johnson', email: 'bob@example.com' }
-        ];
+        const response = await fetch('/api/buyers');
+        if (!response.ok) throw new Error('Failed to load customers');
+
+        const customers = await response.json();
 
         const customerSelect = document.getElementById('customerSelect');
+        if (!customerSelect) return;
+
         customerSelect.innerHTML = '<option value="">Select Customer</option>';
 
         customers.forEach(customer => {
             const option = document.createElement('option');
-            option.value = customer.id;
-            option.textContent = `${customer.name} (${customer.email})`;
+            option.value = customer.email;
+            option.textContent = `${customer.customerName} (${customer.email})`;
             customerSelect.appendChild(option);
         });
 
@@ -388,52 +504,12 @@ async function loadCustomers() {
 }
 
 async function loadMessageHistory() {
-    try {
-        // Simulate API call to get message history
-        const messages = [
-            {
-                date: '2024-01-15',
-                customerName: 'John Doe',
-                subject: 'Order Confirmation',
-                type: 'ORDER_UPDATE',
-                status: 'SENT'
-            },
-            {
-                date: '2024-01-14',
-                customerName: 'Jane Smith',
-                subject: 'Special Offer',
-                type: 'PROMOTIONAL',
-                status: 'SENT'
-            }
-        ];
-
-        refreshMessagesTable(messages);
-
-    } catch (error) {
-        console.error('Error loading message history:', error);
-    }
+    // Simulate loading message history
+    console.log('Loading message history...');
 }
 
 function refreshMessagesTable(messages) {
-    const tbody = document.querySelector('#messagesTable tbody');
-    tbody.innerHTML = '';
-
-    if (messages.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No messages found</td></tr>';
-        return;
-    }
-
-    messages.forEach(message => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${new Date(message.date).toLocaleDateString()}</td>
-            <td>${message.customerName}</td>
-            <td>${message.subject}</td>
-            <td>${message.type.replace('_', ' ')}</td>
-            <td><span class="status-badge status-completed">${message.status}</span></td>
-        `;
-        tbody.appendChild(row);
-    });
+    // Implementation for message history table
 }
 
 async function sendMessage() {
@@ -536,7 +612,7 @@ async function loadBuyersForSelection() {
         // Clear the Customer Information form
         clearCustomerForm();
 
-        showAlert('Customer list refreshed and form cleared!', 'success');
+        //showAlert('Customer list refreshed and form cleared!', 'success');
 
     } catch (error) {
         console.error('Error loading buyers for selection:', error);
@@ -627,7 +703,7 @@ async function editCustomer(buyerId, email) {
 
         const customer = await response.json();
 
-        // Show edit form (you can use a modal or inline editing)
+        // Show edit form
         const newName = prompt('Enter new customer name:', customer.customerName);
         if (newName === null) return;
 
@@ -715,7 +791,9 @@ function showAlert(message, type = 'success') {
 
     // Insert after header
     const header = document.querySelector('.dashboard-header');
-    header.parentNode.insertBefore(alertDiv, header.nextSibling);
+    if (header && header.parentNode) {
+        header.parentNode.insertBefore(alertDiv, header.nextSibling);
+    }
 
     // Auto remove after 5 seconds
     setTimeout(() => {
@@ -743,11 +821,13 @@ window.filterOrders = filterOrders;
 window.createOrder = createOrder;
 window.resetOrderForm = resetOrderForm;
 window.viewOrder = viewOrder;
-window.editOrder = editOrder;
+window.updateOrderStatus = updateOrderStatus;
+window.updateOrderDiscount = updateOrderDiscount;
 window.updateReport = updateReport;
 window.generateReport = generateReport;
 window.sendMessage = sendMessage;
 window.resetMessageForm = resetMessageForm;
+window.calculateTotal = calculateTotal;
 
 // Export customer management functions
 window.createCustomer = createCustomer;
@@ -757,3 +837,4 @@ window.loadAllBuyers = loadAllBuyers;
 window.editCustomer = editCustomer;
 window.deleteCustomer = deleteCustomer;
 window.filterCustomers = filterCustomers;
+window.clearCustomerForm = clearCustomerForm;

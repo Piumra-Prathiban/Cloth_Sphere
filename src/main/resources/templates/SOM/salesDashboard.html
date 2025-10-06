@@ -11,7 +11,6 @@
 <body>
 
 <!-- Sidebar -->
-<!-- Sidebar -->
 <div class="sidebar">
     <h2>Sales Dashboard</h2>
     <ul>
@@ -20,7 +19,7 @@
         <li><a href="#" onclick="showSection('createOrder')" class="nav-link">
             <i class="fas fa-plus-circle"></i> Create Order</a></li>
         <li><a href="#" onclick="showSection('customerManagement')" class="nav-link">
-            <i class="fas fa-users"></i> Customer Management</a></li> <!-- New Link -->
+            <i class="fas fa-users"></i> Customer Management</a></li>
         <li><a href="#" onclick="showSection('orderView')" class="nav-link">
             <i class="fas fa-list-alt"></i> Order View</a></li>
         <li><a href="#" onclick="showSection('summaryReport')" class="nav-link">
@@ -90,21 +89,15 @@
 
         <!-- Dashboard Cards -->
         <div class="cards">
-            <!-- Sales Performance Card -->
+            <!-- Video Card -->
             <div class="card">
                 <h3>Garment Manufacturing Process</h3>
-                <div style="position: relative; width: 100%; padding-top: 56.25%; /* 16:9 Aspect Ratio */">
-                    <video
-                            id="garmentVideo"
-                            controls
-                            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;"
-                            poster="/res/images/LoginPage.jpg">
+                <div style="position: relative; width: 100%; padding-top: 56.25%;">
+                    <video id="garmentVideo" controls style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;" poster="/res/images/LoginPage.jpg">
                         <source src="/res/videos/background3.mp4" type="video/mp4">
                         Your browser does not support the video tag.
                     </video>
                 </div>
-
-                <!-- Optional: Video Controls -->
                 <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
                     <button class="btn btn-sm btn-primary" onclick="document.getElementById('garmentVideo').play()">
                         <i class="fas fa-play"></i> Play
@@ -116,8 +109,6 @@
                         <i class="fas fa-redo"></i> Restart
                     </button>
                 </div>
-
-                <!-- Video Description -->
                 <div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
                     <small><strong>Production Process Overview:</strong> Watch our complete garment manufacturing workflow from design to finished product.</small>
                 </div>
@@ -130,8 +121,6 @@
                     <div class="current-time" id="currentTime">--:--:--</div>
                     <div class="current-date" id="currentDate">Loading...</div>
                 </div>
-
-                <!-- Date Information -->
                 <div class="date-info">
                     <div class="date-item">
                         <span class="date-label">Day of Week:</span>
@@ -153,19 +142,19 @@
                 <h3>Quick Stats</h3>
                 <div class="stats-grid">
                     <div class="stat-item">
-                        <div class="stat-value" id="totalOrders">15</div>
+                        <div class="stat-value" id="totalOrders">0</div>
                         <div class="stat-label">Total Orders</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-value" id="pendingOrders">3</div>
+                        <div class="stat-value" id="pendingOrders">0</div>
                         <div class="stat-label">Pending</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-value" id="completedOrders">12</div>
+                        <div class="stat-value" id="completedOrders">0</div>
                         <div class="stat-label">Completed</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-value" id="successRate">85%</div>
+                        <div class="stat-value" id="successRate">0%</div>
                         <div class="stat-label">Success Rate</div>
                     </div>
                 </div>
@@ -174,7 +163,6 @@
     </div>
 
     <!-- Create Order Section -->
-    <!-- Create Order Section -->
     <div id="createOrder" class="content-section">
         <div class="card">
             <h3>Create New Order</h3>
@@ -182,13 +170,11 @@
                 <fieldset>
                     <legend>Customer Information</legend>
 
-                    <!-- Customer Search/Select Section -->
                     <div class="form-row">
                         <div class="form-group">
                             <label for="existingCustomer">Search Existing Customer:</label>
                             <select id="existingCustomer" onchange="loadCustomerData()">
                                 <option value="">Select Existing Customer</option>
-                                <!-- Customers will be loaded dynamically -->
                             </select>
                         </div>
                         <div class="form-group" style="display: flex; align-items: end;">
@@ -231,36 +217,52 @@
                     </div>
                 </fieldset>
 
-                <!-- Rest of your order form remains the same -->
                 <fieldset>
                     <legend>Order Details</legend>
+
+                    <!-- Order Type (Hidden - Sales Manager can only create PHYSICAL orders) -->
+                    <input type="hidden" id="orderType" name="orderType" value="PHYSICAL">
+
                     <div class="form-row">
                         <div class="form-group">
                             <label for="productType">Product Type:</label>
-                            <select id="productType" name="productType" required>
+                            <select id="productType" name="productType" required onchange="calculateTotal()">
                                 <option value="">Select Product Type</option>
-                                <option value="tshirt">T-Shirt</option>
-                                <option value="shirt">Shirt</option>
-                                <option value="pants">Pants</option>
-                                <option value="jacket">Jacket</option>
-                                <option value="dress">Dress</option>
+                                <option value="T-Shirt">T-Shirt</option>
+                                <option value="Shirt">Shirt</option>
+                                <option value="Pants">Pants</option>
+                                <option value="Jacket">Jacket</option>
+                                <option value="Dress">Dress</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label for="quantity">Quantity:</label>
-                            <input type="number" id="quantity" name="quantity" min="1" required>
+                            <input type="number" id="quantity" name="quantity" min="1" required onchange="calculateTotal()">
                         </div>
                     </div>
+
                     <div class="form-row">
                         <div class="form-group">
                             <label for="unitPrice">Unit Price ($):</label>
-                            <input type="number" id="unitPrice" name="unitPrice" step="0.01" min="0" required>
+                            <input type="number" id="unitPrice" name="unitPrice" step="0.01" min="0" required onchange="calculateTotal()">
+                        </div>
+                        <div class="form-group">
+                            <label for="discountPercentage">Discount (%):</label>
+                            <input type="number" id="discountPercentage" name="discountPercentage" step="0.01" min="0" max="100" value="0" onchange="calculateTotal()">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="subtotalAmount">Subtotal ($):</label>
+                            <input type="number" id="subtotalAmount" name="subtotalAmount" step="0.01" readonly>
                         </div>
                         <div class="form-group">
                             <label for="totalAmount">Total Amount ($):</label>
                             <input type="number" id="totalAmount" name="totalAmount" step="0.01" readonly>
                         </div>
                     </div>
+
                     <div class="form-group">
                         <label for="orderNotes">Order Notes:</label>
                         <textarea id="orderNotes" name="orderNotes" rows="3" placeholder="Additional notes or special requirements"></textarea>
@@ -292,7 +294,6 @@
                 </div>
             </div>
 
-            <!-- Customers Table -->
             <div class="table-container">
                 <table id="customersTable">
                     <thead>
@@ -306,9 +307,7 @@
                         <th>Actions</th>
                     </tr>
                     </thead>
-                    <tbody>
-                    <!-- Customer data will be loaded dynamically -->
-                    </tbody>
+                    <tbody></tbody>
                 </table>
             </div>
         </div>
@@ -323,33 +322,31 @@
                     <select id="orderStatusFilter" onchange="filterOrders()">
                         <option value="ALL">All Status</option>
                         <option value="PENDING">Pending</option>
-                        <option value="CONFIRMED">Confirmed</option>
-                        <option value="IN_PROGRESS">In Progress</option>
-                        <option value="COMPLETED">Completed</option>
-                        <option value="CANCELLED">Cancelled</option>
+                        <option value="IN_PRODUCTION">In Production</option>
+                        <option value="READY_TO_SHIP">Ready to Ship</option>
                     </select>
                     <input type="text" id="orderSearch" placeholder="Search orders..." onkeyup="filterOrders()">
                 </div>
             </div>
 
-            <!-- Orders Table -->
             <div class="table-container">
                 <table id="ordersTable">
                     <thead>
                     <tr>
                         <th>Order ID</th>
+                        <th>Order Type</th>
                         <th>Customer Name</th>
                         <th>Product Type</th>
                         <th>Quantity</th>
+                        <th>Unit Price</th>
+                        <th>Discount</th>
                         <th>Total Amount</th>
                         <th>Order Date</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
                     </thead>
-                    <tbody>
-                    <!-- Order data will be loaded dynamically -->
-                    </tbody>
+                    <tbody></tbody>
                 </table>
             </div>
         </div>
@@ -360,7 +357,6 @@
         <div class="card">
             <h3>Sales Summary Report</h3>
 
-            <!-- Report Filters -->
             <div class="report-filters">
                 <div class="filter-row">
                     <div class="filter-group">
@@ -384,14 +380,13 @@
                 </div>
             </div>
 
-            <!-- Summary Cards -->
             <div class="summary-cards">
                 <div class="summary-card">
                     <div class="summary-icon">
                         <i class="fas fa-shopping-cart"></i>
                     </div>
                     <div class="summary-content">
-                        <div class="summary-value" id="totalSales">$12,450</div>
+                        <div class="summary-value" id="totalSales">$0</div>
                         <div class="summary-label">Total Sales</div>
                     </div>
                 </div>
@@ -400,7 +395,7 @@
                         <i class="fas fa-chart-line"></i>
                     </div>
                     <div class="summary-content">
-                        <div class="summary-value" id="ordersCount">45</div>
+                        <div class="summary-value" id="ordersCount">0</div>
                         <div class="summary-label">Total Orders</div>
                     </div>
                 </div>
@@ -409,7 +404,7 @@
                         <i class="fas fa-users"></i>
                     </div>
                     <div class="summary-content">
-                        <div class="summary-value" id="customersCount">28</div>
+                        <div class="summary-value" id="customersCount">0</div>
                         <div class="summary-label">Customers</div>
                     </div>
                 </div>
@@ -418,13 +413,12 @@
                         <i class="fas fa-percentage"></i>
                     </div>
                     <div class="summary-content">
-                        <div class="summary-value" id="successRateReport">92%</div>
+                        <div class="summary-value" id="successRateReport">0%</div>
                         <div class="summary-label">Success Rate</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Sales Chart -->
             <div class="chart-container">
                 <canvas id="reportChart" width="400" height="200"></canvas>
             </div>
@@ -442,7 +436,6 @@
                         <label for="customerSelect">Select Customer:</label>
                         <select id="customerSelect" name="customerId" required>
                             <option value="">Select Customer</option>
-                            <!-- Customers will be loaded dynamically -->
                         </select>
                     </div>
                     <div class="form-group">
