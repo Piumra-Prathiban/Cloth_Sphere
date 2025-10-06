@@ -11,6 +11,7 @@
 <body>
 
 <!-- Sidebar -->
+<!-- Sidebar -->
 <div class="sidebar">
     <h2>Sales Dashboard</h2>
     <ul>
@@ -18,6 +19,8 @@
             <i class="fas fa-user"></i> Profile Info</a></li>
         <li><a href="#" onclick="showSection('createOrder')" class="nav-link">
             <i class="fas fa-plus-circle"></i> Create Order</a></li>
+        <li><a href="#" onclick="showSection('customerManagement')" class="nav-link">
+            <i class="fas fa-users"></i> Customer Management</a></li> <!-- New Link -->
         <li><a href="#" onclick="showSection('orderView')" class="nav-link">
             <i class="fas fa-list-alt"></i> Order View</a></li>
         <li><a href="#" onclick="showSection('summaryReport')" class="nav-link">
@@ -171,12 +174,30 @@
     </div>
 
     <!-- Create Order Section -->
+    <!-- Create Order Section -->
     <div id="createOrder" class="content-section">
         <div class="card">
             <h3>Create New Order</h3>
             <form id="orderForm">
                 <fieldset>
                     <legend>Customer Information</legend>
+
+                    <!-- Customer Search/Select Section -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="existingCustomer">Search Existing Customer:</label>
+                            <select id="existingCustomer" onchange="loadCustomerData()">
+                                <option value="">Select Existing Customer</option>
+                                <!-- Customers will be loaded dynamically -->
+                            </select>
+                        </div>
+                        <div class="form-group" style="display: flex; align-items: end;">
+                            <button type="button" class="btn btn-primary" onclick="loadBuyersForSelection()">
+                                <i class="fas fa-sync-alt"></i> Refresh
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="form-row">
                         <div class="form-group">
                             <label for="customerName">Customer Name:</label>
@@ -197,8 +218,20 @@
                             <input type="text" id="customerAddress" name="customerAddress" required>
                         </div>
                     </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="company">Company:</label>
+                            <input type="text" id="company" name="company" placeholder="Optional">
+                        </div>
+                        <div class="form-group" style="display: flex; align-items: end;">
+                            <button type="button" class="btn btn-success" onclick="createCustomer()">
+                                <i class="fas fa-user-plus"></i> Create Customer
+                            </button>
+                        </div>
+                    </div>
                 </fieldset>
 
+                <!-- Rest of your order form remains the same -->
                 <fieldset>
                     <legend>Order Details</legend>
                     <div class="form-row">
@@ -243,6 +276,41 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Customer Management Section -->
+    <div id="customerManagement" class="content-section">
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3>Customer Management</h3>
+                <div class="filters">
+                    <input type="text" id="customerSearch" placeholder="Search customers..." onkeyup="filterCustomers()">
+                    <button class="btn btn-primary" onclick="loadAllBuyers()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+            </div>
+
+            <!-- Customers Table -->
+            <div class="table-container">
+                <table id="customersTable">
+                    <thead>
+                    <tr>
+                        <th>Buyer ID</th>
+                        <th>Customer Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Company</th>
+                        <th>Address</th>
+                        <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <!-- Customer data will be loaded dynamically -->
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 

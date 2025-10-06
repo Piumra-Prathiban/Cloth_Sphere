@@ -17,6 +17,10 @@ function showSection(sectionId) {
     } else if (sectionId === 'customerMessage') {
         loadCustomers();
         loadMessageHistory();
+    } else if (sectionId === 'customerManagement') {
+        loadAllBuyers();
+    } else if (sectionId === 'createOrder') {
+        loadBuyersForSelection();
     }
 }
 
@@ -33,8 +37,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Set up form event listeners
     setupFormListeners();
 
-    // Initialize calendar
-    salesCalendar = new SalesCalendar();
+    // Load buyers for selection
+    loadBuyersForSelection();
 });
 
 // Sales Chart
@@ -459,6 +463,245 @@ function resetMessageForm() {
     document.getElementById('messageForm').reset();
 }
 
+//=========================================================================
+// Customer Management Functions
+async function createCustomer() {
+    try {
+        const customerData = {
+            customerName: document.getElementById('customerName').value,
+            email: document.getElementById('customerEmail').value,
+            phone: document.getElementById('customerPhone').value,
+            address: document.getElementById('customerAddress').value,
+            company: document.getElementById('company').value || ''
+        };
+
+        // Validation
+        if (!customerData.customerName || !customerData.email || !customerData.phone || !customerData.address) {
+            showAlert('Please fill in all required customer fields', 'error');
+            return;
+        }
+
+        const response = await fetch('/api/buyers', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(customerData)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to create customer');
+        }
+
+        const createdCustomer = await response.json();
+        showAlert('Customer created successfully! Buyer ID: ' + createdCustomer.buyerId, 'success');
+
+        // Refresh customer dropdown
+        await loadBuyersForSelection();
+
+        // Auto-fill the form with created customer data
+        document.getElementById('customerName').value = createdCustomer.customerName;
+        document.getElementById('customerEmail').value = createdCustomer.email;
+        document.getElementById('customerPhone').value = createdCustomer.phone;
+        document.getElementById('customerAddress').value = createdCustomer.address;
+        document.getElementById('company').value = createdCustomer.company || '';
+
+    } catch (error) {
+        console.error('Error creating customer:', error);
+        showAlert('Error creating customer: ' + error.message, 'error');
+    }
+}
+
+async function loadBuyersForSelection() {
+    try {
+        const response = await fetch('/api/buyers');
+        if (!response.ok) throw new Error('Failed to load customers');
+
+        const buyers = await response.json();
+
+        const existingCustomerSelect = document.getElementById('existingCustomer');
+        if (existingCustomerSelect) {
+            existingCustomerSelect.innerHTML = '<option value="">Select Existing Customer</option>';
+
+            buyers.forEach(buyer => {
+                const option = document.createElement('option');
+                option.value = buyer.email;
+                option.textContent = `${buyer.buyerId} - ${buyer.customerName} (${buyer.email})`;
+                option.setAttribute('data-buyer', JSON.stringify(buyer));
+                existingCustomerSelect.appendChild(option);
+            });
+        }
+
+        // Clear the Customer Information form
+        clearCustomerForm();
+
+        showAlert('Customer list refreshed and form cleared!', 'success');
+
+    } catch (error) {
+        console.error('Error loading buyers for selection:', error);
+        showAlert('Error loading customers: ' + error.message, 'error');
+    }
+}
+
+// Function to clear the customer form
+function clearCustomerForm() {
+    document.getElementById('customerName').value = '';
+    document.getElementById('customerEmail').value = '';
+    document.getElementById('customerPhone').value = '';
+    document.getElementById('customerAddress').value = '';
+    document.getElementById('company').value = '';
+    document.getElementById('existingCustomer').value = '';
+}
+
+function loadCustomerData() {
+    const select = document.getElementById('existingCustomer');
+    const selectedOption = select.options[select.selectedIndex];
+
+    if (selectedOption.value) {
+        const buyer = JSON.parse(selectedOption.getAttribute('data-buyer'));
+
+        // Auto-fill the form with selected customer data
+        document.getElementById('customerName').value = buyer.customerName;
+        document.getElementById('customerEmail').value = buyer.email;
+        document.getElementById('customerPhone').value = buyer.phone || '';
+        document.getElementById('customerAddress').value = buyer.address || '';
+        document.getElementById('company').value = buyer.company || '';
+
+        showAlert(`Loaded customer: ${buyer.customerName}`, 'success');
+    }
+}
+
+async function loadAllBuyers() {
+    try {
+        const response = await fetch('/api/buyers');
+        if (!response.ok) throw new Error('Failed to load customers');
+
+        const buyers = await response.json();
+        refreshCustomersTable(buyers);
+
+    } catch (error) {
+        console.error('Error loading buyers:', error);
+        showAlert('Error loading customers', 'error');
+    }
+}
+
+function refreshCustomersTable(buyers) {
+    const tbody = document.querySelector('#customersTable tbody');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+
+    if (buyers.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No customers found</td></tr>';
+        return;
+    }
+
+    buyers.forEach(buyer => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${buyer.buyerId}</td>
+            <td>${buyer.customerName}</td>
+            <td>${buyer.email}</td>
+            <td>${buyer.phone || 'N/A'}</td>
+            <td>${buyer.company || 'N/A'}</td>
+            <td>${buyer.address ? buyer.address.substring(0, 50) + (buyer.address.length > 50 ? '...' : '') : 'N/A'}</td>
+            <td>
+                <button class="btn btn-warning btn-sm" onclick="editCustomer('${buyer.buyerId}', '${buyer.email}')">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="deleteCustomer('${buyer.buyerId}', '${buyer.email}')">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+async function editCustomer(buyerId, email) {
+    try {
+        // Fetch customer details
+        const response = await fetch(`/api/buyers/${buyerId}/${encodeURIComponent(email)}`);
+        if (!response.ok) throw new Error('Failed to load customer details');
+
+        const customer = await response.json();
+
+        // Show edit form (you can use a modal or inline editing)
+        const newName = prompt('Enter new customer name:', customer.customerName);
+        if (newName === null) return;
+
+        const newPhone = prompt('Enter new phone:', customer.phone);
+        if (newPhone === null) return;
+
+        const newAddress = prompt('Enter new address:', customer.address);
+        if (newAddress === null) return;
+
+        const newCompany = prompt('Enter new company:', customer.company);
+
+        const updateData = {
+            customerName: newName,
+            phone: newPhone,
+            address: newAddress,
+            company: newCompany || ''
+        };
+
+        const updateResponse = await fetch(`/api/buyers/${buyerId}/${encodeURIComponent(email)}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(updateData)
+        });
+
+        if (!updateResponse.ok) throw new Error('Failed to update customer');
+
+        showAlert('Customer updated successfully!', 'success');
+        loadAllBuyers(); // Refresh the table
+
+    } catch (error) {
+        console.error('Error editing customer:', error);
+        showAlert('Error updating customer: ' + error.message, 'error');
+    }
+}
+
+async function deleteCustomer(buyerId, email) {
+    if (!confirm(`Are you sure you want to delete customer ${buyerId}?`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/buyers/${buyerId}/${encodeURIComponent(email)}`, {
+            method: 'DELETE'
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to delete customer');
+        }
+
+        showAlert('Customer deleted successfully!', 'success');
+        loadAllBuyers(); // Refresh the table
+
+        // Also refresh the customer dropdown in create order form
+        loadBuyersForSelection();
+
+    } catch (error) {
+        console.error('Error deleting customer:', error);
+        showAlert('Error deleting customer: ' + error.message, 'error');
+    }
+}
+
+function filterCustomers() {
+    const searchTerm = document.getElementById('customerSearch').value.toLowerCase();
+    const rows = document.querySelectorAll('#customersTable tbody tr');
+
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    });
+}
+
 // Utility Functions
 function showAlert(message, type = 'success') {
     // Remove existing alerts
@@ -505,3 +748,12 @@ window.updateReport = updateReport;
 window.generateReport = generateReport;
 window.sendMessage = sendMessage;
 window.resetMessageForm = resetMessageForm;
+
+// Export customer management functions
+window.createCustomer = createCustomer;
+window.loadBuyersForSelection = loadBuyersForSelection;
+window.loadCustomerData = loadCustomerData;
+window.loadAllBuyers = loadAllBuyers;
+window.editCustomer = editCustomer;
+window.deleteCustomer = deleteCustomer;
+window.filterCustomers = filterCustomers;
