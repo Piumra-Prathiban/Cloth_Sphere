@@ -155,20 +155,29 @@ function sendMessage(receiverEmail, subject, messageText) {
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
     submitBtn.disabled = true;
 
-    const formData = new URLSearchParams();
+    // Create proper form data
+    const formData = new FormData();
     formData.append('senderEmail', currentUserEmail);
     formData.append('receiverEmail', receiverEmail);
     formData.append('subject', subject.trim());
     formData.append('messageText', messageText.trim());
 
+    console.log('📦 Sending data:', {
+        senderEmail: currentUserEmail,
+        receiverEmail: receiverEmail,
+        subject: subject.trim()
+    });
+
     fetch('/communication/send', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: formData
+        body: formData  // Use FormData instead of URLSearchParams
     })
         .then(response => {
+            console.log('📨 Response status:', response.status);
+            console.log('📨 Response ok:', response.ok);
+
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
+                throw new Error(`HTTP ${response.status} - ${response.statusText}`);
             }
             return response.json();
         })
@@ -187,7 +196,8 @@ function sendMessage(receiverEmail, subject, messageText) {
         })
         .catch(error => {
             console.error('❌ Send error:', error);
-            showMessage('Network error sending message', 'error');
+            console.error('❌ Error details:', error.message);
+            showMessage('Network error: ' + error.message, 'error');
         })
         .finally(() => {
             // Re-enable button after a delay to prevent rapid clicking
