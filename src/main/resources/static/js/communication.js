@@ -74,7 +74,13 @@ function showSection(sectionId, event) {
     currentSection = sectionId;
 
     switch(sectionId) {
-        case 'compose': loadAvailableUsers(); break;
+        case 'compose':
+            // Ensure the compose form is ready
+            setTimeout(() => {
+                loadAvailableUsers();
+                setupFormHandlers();
+            }, 50);
+            break;
         case 'inbox': loadInbox(); break;
         case 'sent': loadSentMessages(); break;
         case 'statistics': loadStatistics(); break;
@@ -530,11 +536,51 @@ function replyToMessage() {
             if (data.success) {
                 const msg = data.message;
                 showSection('compose');
-                document.getElementById('receiver-select').value = msg.sender_email;
-                document.getElementById('message-subject').value = `Re: ${msg.subject}`;
-                document.getElementById('message-text').value = `\n\n--- Original ---\nFrom: ${msg.sender_name}\n\n${msg.message_text}`;
+
+                // Wait a brief moment for the compose section to be fully rendered
+                setTimeout(() => {
+                    const receiverSelect = document.getElementById('receiver-select');
+                    const subjectInput = document.getElementById('message-subject');
+                    const messageTextarea = document.getElementById('message-text');
+
+                    if (receiverSelect && subjectInput && messageTextarea) {
+                        // Set the receiver email
+                        receiverSelect.value = msg.sender_email;
+
+                        // Set the subject with "Re: " prefix
+                        subjectInput.value = `Re: ${msg.subject}`;
+
+                        // Set the message text with original content
+                        messageTextarea.value = `\n\n--- Original ---\nFrom: ${msg.sender_name}\n\n${msg.message_text}`;
+
+                        // Update character count
+                        document.getElementById('char-count').textContent = messageTextarea.value.length;
+
+                        console.log('✅ Reply form populated successfully');
+                    } else {
+                        console.error('❌ Form elements not found');
+                        // Retry after a longer delay if elements aren't found
+                        setTimeout(() => {
+                            const retryReceiverSelect = document.getElementById('receiver-select');
+                            const retrySubjectInput = document.getElementById('message-subject');
+                            const retryMessageTextarea = document.getElementById('message-text');
+
+                            if (retryReceiverSelect && retrySubjectInput && retryMessageTextarea) {
+                                retryReceiverSelect.value = msg.sender_email;
+                                retrySubjectInput.value = `Re: ${msg.subject}`;
+                                retryMessageTextarea.value = `\n\n--- Original ---\nFrom: ${msg.sender_name}\n\n${msg.message_text}`;
+                                document.getElementById('char-count').textContent = retryMessageTextarea.value.length;
+                            }
+                        }, 500);
+                    }
+                }, 100);
+
                 closeMessageModal();
             }
+        })
+        .catch(error => {
+            console.error('❌ Error fetching message for reply:', error);
+            showMessage('Error loading message for reply', 'error');
         });
 }
 
