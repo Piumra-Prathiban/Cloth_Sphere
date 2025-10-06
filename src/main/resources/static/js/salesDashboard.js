@@ -21,7 +21,10 @@ function showSection(sectionId) {
         loadAllBuyers();
     } else if (sectionId === 'createOrder') {
         loadBuyersForSelection();
-        loadProducts(); // Load products when create order section is shown
+        loadProducts();
+    } else if (sectionId === 'profile') {
+        // Refresh quick stats when viewing profile/dashboard
+        loadQuickStats();
     }
 }
 
@@ -44,7 +47,60 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load products for product dropdown
     loadProducts();
     setupProductSelection();
+
+    // Start auto-refresh for stats
+    startStatsAutoRefresh();
+
+    // Add real-time search listeners
+    setupRealTimeSearch();
+
+    // Test product loading
+    setTimeout(debugProductLoading, 1000);
 });
+
+// Setup real-time search functionality
+function setupRealTimeSearch() {
+    // Order search
+    const orderSearch = document.getElementById('orderSearch');
+    if (orderSearch) {
+        orderSearch.addEventListener('input', filterOrders);
+    }
+
+    // Order status filter
+    const orderStatusFilter = document.getElementById('orderStatusFilter');
+    if (orderStatusFilter) {
+        orderStatusFilter.addEventListener('change', filterOrders);
+    }
+
+    // Customer search
+    const customerSearch = document.getElementById('customerSearch');
+    if (customerSearch) {
+        customerSearch.addEventListener('input', filterCustomers);
+    }
+}
+
+// Debug product loading
+async function debugProductLoading() {
+    try {
+        console.log('Testing product API endpoint...');
+        const response = await fetch('/api/products');
+        console.log('API Response status:', response.status);
+
+        if (response.ok) {
+            const products = await response.json();
+            console.log('Products received:', products);
+            console.log('Number of products:', products.length);
+
+            if (products.length > 0) {
+                console.log('First product sample:', products[0]);
+            }
+        } else {
+            console.error('API returned error status:', response.status);
+        }
+    } catch (error) {
+        console.error('Debug - Error fetching products:', error);
+    }
+}
 
 // Sales Chart
 function initializeSalesChart() {
@@ -85,26 +141,90 @@ function initializeSalesChart() {
     });
 }
 
-// Quick Stats
+// Enhanced Quick Stats with real-time updates
 async function loadQuickStats() {
     try {
         const response = await fetch('/api/orders');
         if (!response.ok) throw new Error('Failed to load orders');
 
         const orders = await response.json();
+        const stats = getOrderStatusCounts(orders);
 
-        const totalOrders = orders.length;
-        const pendingOrders = orders.filter(order => order.status === 'PENDING').length;
-        const completedOrders = orders.filter(order => order.status === 'READY_TO_SHIP').length;
-        const successRate = totalOrders > 0 ? Math.round((completedOrders / totalOrders) * 100) : 0;
+        // Update with animation
+        updateStatWithAnimation('totalOrders', stats.total);
+        updateStatWithAnimation('pendingOrders', stats.pending);
+        updateStatWithAnimation('completedOrders', stats.readyToShip); // READY_TO_SHIP = completed
 
-        document.getElementById('totalOrders').textContent = totalOrders;
-        document.getElementById('pendingOrders').textContent = pendingOrders;
-        document.getElementById('completedOrders').textContent = completedOrders;
-        document.getElementById('successRate').textContent = successRate + '%';
+        const successRate = stats.total > 0 ? Math.round((stats.readyToShip / stats.total) * 100) : 0;
+        updateStatWithAnimation('successRate', successRate + '%');
 
     } catch (error) {
         console.error('Error loading quick stats:', error);
+        // Set default values on error
+        updateStatWithAnimation('totalOrders', 0);
+        updateStatWithAnimation('pendingOrders', 0);
+        updateStatWithAnimation('completedOrders', 0);
+        updateStatWithAnimation('successRate', '0%');
+    }
+}
+
+// Helper function to update stats with animation
+function updateStatWithAnimation(elementId, newValue) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.textContent = newValue;
+        element.parentElement.classList.add('stat-updated');
+        setTimeout(() => {
+            element.parentElement.classList.remove('stat-updated');
+        }, 500);
+    }
+}
+
+// Get detailed order status counts
+function getOrderStatusCounts(orders) {
+    const statusCounts = {
+        total: orders.length,
+        pending: 0,
+        inProduction: 0,
+        readyToShip: 0,
+        other: 0
+    };
+
+    orders.forEach(order => {
+        switch (order.status) {
+            case 'PENDING':
+                statusCounts.pending++;
+                break;
+            case 'IN_PRODUCTION':
+                statusCounts.inProduction++;
+                break;
+            case 'READY_TO_SHIP':
+                statusCounts.readyToShip++;
+                break;
+            default:
+                statusCounts.other++;
+        }
+    });
+
+    return statusCounts;
+}
+
+// Auto-refresh stats every 30 seconds when on dashboard
+function startStatsAutoRefresh() {
+    setInterval(() => {
+        if (document.getElementById('profile').classList.contains('active')) {
+            loadQuickStats();
+        }
+    }, 30000); // Refresh every 30 seconds
+}
+
+// Update stats when orders change
+function updateQuickStatsAfterOrderChange() {
+    loadQuickStats();
+
+    // Also update summary report if it's currently active
+    if (document.getElementById('summaryReport').classList.contains('active')) {
+        loadSummaryReport();
     }
 }
 
@@ -130,6 +250,7 @@ async function loadProducts() {
         if (!response.ok) throw new Error('Failed to load products');
 
         const products = await response.json();
+        console.log('Loaded products from API:', products); // Debug log
         populateProductDropdown(products);
 
     } catch (error) {
@@ -138,6 +259,54 @@ async function loadProducts() {
         // Fallback to static products if API fails
         loadFallbackProducts();
     }
+}
+
+// Populate product type dropdown with actual products
+function populateProductDropdown(products) {
+    const productTypeSelect = document.getElementById('productType');
+    if (!productTypeSelect) {
+        console.error('Product type select element not found');
+        return;
+    }
+
+    // Clear existing options except the first one
+    productTypeSelect.innerHTML = '<option value="">Select Product Type</option>';
+
+    if (!products || products.length === 0) {
+        console.warn('No products available');
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = 'No products available';
+        productTypeSelect.appendChild(option);
+        return;
+    }
+
+    // Group products by category
+    const productsByCategory = {};
+    products.forEach(product => {
+        if (!productsByCategory[product.category]) {
+            productsByCategory[product.category] = [];
+        }
+        productsByCategory[product.category].push(product);
+    });
+
+    // Add products organized by category
+    Object.keys(productsByCategory).forEach(category => {
+        const optgroup = document.createElement('optgroup');
+        optgroup.label = category;
+
+        productsByCategory[category].forEach(product => {
+            const option = document.createElement('option');
+            option.value = product.productId || product.name; // Use productId as value
+            option.textContent = `${product.name} - $${product.price} (Code: ${product.code})`;
+            option.setAttribute('data-product', JSON.stringify(product));
+            optgroup.appendChild(option);
+        });
+
+        productTypeSelect.appendChild(optgroup);
+    });
+
+    console.log('Product dropdown populated with', products.length, 'products');
 }
 
 // Fallback product data in case API fails
@@ -159,40 +328,6 @@ function loadFallbackProducts() {
     showAlert('Using fallback product data. Some features may be limited.', 'warning');
 }
 
-// Populate product type dropdown with actual products
-function populateProductDropdown(products) {
-    const productTypeSelect = document.getElementById('productType');
-    if (!productTypeSelect) return;
-
-    // Clear existing options except the first one
-    productTypeSelect.innerHTML = '<option value="">Select Product Type</option>';
-
-    // Group products by category
-    const productsByCategory = {};
-    products.forEach(product => {
-        if (!productsByCategory[product.category]) {
-            productsByCategory[product.category] = [];
-        }
-        productsByCategory[product.category].push(product);
-    });
-
-    // Add products organized by category
-    Object.keys(productsByCategory).forEach(category => {
-        const optgroup = document.createElement('optgroup');
-        optgroup.label = category;
-
-        productsByCategory[category].forEach(product => {
-            const option = document.createElement('option');
-            option.value = product.name;
-            option.textContent = `${product.name} - $${product.price} (Code: ${product.code})`;
-            option.setAttribute('data-product', JSON.stringify(product));
-            optgroup.appendChild(option);
-        });
-
-        productTypeSelect.appendChild(optgroup);
-    });
-}
-
 // Setup product selection handler
 function setupProductSelection() {
     const productTypeSelect = document.getElementById('productType');
@@ -200,8 +335,13 @@ function setupProductSelection() {
         productTypeSelect.addEventListener('change', function() {
             const selectedOption = this.options[this.selectedIndex];
             if (selectedOption.value && selectedOption.getAttribute('data-product')) {
-                const product = JSON.parse(selectedOption.getAttribute('data-product'));
-                autoFillProductDetails(product);
+                try {
+                    const product = JSON.parse(selectedOption.getAttribute('data-product'));
+                    autoFillProductDetails(product);
+                } catch (e) {
+                    console.error('Error parsing product data:', e);
+                    showAlert('Error loading product details', 'error');
+                }
             } else {
                 // Clear product details if no product selected
                 document.getElementById('unitPrice').value = '';
@@ -269,6 +409,11 @@ function refreshOrdersTable(orders) {
 
     orders.forEach(order => {
         const row = document.createElement('tr');
+
+        // Format status for display and filtering
+        const statusDisplay = order.status.replace('_', ' ');
+        const statusClass = `status-${order.status.toLowerCase().replace('_', '-')}`;
+
         row.innerHTML = `
             <td>${order.orderId}</td>
             <td>${order.orderType}</td>
@@ -279,7 +424,7 @@ function refreshOrdersTable(orders) {
             <td>${order.discountPercentage || 0}%</td>
             <td>$${order.totalAmount.toFixed(2)}</td>
             <td>${new Date(order.placeDate).toLocaleDateString()}</td>
-            <td><span class="status-badge status-${order.status.toLowerCase().replace('_', '-')}">${order.status.replace('_', ' ')}</span></td>
+            <td><span class="status-badge ${statusClass}" data-status="${order.status}">${statusDisplay}</span></td>
             <td>
                 <button class="btn btn-warning btn-sm" onclick="viewOrder('${order.orderType}', '${order.orderId}')">
                     <i class="fas fa-eye"></i> View
@@ -294,16 +439,72 @@ function refreshOrdersTable(orders) {
         `;
         tbody.appendChild(row);
     });
+
+    // Apply current filters after loading
+    setTimeout(() => filterOrders(), 100);
 }
 
 function filterOrders() {
     const statusFilter = document.getElementById('orderStatusFilter').value;
-    const searchTerm = document.getElementById('orderSearch').value.toLowerCase();
+    const searchTerm = document.getElementById('orderSearch').value.toLowerCase().trim();
 
-    // In a real application, you would make an API call here
-    // For now, we'll simulate filtering
-    console.log('Filtering orders:', { statusFilter, searchTerm });
-    loadOrders(); // Reload with filters applied
+    const rows = document.querySelectorAll('#ordersTable tbody tr');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+        if (row.classList.contains('no-results')) {
+            row.style.display = 'none';
+            return;
+        }
+
+        const statusBadge = row.querySelector('.status-badge');
+        const customerNameCell = row.querySelector('td:nth-child(3)');
+        const orderIdCell = row.querySelector('td:nth-child(1)');
+        const productTypeCell = row.querySelector('td:nth-child(4)');
+
+        const status = statusBadge?.getAttribute('data-status') || '';
+        const customerName = customerNameCell?.textContent?.toLowerCase() || '';
+        const orderId = orderIdCell?.textContent?.toLowerCase() || '';
+        const productType = productTypeCell?.textContent?.toLowerCase() || '';
+
+        // Improved status matching
+        let statusMatch = false;
+        if (statusFilter === 'ALL') {
+            statusMatch = true;
+        } else if (statusFilter === 'PENDING' && status === 'PENDING') {
+            statusMatch = true;
+        } else if (statusFilter === 'IN_PRODUCTION' && status === 'IN_PRODUCTION') {
+            statusMatch = true;
+        } else if (statusFilter === 'READY_TO_SHIP' && status === 'READY_TO_SHIP') {
+            statusMatch = true;
+        }
+
+        const searchMatch = !searchTerm ||
+            customerName.includes(searchTerm) ||
+            orderId.includes(searchTerm) ||
+            productType.includes(searchTerm);
+
+        const shouldShow = statusMatch && searchMatch;
+        row.style.display = shouldShow ? '' : 'none';
+
+        if (shouldShow) visibleCount++;
+    });
+
+    // Handle no results message
+    const tbody = document.querySelector('#ordersTable tbody');
+    let noResultsRow = tbody.querySelector('.no-results');
+
+    if (visibleCount === 0) {
+        if (!noResultsRow) {
+            noResultsRow = document.createElement('tr');
+            noResultsRow.className = 'no-results';
+            noResultsRow.innerHTML = `<td colspan="11" style="text-align: center; color: #666; padding: 20px; font-style: italic;">No orders found matching your criteria</td>`;
+            tbody.appendChild(noResultsRow);
+        }
+        noResultsRow.style.display = '';
+    } else if (noResultsRow) {
+        noResultsRow.style.display = 'none';
+    }
 }
 
 async function createOrder() {
@@ -366,8 +567,8 @@ async function createOrder() {
             loadOrders();
         }
 
-        // Refresh quick stats
-        loadQuickStats();
+        // Refresh quick stats - UPDATED
+        updateQuickStatsAfterOrderChange();
 
     } catch (error) {
         console.error('Error creating order:', error);
@@ -382,74 +583,134 @@ function resetOrderForm() {
     document.getElementById('existingCustomer').value = '';
 }
 
+// Modal state variables
+let currentOrderType = '';
+let currentOrderId = '';
+let currentCustomerId = '';
+let currentCustomerEmail = '';
+
+// Order View Modal Functions
 async function viewOrder(orderType, orderId) {
     try {
         const response = await fetch(`/api/orders/${orderType}/${orderId}`);
         if (!response.ok) throw new Error('Failed to load order details');
 
         const order = await response.json();
+        showOrderViewModal(order);
 
-        // Show order details in a modal or alert
-        const orderDetails = `
-Order ID: ${order.orderId}
-Order Type: ${order.orderType}
-Customer: ${order.customerName}
-Product: ${order.productType}
-Quantity: ${order.quantity}
-Unit Price: $${order.unitPrice}
-Discount: ${order.discountPercentage || 0}%
-Total Amount: $${order.totalAmount}
-Status: ${order.status}
-Order Date: ${new Date(order.placeDate).toLocaleDateString()}
-Notes: ${order.orderNotes || 'None'}
-        `;
-
-        alert(orderDetails);
     } catch (error) {
         console.error('Error viewing order:', error);
         showAlert('Error loading order details', 'error');
     }
 }
 
+function showOrderViewModal(order) {
+    // Populate modal with order data
+    document.getElementById('modalOrderId').textContent = order.orderId;
+    document.getElementById('modalOrderType').textContent = order.orderType;
+    document.getElementById('modalCustomerName').textContent = order.customerName;
+    document.getElementById('modalCustomerEmail').textContent = order.customerEmail || 'N/A';
+    document.getElementById('modalCustomerPhone').textContent = order.customerPhone || 'N/A';
+    document.getElementById('modalCustomerAddress').textContent = order.customerAddress || 'N/A';
+    document.getElementById('modalProductType').textContent = order.productType;
+    document.getElementById('modalQuantity').textContent = order.quantity;
+    document.getElementById('modalUnitPrice').textContent = `$${order.unitPrice.toFixed(2)}`;
+    document.getElementById('modalDiscount').textContent = `${order.discountPercentage || 0}%`;
+    document.getElementById('modalTotalAmount').textContent = `$${order.totalAmount.toFixed(2)}`;
+    document.getElementById('modalStatus').textContent = order.status;
+    document.getElementById('modalOrderNotes').textContent = order.orderNotes || 'No notes';
+    document.getElementById('modalOrderDate').textContent = new Date(order.placeDate).toLocaleDateString();
+    document.getElementById('modalCreatedBy').textContent = order.createdBy || 'N/A';
+
+    // Show modal
+    document.getElementById('orderViewModal').style.display = 'block';
+}
+
+function closeOrderViewModal() {
+    document.getElementById('orderViewModal').style.display = 'none';
+}
+
+// Update Status Modal Functions
 async function updateOrderStatus(orderType, orderId) {
     try {
+        currentOrderType = orderType;
+        currentOrderId = orderId;
+
         const response = await fetch(`/api/orders/${orderType}/${orderId}`);
         if (!response.ok) throw new Error('Failed to load order details');
 
         const order = await response.json();
+        showUpdateStatusModal(order);
 
-        // Determine available status transitions
-        let availableStatuses = [];
-        if (order.status === 'PENDING') {
-            availableStatuses = ['IN_PRODUCTION', 'READY_TO_SHIP'];
-        } else if (order.status === 'IN_PRODUCTION') {
-            availableStatuses = ['READY_TO_SHIP'];
-        } else {
-            showAlert('Order status cannot be changed from ' + order.status, 'error');
-            return;
-        }
+    } catch (error) {
+        console.error('Error loading order details:', error);
+        showAlert('Error loading order details', 'error');
+    }
+}
 
-        const newStatus = prompt(
-            `Current Status: ${order.status}\nAvailable statuses: ${availableStatuses.join(', ')}\nEnter new status:`,
-            availableStatuses[0]
-        );
+function showUpdateStatusModal(order) {
+    // Populate current status
+    document.getElementById('currentStatusDisplay').textContent = order.status;
 
-        if (!newStatus || !availableStatuses.includes(newStatus)) {
-            showAlert('Invalid status selected', 'error');
-            return;
-        }
+    // Determine available status transitions
+    let availableStatuses = [];
+    if (order.status === 'PENDING') {
+        availableStatuses = ['IN_PRODUCTION', 'READY_TO_SHIP'];
+    } else if (order.status === 'IN_PRODUCTION') {
+        availableStatuses = ['READY_TO_SHIP'];
+    } else {
+        showAlert('Order status cannot be changed from ' + order.status, 'error');
+        return;
+    }
 
-        const updateResponse = await fetch(`/api/orders/${orderType}/${orderId}/status?newStatus=${newStatus}&updatedBy=SalesManager`, {
+    document.getElementById('availableStatusesDisplay').textContent = availableStatuses.join(', ');
+
+    // Populate status dropdown
+    const statusSelect = document.getElementById('newStatusSelect');
+    statusSelect.innerHTML = '<option value="">Select Status</option>';
+
+    availableStatuses.forEach(status => {
+        const option = document.createElement('option');
+        option.value = status;
+        option.textContent = status.replace('_', ' ');
+        statusSelect.appendChild(option);
+    });
+
+    // Show modal
+    document.getElementById('updateStatusModal').style.display = 'block';
+}
+
+function closeUpdateStatusModal() {
+    document.getElementById('updateStatusModal').style.display = 'none';
+    currentOrderType = '';
+    currentOrderId = '';
+}
+
+async function confirmStatusUpdate() {
+    const newStatus = document.getElementById('newStatusSelect').value;
+
+    if (!newStatus) {
+        showAlert('Please select a status', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/orders/${currentOrderType}/${currentOrderId}/status?newStatus=${newStatus}&updatedBy=SalesManager`, {
             method: 'PUT'
         });
 
-        if (!updateResponse.ok) {
-            const errorData = await updateResponse.json();
+        if (!response.ok) {
+            const errorData = await response.json();
             throw new Error(errorData.error || 'Failed to update order status');
         }
 
+        const updatedOrder = await response.json();
         showAlert('Order status updated successfully!', 'success');
+        closeUpdateStatusModal();
         loadOrders(); // Refresh the table
+
+        // Refresh quick stats - UPDATED
+        updateQuickStatsAfterOrderChange();
 
     } catch (error) {
         console.error('Error updating order status:', error);
@@ -457,41 +718,236 @@ async function updateOrderStatus(orderType, orderId) {
     }
 }
 
+// Update Discount Modal Functions
 async function updateOrderDiscount(orderType, orderId) {
     try {
+        currentOrderType = orderType;
+        currentOrderId = orderId;
+
         const response = await fetch(`/api/orders/${orderType}/${orderId}`);
         if (!response.ok) throw new Error('Failed to load order details');
 
         const order = await response.json();
+        showUpdateDiscountModal(order);
 
-        const newDiscount = prompt(
-            `Current Discount: ${order.discountPercentage || 0}%\nEnter new discount percentage (0-100):`,
-            order.discountPercentage || 0
-        );
+    } catch (error) {
+        console.error('Error loading order details:', error);
+        showAlert('Error loading order details', 'error');
+    }
+}
 
-        if (newDiscount === null) return;
+function showUpdateDiscountModal(order) {
+    // Populate current discount
+    document.getElementById('currentDiscountDisplay').textContent = `${order.discountPercentage || 0}%`;
+    document.getElementById('newDiscountInput').value = order.discountPercentage || 0;
 
-        const discountPercentage = parseFloat(newDiscount);
-        if (isNaN(discountPercentage) || discountPercentage < 0 || discountPercentage > 100) {
-            showAlert('Please enter a valid discount percentage between 0 and 100', 'error');
-            return;
-        }
+    // Populate preview
+    document.getElementById('previewQuantity').textContent = order.quantity;
+    document.getElementById('previewUnitPrice').textContent = `$${order.unitPrice.toFixed(2)}`;
+    updateDiscountPreview(order);
 
-        const updateResponse = await fetch(`/api/orders/${orderType}/${orderId}/discount?discountPercentage=${discountPercentage}&updatedBy=SalesManager`, {
+    // Add event listener for real-time preview
+    document.getElementById('newDiscountInput').addEventListener('input', function() {
+        updateDiscountPreview(order);
+    });
+
+    // Show modal
+    document.getElementById('updateDiscountModal').style.display = 'block';
+}
+
+function updateDiscountPreview(order) {
+    const discountPercentage = parseFloat(document.getElementById('newDiscountInput').value) || 0;
+    const subtotal = order.quantity * order.unitPrice;
+    const discountAmount = subtotal * (discountPercentage / 100);
+    const total = subtotal - discountAmount;
+
+    document.getElementById('previewTotalAmount').textContent = `$${total.toFixed(2)}`;
+}
+
+function closeUpdateDiscountModal() {
+    document.getElementById('updateDiscountModal').style.display = 'none';
+    currentOrderType = '';
+    currentOrderId = '';
+}
+
+async function confirmDiscountUpdate() {
+    const discountPercentage = parseFloat(document.getElementById('newDiscountInput').value);
+
+    if (isNaN(discountPercentage) || discountPercentage < 0 || discountPercentage > 100) {
+        showAlert('Please enter a valid discount percentage between 0 and 100', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/orders/${currentOrderType}/${currentOrderId}/discount?discountPercentage=${discountPercentage}&updatedBy=SalesManager`, {
             method: 'PUT'
         });
 
-        if (!updateResponse.ok) {
-            const errorData = await updateResponse.json();
+        if (!response.ok) {
+            const errorData = await response.json();
             throw new Error(errorData.error || 'Failed to update order discount');
         }
 
+        const updatedOrder = await response.json();
         showAlert('Order discount updated successfully!', 'success');
+        closeUpdateDiscountModal();
         loadOrders(); // Refresh the table
+
+        // Refresh quick stats - UPDATED
+        updateQuickStatsAfterOrderChange();
 
     } catch (error) {
         console.error('Error updating order discount:', error);
         showAlert('Error updating order discount: ' + error.message, 'error');
+    }
+}
+
+// Customer Edit Modal Functions
+async function editCustomer(buyerId, email) {
+    try {
+        currentCustomerId = buyerId;
+        currentCustomerEmail = email;
+
+        const response = await fetch(`/api/buyers/${buyerId}/${encodeURIComponent(email)}`);
+        if (!response.ok) throw new Error('Failed to load customer details');
+
+        const customer = await response.json();
+        showCustomerEditModal(customer);
+
+    } catch (error) {
+        console.error('Error loading customer details:', error);
+        showAlert('Error loading customer details', 'error');
+    }
+}
+
+function showCustomerEditModal(customer) {
+    // Populate form with customer data
+    document.getElementById('editCustomerName').value = customer.customerName;
+    document.getElementById('editCustomerEmail').value = customer.email;
+    document.getElementById('editCustomerPhone').value = customer.phone || '';
+    document.getElementById('editCustomerAddress').value = customer.address || '';
+    document.getElementById('editCustomerCompany').value = customer.company || '';
+
+    // Make email field read-only
+    document.getElementById('editCustomerEmail').readOnly = true;
+    document.getElementById('editCustomerEmail').style.backgroundColor = '#f8f9fa';
+    document.getElementById('editCustomerEmail').title = 'Email cannot be changed';
+
+    // Show modal
+    document.getElementById('customerEditModal').style.display = 'block';
+}
+
+function closeCustomerEditModal() {
+    document.getElementById('customerEditModal').style.display = 'none';
+    currentCustomerId = '';
+    currentCustomerEmail = '';
+}
+
+async function confirmCustomerEdit() {
+    const formData = {
+        customerName: document.getElementById('editCustomerName').value,
+        email: document.getElementById('editCustomerEmail').value,
+        phone: document.getElementById('editCustomerPhone').value,
+        address: document.getElementById('editCustomerAddress').value,
+        company: document.getElementById('editCustomerCompany').value
+    };
+
+    // Validation
+    if (!formData.customerName || !formData.email || !formData.phone || !formData.address) {
+        showAlert('Please fill in all required fields', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/buyers/${currentCustomerId}/${encodeURIComponent(currentCustomerEmail)}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to update customer');
+        }
+
+        const updatedCustomer = await response.json();
+        showAlert('Customer updated successfully!', 'success');
+        closeCustomerEditModal();
+        loadAllBuyers(); // Refresh the table
+
+    } catch (error) {
+        console.error('Error updating customer:', error);
+        showAlert('Error updating customer: ' + error.message, 'error');
+    }
+}
+
+// Customer Delete Modal Functions
+async function deleteCustomer(buyerId, email) {
+    currentCustomerId = buyerId;
+    currentCustomerEmail = email;
+
+    try {
+        const response = await fetch(`/api/buyers/${buyerId}/${encodeURIComponent(email)}`);
+        if (!response.ok) throw new Error('Failed to load customer details');
+
+        const customer = await response.json();
+        showCustomerDeleteModal(customer);
+
+    } catch (error) {
+        console.error('Error loading customer details:', error);
+        showAlert('Error loading customer details', 'error');
+    }
+}
+
+function showCustomerDeleteModal(customer) {
+    // Populate confirmation data
+    document.getElementById('deleteCustomerId').textContent = customer.buyerId;
+    document.getElementById('deleteCustomerName').textContent = customer.customerName;
+    document.getElementById('deleteCustomerEmail').textContent = customer.email;
+
+    // Show modal
+    document.getElementById('customerDeleteModal').style.display = 'block';
+}
+
+function closeCustomerDeleteModal() {
+    document.getElementById('customerDeleteModal').style.display = 'none';
+    currentCustomerId = '';
+    currentCustomerEmail = '';
+}
+
+async function confirmCustomerDelete() {
+    try {
+        const response = await fetch(`/api/buyers/${currentCustomerId}/${encodeURIComponent(currentCustomerEmail)}`, {
+            method: 'DELETE'
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to delete customer');
+        }
+
+        showAlert('Customer deleted successfully!', 'success');
+        closeCustomerDeleteModal();
+        loadAllBuyers(); // Refresh the table
+
+        // Also refresh the customer dropdown in create order form
+        loadBuyersForSelection();
+
+    } catch (error) {
+        console.error('Error deleting customer:', error);
+        showAlert('Error deleting customer: ' + error.message, 'error');
+    }
+}
+
+// Close modals when clicking outside
+window.onclick = function(event) {
+    const modals = document.getElementsByClassName('modal');
+    for (let modal of modals) {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
     }
 }
 
@@ -518,6 +974,11 @@ async function loadSummaryReport() {
 
     } catch (error) {
         console.error('Error loading summary report:', error);
+        // Set default values on error
+        document.getElementById('totalSales').textContent = '$0';
+        document.getElementById('ordersCount').textContent = '0';
+        document.getElementById('customersCount').textContent = '0';
+        document.getElementById('successRateReport').textContent = '0%';
     }
 }
 
@@ -681,9 +1142,16 @@ async function createCustomer() {
             company: document.getElementById('company').value || ''
         };
 
-        // Validation
+        // Enhanced Validation
         if (!customerData.customerName || !customerData.email || !customerData.phone || !customerData.address) {
             showAlert('Please fill in all required customer fields', 'error');
+            return;
+        }
+
+        // Email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(customerData.email)) {
+            showAlert('Please enter a valid email address with @ symbol', 'error');
             return;
         }
 
@@ -823,87 +1291,41 @@ function refreshCustomersTable(buyers) {
     });
 }
 
-async function editCustomer(buyerId, email) {
-    try {
-        // Fetch customer details
-        const response = await fetch(`/api/buyers/${buyerId}/${encodeURIComponent(email)}`);
-        if (!response.ok) throw new Error('Failed to load customer details');
-
-        const customer = await response.json();
-
-        // Show edit form
-        const newName = prompt('Enter new customer name:', customer.customerName);
-        if (newName === null) return;
-
-        const newPhone = prompt('Enter new phone:', customer.phone);
-        if (newPhone === null) return;
-
-        const newAddress = prompt('Enter new address:', customer.address);
-        if (newAddress === null) return;
-
-        const newCompany = prompt('Enter new company:', customer.company);
-
-        const updateData = {
-            customerName: newName,
-            phone: newPhone,
-            address: newAddress,
-            company: newCompany || ''
-        };
-
-        const updateResponse = await fetch(`/api/buyers/${buyerId}/${encodeURIComponent(email)}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(updateData)
-        });
-
-        if (!updateResponse.ok) throw new Error('Failed to update customer');
-
-        showAlert('Customer updated successfully!', 'success');
-        loadAllBuyers(); // Refresh the table
-
-    } catch (error) {
-        console.error('Error editing customer:', error);
-        showAlert('Error updating customer: ' + error.message, 'error');
-    }
-}
-
-async function deleteCustomer(buyerId, email) {
-    if (!confirm(`Are you sure you want to delete customer ${buyerId}?`)) {
-        return;
-    }
-
-    try {
-        const response = await fetch(`/api/buyers/${buyerId}/${encodeURIComponent(email)}`, {
-            method: 'DELETE'
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to delete customer');
-        }
-
-        showAlert('Customer deleted successfully!', 'success');
-        loadAllBuyers(); // Refresh the table
-
-        // Also refresh the customer dropdown in create order form
-        loadBuyersForSelection();
-
-    } catch (error) {
-        console.error('Error deleting customer:', error);
-        showAlert('Error deleting customer: ' + error.message, 'error');
-    }
-}
-
 function filterCustomers() {
-    const searchTerm = document.getElementById('customerSearch').value.toLowerCase();
+    const searchTerm = document.getElementById('customerSearch').value.toLowerCase().trim();
     const rows = document.querySelectorAll('#customersTable tbody tr');
+    let visibleCount = 0;
 
     rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(searchTerm) ? '' : 'none';
+        const customerName = row.cells[1]?.textContent?.toLowerCase() || '';
+        const email = row.cells[2]?.textContent?.toLowerCase() || '';
+        const phone = row.cells[3]?.textContent?.toLowerCase() || '';
+        const company = row.cells[4]?.textContent?.toLowerCase() || '';
+
+        const matchesSearch = !searchTerm ||
+            customerName.includes(searchTerm) ||
+            email.includes(searchTerm) ||
+            phone.includes(searchTerm) ||
+            company.includes(searchTerm);
+
+        row.style.display = matchesSearch ? '' : 'none';
+        if (matchesSearch) visibleCount++;
     });
+
+    // Show message if no customers found
+    const tbody = document.querySelector('#customersTable tbody');
+    const noResultsRow = tbody.querySelector('.no-results');
+
+    if (visibleCount === 0) {
+        if (!noResultsRow) {
+            const row = document.createElement('tr');
+            row.className = 'no-results';
+            row.innerHTML = `<td colspan="7" style="text-align: center; color: #666;">No customers found matching your search</td>`;
+            tbody.appendChild(row);
+        }
+    } else if (noResultsRow) {
+        noResultsRow.remove();
+    }
 }
 
 // Utility Functions
@@ -966,3 +1388,14 @@ window.editCustomer = editCustomer;
 window.deleteCustomer = deleteCustomer;
 window.filterCustomers = filterCustomers;
 window.clearCustomerForm = clearCustomerForm;
+
+// Export modal functions
+window.closeOrderViewModal = closeOrderViewModal;
+window.closeUpdateStatusModal = closeUpdateStatusModal;
+window.confirmStatusUpdate = confirmStatusUpdate;
+window.closeUpdateDiscountModal = closeUpdateDiscountModal;
+window.confirmDiscountUpdate = confirmDiscountUpdate;
+window.closeCustomerEditModal = closeCustomerEditModal;
+window.confirmCustomerEdit = confirmCustomerEdit;
+window.closeCustomerDeleteModal = closeCustomerDeleteModal;
+window.confirmCustomerDelete = confirmCustomerDelete;

@@ -283,6 +283,7 @@
                 </div>
             </form>
         </div>
+
     </div>
 
     <!-- Customer Management Section -->
@@ -358,118 +359,220 @@
 
     <!-- Summary Report Section -->
     <div id="summaryReport" class="content-section">
-        <div class="card">
-            <h3>Sales Summary Report</h3>
-
-            <div class="report-filters">
-                <div class="filter-row">
-                    <div class="filter-group">
-                        <label for="reportType">Report Type:</label>
-                        <select id="reportType" onchange="updateReport()">
-                            <option value="daily">Daily</option>
-                            <option value="weekly">Weekly</option>
-                            <option value="monthly" selected>Monthly</option>
-                            <option value="yearly">Yearly</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label for="reportMonth">Month:</label>
-                        <input type="month" id="reportMonth" onchange="updateReport()">
-                    </div>
-                    <div class="filter-group">
-                        <button class="btn btn-primary" onclick="generateReport()">
-                            <i class="fas fa-download"></i> Export Report
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="summary-cards">
-                <div class="summary-card">
-                    <div class="summary-icon">
-                        <i class="fas fa-shopping-cart"></i>
-                    </div>
-                    <div class="summary-content">
-                        <div class="summary-value" id="totalSales">$0</div>
-                        <div class="summary-label">Total Sales</div>
-                    </div>
-                </div>
-                <div class="summary-card">
-                    <div class="summary-icon">
-                        <i class="fas fa-chart-line"></i>
-                    </div>
-                    <div class="summary-content">
-                        <div class="summary-value" id="ordersCount">0</div>
-                        <div class="summary-label">Total Orders</div>
-                    </div>
-                </div>
-                <div class="summary-card">
-                    <div class="summary-icon">
-                        <i class="fas fa-users"></i>
-                    </div>
-                    <div class="summary-content">
-                        <div class="summary-value" id="customersCount">0</div>
-                        <div class="summary-label">Customers</div>
-                    </div>
-                </div>
-                <div class="summary-card">
-                    <div class="summary-icon">
-                        <i class="fas fa-percentage"></i>
-                    </div>
-                    <div class="summary-content">
-                        <div class="summary-value" id="successRateReport">0%</div>
-                        <div class="summary-label">Success Rate</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="chart-container">
-                <canvas id="reportChart" width="400" height="200"></canvas>
-            </div>
-        </div>
+        <!-- ... existing summary report content ... -->
     </div>
 
     <!-- Customer Message Section -->
     <div id="customerMessage" class="content-section">
-        <div class="card">
-            <h3>Send Message to Customer</h3>
-            <form id="messageForm">
-                <fieldset>
-                    <legend>Message Details</legend>
-                    <div class="form-group">
-                        <label for="customerSelect">Select Customer:</label>
-                        <select id="customerSelect" name="customerId" required>
-                            <option value="">Select Customer</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="messageSubject">Subject:</label>
-                        <input type="text" id="messageSubject" name="subject" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="messageContent">Message:</label>
-                        <textarea id="messageContent" name="content" rows="6" required placeholder="Type your message here..."></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="messageType">Message Type:</label>
-                        <select id="messageType" name="messageType">
-                            <option value="GENERAL">General</option>
-                            <option value="PROMOTIONAL">Promotional</option>
-                            <option value="ORDER_UPDATE">Order Update</option>
-                            <option value="FOLLOW_UP">Follow Up</option>
-                        </select>
-                    </div>
-                </fieldset>
+        <!-- ... existing customer message content ... -->
+    </div>
+</div>
 
-                <div style="text-align: right; margin-top: 20px;">
-                    <button type="button" class="btn btn-secondary" onclick="resetMessageForm()">
-                        <i class="fas fa-times"></i> Cancel
-                    </button>
-                    <button type="submit" class="btn btn-success">
-                        <i class="fas fa-paper-plane"></i> Send Message
-                    </button>
+<!-- Order View Modal -->
+<div id="orderViewModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Order Details</h3>
+            <span class="close" onclick="closeOrderViewModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="order-details-grid">
+                <div class="detail-item">
+                    <label>Order ID:</label>
+                    <span id="modalOrderId">-</span>
+                </div>
+                <div class="detail-item">
+                    <label>Order Type:</label>
+                    <span id="modalOrderType">-</span>
+                </div>
+                <div class="detail-item">
+                    <label>Customer Name:</label>
+                    <span id="modalCustomerName">-</span>
+                </div>
+                <div class="detail-item">
+                    <label>Customer Email:</label>
+                    <span id="modalCustomerEmail">-</span>
+                </div>
+                <div class="detail-item">
+                    <label>Customer Phone:</label>
+                    <span id="modalCustomerPhone">-</span>
+                </div>
+                <div class="detail-item">
+                    <label>Customer Address:</label>
+                    <span id="modalCustomerAddress">-</span>
+                </div>
+                <div class="detail-item">
+                    <label>Product Type:</label>
+                    <span id="modalProductType">-</span>
+                </div>
+                <div class="detail-item">
+                    <label>Quantity:</label>
+                    <span id="modalQuantity">-</span>
+                </div>
+                <div class="detail-item">
+                    <label>Unit Price:</label>
+                    <span id="modalUnitPrice">-</span>
+                </div>
+                <div class="detail-item">
+                    <label>Discount:</label>
+                    <span id="modalDiscount">-</span>
+                </div>
+                <div class="detail-item">
+                    <label>Total Amount:</label>
+                    <span id="modalTotalAmount">-</span>
+                </div>
+                <div class="detail-item">
+                    <label>Status:</label>
+                    <span id="modalStatus">-</span>
+                </div>
+                <div class="detail-item full-width">
+                    <label>Order Notes:</label>
+                    <span id="modalOrderNotes">-</span>
+                </div>
+                <div class="detail-item">
+                    <label>Order Date:</label>
+                    <span id="modalOrderDate">-</span>
+                </div>
+                <div class="detail-item">
+                    <label>Created By:</label>
+                    <span id="modalCreatedBy">-</span>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeOrderViewModal()">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Update Status Modal -->
+<div id="updateStatusModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Update Order Status</h3>
+            <span class="close" onclick="closeUpdateStatusModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="status-info">
+                <div class="current-status">
+                    <strong>Current Status:</strong> <span id="currentStatusDisplay">-</span>
+                </div>
+                <div class="available-statuses">
+                    <strong>Available Statuses:</strong> <span id="availableStatusesDisplay">-</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="newStatusSelect">Select New Status:</label>
+                <select id="newStatusSelect">
+                    <option value="">Select Status</option>
+                </select>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeUpdateStatusModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="confirmStatusUpdate()">Update Status</button>
+        </div>
+    </div>
+</div>
+
+<!-- Update Discount Modal -->
+<div id="updateDiscountModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Update Order Discount</h3>
+            <span class="close" onclick="closeUpdateDiscountModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="discount-info">
+                <div class="current-discount">
+                    <strong>Current Discount:</strong> <span id="currentDiscountDisplay">0%</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="newDiscountInput">New Discount Percentage (0-100):</label>
+                <input type="number" id="newDiscountInput" min="0" max="100" step="0.01" placeholder="Enter discount percentage">
+            </div>
+            <div class="price-preview">
+                <div class="preview-item">
+                    <label>Quantity:</label> <span id="previewQuantity">-</span>
+                </div>
+                <div class="preview-item">
+                    <label>Unit Price:</label> <span id="previewUnitPrice">-</span>
+                </div>
+                <div class="preview-item">
+                    <label>New Total Amount:</label> <span id="previewTotalAmount">-</span>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeUpdateDiscountModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="confirmDiscountUpdate()">Update Discount</button>
+        </div>
+    </div>
+</div>
+
+<!-- Customer Edit Modal -->
+<div id="customerEditModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Edit Customer</h3>
+            <span class="close" onclick="closeCustomerEditModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <form id="customerEditForm">
+                <div class="form-group">
+                    <label for="editCustomerName">Customer Name:</label>
+                    <input type="text" id="editCustomerName" required>
+                </div>
+                <div class="form-group">
+                    <label for="editCustomerEmail">Email:</label>
+                    <input type="email" id="editCustomerEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="editCustomerPhone">Phone:</label>
+                    <input type="text" id="editCustomerPhone" required>
+                </div>
+                <div class="form-group">
+                    <label for="editCustomerAddress">Address:</label>
+                    <textarea id="editCustomerAddress" rows="3" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="editCustomerCompany">Company:</label>
+                    <input type="text" id="editCustomerCompany">
                 </div>
             </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeCustomerEditModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="confirmCustomerEdit()">Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<!-- Customer Delete Modal -->
+<div id="customerDeleteModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Delete Customer</h3>
+            <span class="close" onclick="closeCustomerDeleteModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="delete-confirmation">
+                <i class="fas fa-exclamation-triangle" style="color: #dc3545; font-size: 48px; margin-bottom: 20px;"></i>
+                <p>Are you sure you want to delete this customer?</p>
+                <div class="customer-details-preview">
+                    <strong>Customer ID:</strong> <span id="deleteCustomerId">-</span><br>
+                    <strong>Customer Name:</strong> <span id="deleteCustomerName">-</span><br>
+                    <strong>Email:</strong> <span id="deleteCustomerEmail">-</span>
+                </div>
+                <p style="color: #dc3545; font-weight: bold; margin-top: 15px;">
+                    This action cannot be undone!
+                </p>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeCustomerDeleteModal()">Cancel</button>
+            <button class="btn btn-danger" onclick="confirmCustomerDelete()">Delete Customer</button>
         </div>
     </div>
 </div>
