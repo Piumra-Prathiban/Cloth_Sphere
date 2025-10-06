@@ -28,7 +28,7 @@ public class CalendarNoteController {
             HttpSession session) {
 
         SystemUser currentUser = (SystemUser) session.getAttribute("currentUser");
-        if (currentUser == null || !"hr-manager".equals(currentUser.getRole())) {
+        if (currentUser == null || !("hr-manager".equals(currentUser.getRole()) || "sales-executive".equals(currentUser.getRole()))) {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
 

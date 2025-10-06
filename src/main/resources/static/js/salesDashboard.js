@@ -32,6 +32,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Set up form event listeners
     setupFormListeners();
+
+    // Initialize calendar
+    salesCalendar = new SalesCalendar();
 });
 
 // Sales Chart

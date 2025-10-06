@@ -495,6 +495,60 @@ fieldset textarea {
 .text-primary { color: #007bff; }
 .text-warning { color: #ffc107; }
 
+/* Time Display Styles */
+.time-display {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.current-time {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-bottom: 10px;
+    font-family: 'Courier New', monospace;
+}
+
+.current-date {
+    font-size: 1.2rem;
+    opacity: 0.9;
+}
+
+/* Date Information */
+.date-info {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+}
+
+.date-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.date-item:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.date-label {
+    font-weight: 500;
+    color: #495057;
+}
+
+.date-value {
+    font-weight: bold;
+    color: #212529;
+}
+
 /* Responsive Design */
 @media (max-width: 1200px) {
     .sidebar {
@@ -565,6 +619,9 @@ fieldset textarea {
     .stats-grid {
         grid-template-columns: 1fr;
     }
+    .current-time {
+        font-size: 2rem;
+    }
 }
 
 @media (max-width: 576px) {
@@ -587,5 +644,11 @@ fieldset textarea {
     }
     .sidebar ul {
         flex-direction: column;
+    }
+    .current-time {
+        font-size: 1.8rem;
+    }
+    .current-date {
+        font-size: 1rem;
     }
 }
