@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClothSphere - Sales Executive Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/css/salesDashboard.css">
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+    <h2>Sales Dashboard</h2>
+    <ul>
+        <li><a href="#" onclick="showSection('profile')" class="nav-link active">
+            <i class="fas fa-user"></i> Profile Info</a></li>
+        <li><a href="#" onclick="showSection('createOrder')" class="nav-link">
+            <i class="fas fa-plus-circle"></i> Create Order</a></li>
+        <li><a href="#" onclick="showSection('orderView')" class="nav-link">
+            <i class="fas fa-list-alt"></i> Order View</a></li>
+        <li><a href="#" onclick="showSection('summaryReport')" class="nav-link">
+            <i class="fas fa-chart-bar"></i> Summary Report</a></li>
+        <li><a href="#" onclick="showSection('customerMessage')" class="nav-link">
+            <i class="fas fa-comments"></i> Send Message</a></li>
+    </ul>
+</div>
+
+<!-- Main content -->
+<div class="main">
+    <div class="dashboard-header">
+        <h1>Welcome, <span th:text="${user.userName}">Sales Executive</span></h1>
+        <button class="logout-btn" onclick="logout()">
+            <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
+    </div>
+
+    <!-- Display messages -->
+    <div th:if="${updateMessage}" th:class="${#strings.startsWith(updateMessage, 'success')} ? 'alert alert-success' : 'alert alert-error'">
+        <span th:text="${#strings.substringAfter(updateMessage, ':')}">Update message</span>
+    </div>
+
+    <!-- Profile Section -->
+    <div id="profile" class="content-section active">
+        <div class="card">
+            <h3>Sales Executive Profile</h3>
+            <form id="passwordForm" th:action="@{/sales/updatePassword}" method="post">
+                <div class="user-detail">
+                    <label>Username:</label>
+                    <div class="value"><input type="text" th:value="${user.userName}" class="readonly-field" readonly></div>
+                </div>
+                <div class="user-detail">
+                    <label>Role:</label>
+                    <div class="value"><input type="text" th:value="${user.role}" class="readonly-field" readonly></div>
+                </div>
+                <div class="user-detail">
+                    <label>Email:</label>
+                    <div class="value"><input type="text" th:value="${user.email}" class="readonly-field" readonly></div>
+                </div>
+                <div class="user-detail">
+                    <label>Phone Number:</label>
+                    <div class="value"><input type="text" th:value="${user.phoneNumber}" class="readonly-field" readonly></div>
+                </div>
+                <div class="user-detail">
+                    <label for="currentPassword">Current Password:</label>
+                    <div class="value"><input type="password" id="currentPassword" name="currentPassword" required></div>
+                </div>
+                <div class="user-detail">
+                    <label for="newPassword">New Password:</label>
+                    <div class="value"><input type="password" id="newPassword" name="newPassword" required></div>
+                </div>
+                <div class="user-detail">
+                    <label for="confirmPassword">Confirm Password:</label>
+                    <div class="value"><input type="password" id="confirmPassword" name="confirmPassword" required></div>
+                </div>
+                <div>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save"></i> Update Password
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="resetForm()">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Dashboard Cards -->
+        <div class="cards">
+            <!-- Sales Performance Card -->
+            <div class="card">
+                <h3>Sales Performance</h3>
+                <canvas id="salesChart" width="400" height="200"></canvas>
+                <div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+                    <small><strong>Monthly Summary:</strong> Track your sales performance and targets</small>
+                </div>
+            </div>
+
+            <!-- Recent Activities -->
+            <div class="card">
+                <h3>Recent Activities</h3>
+                <div class="notifications">
+                    <ul>
+                        <li class="new">
+                            <i class="fas fa-shopping-cart text-success"></i>
+                            <span>New order #ORD-001 created</span>
+                            <small>2 hours ago</small>
+                        </li>
+                        <li>
+                            <i class="fas fa-user-check text-primary"></i>
+                            <span>Customer follow-up completed</span>
+                            <small>5 hours ago</small>
+                        </li>
+                        <li>
+                            <i class="fas fa-chart-line text-warning"></i>
+                            <span>Monthly target 75% achieved</span>
+                            <small>1 day ago</small>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="card">
+                <h3>Quick Stats</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalOrders">15</div>
+                        <div class="stat-label">Total Orders</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="pendingOrders">3</div>
+                        <div class="stat-label">Pending</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="completedOrders">12</div>
+                        <div class="stat-label">Completed</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="successRate">85%</div>
+                        <div class="stat-label">Success Rate</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Order Section -->
+    <div id="createOrder" class="content-section">
+        <div class="card">
+            <h3>Create New Order</h3>
+            <form id="orderForm">
+                <fieldset>
+                    <legend>Customer Information</legend>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="customerName">Customer Name:</label>
+                            <input type="text" id="customerName" name="customerName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="customerEmail">Email:</label>
+                            <input type="email" id="customerEmail" name="customerEmail" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="customerPhone">Phone:</label>
+                            <input type="text" id="customerPhone" name="customerPhone" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="customerAddress">Address:</label>
+                            <input type="text" id="customerAddress" name="customerAddress" required>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Order Details</legend>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="productType">Product Type:</label>
+                            <select id="productType" name="productType" required>
+                                <option value="">Select Product Type</option>
+                                <option value="tshirt">T-Shirt</option>
+                                <option value="shirt">Shirt</option>
+                                <option value="pants">Pants</option>
+                                <option value="jacket">Jacket</option>
+                                <option value="dress">Dress</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="quantity">Quantity:</label>
+                            <input type="number" id="quantity" name="quantity" min="1" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="unitPrice">Unit Price ($):</label>
+                            <input type="number" id="unitPrice" name="unitPrice" step="0.01" min="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="totalAmount">Total Amount ($):</label>
+                            <input type="number" id="totalAmount" name="totalAmount" step="0.01" readonly>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="orderNotes">Order Notes:</label>
+                        <textarea id="orderNotes" name="orderNotes" rows="3" placeholder="Additional notes or special requirements"></textarea>
+                    </div>
+                </fieldset>
+
+                <div style="text-align: right; margin-top: 20px;">
+                    <button type="button" class="btn btn-secondary" onclick="resetOrderForm()">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save"></i> Create Order
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Order View Section -->
+    <div id="orderView" class="content-section">
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3>Order Management</h3>
+                <div class="filters">
+                    <select id="orderStatusFilter" onchange="filterOrders()">
+                        <option value="ALL">All Status</option>
+                        <option value="PENDING">Pending</option>
+                        <option value="CONFIRMED">Confirmed</option>
+                        <option value="IN_PROGRESS">In Progress</option>
+                        <option value="COMPLETED">Completed</option>
+                        <option value="CANCELLED">Cancelled</option>
+                    </select>
+                    <input type="text" id="orderSearch" placeholder="Search orders..." onkeyup="filterOrders()">
+                </div>
+            </div>
+
+            <!-- Orders Table -->
+            <div class="table-container">
+                <table id="ordersTable">
+                    <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Customer Name</th>
+                        <th>Product Type</th>
+                        <th>Quantity</th>
+                        <th>Total Amount</th>
+                        <th>Order Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <!-- Order data will be loaded dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Report Section -->
+    <div id="summaryReport" class="content-section">
+        <div class="card">
+            <h3>Sales Summary Report</h3>
+
+            <!-- Report Filters -->
+            <div class="report-filters">
+                <div class="filter-row">
+                    <div class="filter-group">
+                        <label for="reportType">Report Type:</label>
+                        <select id="reportType" onchange="updateReport()">
+                            <option value="daily">Daily</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="monthly" selected>Monthly</option>
+                            <option value="yearly">Yearly</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="reportMonth">Month:</label>
+                        <input type="month" id="reportMonth" onchange="updateReport()">
+                    </div>
+                    <div class="filter-group">
+                        <button class="btn btn-primary" onclick="generateReport()">
+                            <i class="fas fa-download"></i> Export Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="summary-cards">
+                <div class="summary-card">
+                    <div class="summary-icon">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <div class="summary-content">
+                        <div class="summary-value" id="totalSales">$12,450</div>
+                        <div class="summary-label">Total Sales</div>
+                    </div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="summary-content">
+                        <div class="summary-value" id="ordersCount">45</div>
+                        <div class="summary-label">Total Orders</div>
+                    </div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="summary-content">
+                        <div class="summary-value" id="customersCount">28</div>
+                        <div class="summary-label">Customers</div>
+                    </div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-icon">
+                        <i class="fas fa-percentage"></i>
+                    </div>
+                    <div class="summary-content">
+                        <div class="summary-value" id="successRateReport">92%</div>
+                        <div class="summary-label">Success Rate</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sales Chart -->
+            <div class="chart-container">
+                <canvas id="reportChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Message Section -->
+    <div id="customerMessage" class="content-section">
+        <div class="card">
+            <h3>Send Message to Customer</h3>
+            <form id="messageForm">
+                <fieldset>
+                    <legend>Message Details</legend>
+                    <div class="form-group">
+                        <label for="customerSelect">Select Customer:</label>
+                        <select id="customerSelect" name="customerId" required>
+                            <option value="">Select Customer</option>
+                            <!-- Customers will be loaded dynamically -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="messageSubject">Subject:</label>
+                        <input type="text" id="messageSubject" name="subject" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="messageContent">Message:</label>
+                        <textarea id="messageContent" name="content" rows="6" required placeholder="Type your message here..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="messageType">Message Type:</label>
+                        <select id="messageType" name="messageType">
+                            <option value="GENERAL">General</option>
+                            <option value="PROMOTIONAL">Promotional</option>
+                            <option value="ORDER_UPDATE">Order Update</option>
+                            <option value="FOLLOW_UP">Follow Up</option>
+                        </select>
+                    </div>
+                </fieldset>
+
+                <div style="text-align: right; margin-top: 20px;">
+                    <button type="button" class="btn btn-secondary" onclick="resetMessageForm()">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-paper-plane"></i> Send Message
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="/js/salesDashboard.js"></script>
+</body>
+</html>

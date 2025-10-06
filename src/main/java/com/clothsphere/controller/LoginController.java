@@ -217,9 +217,23 @@ public class LoginController {
     public String showCustomerDashboard(HttpSession session, Model model) {
         return loadDashboard("customerDashboard", session, model);
     }
+// ========================= Logout =========================
 
-    @GetMapping("/salesDashboard")
-    public String showSalesDashboard(HttpSession session, Model model) {
-        return loadDashboard("salesDashboard", session, model);
+    @GetMapping("/logout")
+    public String logout(HttpSession session) {
+        System.out.println("=== USER LOGOUT ===");
+
+        // Invalidate the session
+        if (session != null) {
+            session.invalidate();
+        }
+
+        System.out.println("User logged out successfully");
+        return "redirect:/systemUserLogin?logout=true";
+    }
+
+    @PostMapping("/logout")
+    public String logoutPost(HttpSession session) {
+        return logout(session);
     }
 }
