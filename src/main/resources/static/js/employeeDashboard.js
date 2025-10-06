@@ -533,7 +533,6 @@
      updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
      updateBtn.disabled = true;
 
-     // Enhanced validation for actual hours
      let actualHours = null;
      if (selectedStatus === 'COMPLETED') {
          const actualHoursInput = document.getElementById('actual-hours-input');
@@ -556,17 +555,14 @@
          actualHours = hoursValue;
      }
 
-     // Prepare request data
      const requestData = {
          status: selectedStatus
      };
 
-     // Add actual hours only for COMPLETED status
      if (selectedStatus === 'COMPLETED' && actualHours) {
          requestData.actualHours = actualHours;
      }
 
-     // Use the employee-specific endpoint
      fetch(`/api/assignments/employee/${currentAssignmentId}/status`, {
          method: 'PUT',
          headers: {
@@ -584,27 +580,28 @@
              if (data.success) {
                  let message = 'Task status updated successfully!';
 
-                 // Add completion information if status is COMPLETED
-                 if (selectedStatus === 'COMPLETED') {
-                     message += ` Completed on ${new Date(data.completionDate).toLocaleDateString()}`;
+                 if (selectedStatus === 'COMPLETED' && data.completionDate) {
+                     message += ` Completed on ${formatDate(data.completionDate)}`;
                      if (data.actualHours) {
-                         message += ` with ${data.actualHours} hours worked`;
+                         message += ` with ${data.actualHours} hours worked.`;
                      }
                  }
 
                  // Add task progress information if available
                  if (data.taskProgress) {
                      const progress = data.taskProgress;
-                     message += ` Task progress: ${progress.completedAssignments}/${progress.totalAssignments} completed`;
+                     message += ` Task progress: ${progress.completedAssignments}/${progress.totalAssignments} assignments completed.`;
 
                      if (data.taskStatus) {
-                         message += ` (Overall task: ${getStatusLabel(data.taskStatus)})`;
+                         message += ` Overall task status: ${getStatusLabel(data.taskStatus)}.`;
                      }
                  }
 
                  showMessage(message, 'success');
                  closeStatusModal();
-                 loadEmployeeTasks(); // Reload tasks to show updated completion date and hours
+
+                 // Reload tasks to show updated information
+                 loadEmployeeTasks();
              } else {
                  throw new Error(data.message || 'Failed to update status');
              }

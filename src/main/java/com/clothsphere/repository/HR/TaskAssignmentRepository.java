@@ -42,7 +42,7 @@ public interface TaskAssignmentRepository extends JpaRepository<TaskAssignment, 
     // Custom DELETE query
     @Modifying
     @Query(value = "DELETE FROM task_assignment WHERE assignment_id = :assignmentId", nativeQuery = true)
-    int deleteByAssignmentId(@Param("assignmentId") String assignmentId);
+    void deleteByAssignmentId(@Param("assignmentId") String assignmentId);
 
     // Custom SELECT by ID query
     @Query(value = "SELECT * FROM task_assignment WHERE assignment_id = :assignmentId", nativeQuery = true)

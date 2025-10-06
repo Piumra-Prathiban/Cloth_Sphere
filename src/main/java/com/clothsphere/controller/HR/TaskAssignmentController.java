@@ -270,19 +270,29 @@ public class TaskAssignmentController {
         Map<String, Object> response = new HashMap<>();
 
         try {
+            // Check if assignment exists first
+            Optional<TaskAssignment> assignmentOpt = taskAssignmentService.getAssignmentById(assignmentId);
+            if (!assignmentOpt.isPresent()) {
+                response.put("success", false);
+                response.put("message", "Assignment not found");
+                return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+            }
+
             boolean success = taskAssignmentService.deleteAssignment(assignmentId);
 
             if (success) {
                 response.put("success", true);
                 response.put("message", "Assignment deleted successfully!");
+                logger.info("Successfully deleted assignment: {}", assignmentId);
                 return new ResponseEntity<>(response, HttpStatus.OK);
             } else {
                 response.put("success", false);
-                response.put("message", "Assignment not found or failed to delete");
-                return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+                response.put("message", "Failed to delete assignment");
+                return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
             }
 
         } catch (Exception e) {
+            logger.error("Error deleting assignment {}: {}", assignmentId, e.getMessage(), e);
             response.put("success", false);
             response.put("message", "Error deleting assignment: " + e.getMessage());
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -397,7 +407,7 @@ public class TaskAssignmentController {
     }
 
     /**
-     * Employee update assignment status - with actual hours input
+     * Employee update assignment status - with actual hours input - FIXED VERSION
      */
     @PutMapping("/employee/{assignmentId}/status")
     public ResponseEntity<Map<String, Object>> updateEmployeeAssignmentStatus(
@@ -432,9 +442,9 @@ public class TaskAssignmentController {
                         actualHours = Integer.parseInt(hoursObj.toString());
                     }
 
-                    if (actualHours < 1) {
+                    if (actualHours < 0) {
                         response.put("success", false);
-                        response.put("message", "Actual hours must be at least 1");
+                        response.put("message", "Actual hours cannot be negative");
                         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
                     }
                 } catch (NumberFormatException e) {
@@ -459,7 +469,7 @@ public class TaskAssignmentController {
                 return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
             }
 
-            // Update assignment status with actual hours
+            // Update assignment status with actual hours - This now properly updates task status
             TaskAssignment updatedAssignment = taskAssignmentService.updateAssignmentStatus(
                     assignmentId, status, actualHours);
 
@@ -468,20 +478,25 @@ public class TaskAssignmentController {
                 response.put("message", "Assignment status updated successfully!");
                 response.put("assignment", updatedAssignment);
 
+                // Get updated task information
+                String taskId = updatedAssignment.getTask().getTaskId();
+                Map<String, Object> taskProgress = taskAssignmentService.getTaskCompletionProgress(taskId);
+                response.put("taskProgress", taskProgress);
+
+                // Get the current task status
+                Optional<ProductionTask> taskOpt = productionTaskService.getTaskById(taskId);
+                if (taskOpt.isPresent()) {
+                    response.put("taskStatus", taskOpt.get().getStatus());
+                }
+
                 // Include completion information if status is COMPLETED
                 if ("COMPLETED".equals(status)) {
                     response.put("completionDate", updatedAssignment.getCompletionDate());
                     response.put("actualHours", updatedAssignment.getActualHours());
                 }
 
-                // Get updated task progress information
-                String taskId = updatedAssignment.getTask().getTaskId();
-                response.put("taskProgress", taskAssignmentService.getTaskCompletionProgress(taskId));
-
-                Optional<ProductionTask> taskOpt = productionTaskService.getTaskById(taskId);
-                if (taskOpt.isPresent()) {
-                    response.put("taskStatus", taskOpt.get().getStatus());
-                }
+                logger.info("Employee {} updated assignment {} to status {}. Task {} status updated.",
+                        currentUser.getUserName(), assignmentId, status, taskId);
 
                 return new ResponseEntity<>(response, HttpStatus.OK);
             } else {

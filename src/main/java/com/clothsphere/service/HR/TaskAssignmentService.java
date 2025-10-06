@@ -138,14 +138,33 @@ public class TaskAssignmentService {
     @Transactional
     public boolean deleteAssignment(String assignmentId) {
         try {
-            if (taskAssignmentRepository.existsById(assignmentId)) {
-                taskAssignmentRepository.deleteByAssignmentId(assignmentId);
-                return true;
+            Optional<TaskAssignment> assignmentOpt = taskAssignmentRepository.findById(assignmentId);
+            if (!assignmentOpt.isPresent()) {
+                logger.warn("Assignment {} not found for deletion", assignmentId);
+                return false;
             }
-            return false;
+
+            TaskAssignment assignment = assignmentOpt.get();
+            String taskId = assignment.getTask() != null ? assignment.getTask().getTaskId() : null;
+
+            // Delete the assignment
+            taskAssignmentRepository.deleteByAssignmentId(assignmentId);
+            logger.info("Successfully deleted assignment: {}", assignmentId);
+
+            // Update task status if task exists
+            if (taskId != null) {
+                try {
+                    updateTaskStatusBasedOnAssignments(taskId);
+                } catch (Exception e) {
+                    logger.error("Error updating task status after assignment deletion: {}", e.getMessage());
+                    // Don't fail the deletion if task status update fails
+                }
+            }
+
+            return true;
         } catch (Exception e) {
-            System.out.println("Error deleting assignment: " + e.getMessage());
-            return false;
+            logger.error("Error deleting assignment {}: {}", assignmentId, e.getMessage(), e);
+            throw new RuntimeException("Failed to delete assignment: " + e.getMessage(), e);
         }
     }
 
@@ -454,7 +473,7 @@ public class TaskAssignmentService {
     }
 
     /**
-     * Update production task status based on assignment completions
+     * Update production task status based on assignment completions - FIXED VERSION
      */
     @Transactional
     public void updateTaskStatusBasedOnAssignments(String taskId) {
@@ -469,8 +488,10 @@ public class TaskAssignmentService {
 
             if (assignments.isEmpty()) {
                 // No assignments, set to PENDING
-                task.setStatus("PENDING");
-                productionTaskService.updateTask(taskId, task);
+                if (!"PENDING".equals(task.getStatus())) {
+                    task.setStatus("PENDING");
+                    productionTaskService.updateTask(taskId, task);
+                }
                 return;
             }
 
@@ -485,43 +506,61 @@ public class TaskAssignmentService {
             long assignedAssignments = assignments.stream()
                     .filter(assignment -> "ASSIGNED".equals(assignment.getStatus()))
                     .count();
+            long cancelledAssignments = assignments.stream()
+                    .filter(assignment -> "CANCELLED".equals(assignment.getStatus()))
+                    .count();
 
             String newTaskStatus = determineTaskStatus(totalAssignments, completedAssignments,
-                    inProgressAssignments, assignedAssignments);
+                    inProgressAssignments, assignedAssignments, cancelledAssignments);
 
             // Update task status if changed
             if (!newTaskStatus.equals(task.getStatus())) {
                 task.setStatus(newTaskStatus);
                 productionTaskService.updateTask(taskId, task);
-                System.out.println("Updated task " + taskId + " status to: " + newTaskStatus);
+                logger.info("Updated task {} status from {} to {}", taskId, task.getStatus(), newTaskStatus);
             }
         } catch (Exception e) {
-            System.out.println("Error updating task status based on assignments: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("Error updating task status based on assignments: {}", e.getMessage(), e);
         }
     }
 
+
     /**
-     * Determine task status based on assignment progress
+     * Determine task status based on assignment progress - FIXED VERSION
      */
-    private String determineTaskStatus(long total, long completed, long inProgress, long assigned) {
+    private String determineTaskStatus(long total, long completed, long inProgress, long assigned, long cancelled) {
         if (total == 0) {
             return "PENDING";
         }
 
+        // If all assignments are completed, task is COMPLETED
         if (completed == total) {
-            // All employees completed their assignments
             return "COMPLETED";
-        } else if (completed > 0 || inProgress > 0) {
-            // At least one employee started or completed work
+        }
+
+        // If all assignments are cancelled, task is CANCELLED
+        if (cancelled == total) {
+            return "CANCELLED";
+        }
+
+        // If any assignment is in progress, task is IN_PROGRESS
+        if (inProgress > 0) {
             return "IN_PROGRESS";
-        } else if (assigned == total) {
-            // All assignments are assigned but no one started
+        }
+
+        // If any assignment is completed but not all, task is IN_PROGRESS
+        if (completed > 0 && completed < total) {
+            return "IN_PROGRESS";
+        }
+
+        // If assignments exist but none are started, task is PENDING
+        if (assigned > 0 || (completed == 0 && inProgress == 0)) {
             return "PENDING";
         }
 
         return "PENDING";
     }
+
 
     @Transactional
     public TaskAssignment updateAssignmentWithTaskStatus(String assignmentId, TaskAssignment assignmentData) {
@@ -536,6 +575,9 @@ public class TaskAssignmentService {
         return updatedAssignment;
     }
 
+    /**
+     * Update assignment status with proper task synchronization - FIXED VERSION
+     */
     @Transactional
     public TaskAssignment updateAssignmentStatus(String assignmentId, String newStatus, Integer actualHours) {
         Optional<TaskAssignment> optionalAssignment = taskAssignmentRepository.findById(assignmentId);
@@ -545,28 +587,33 @@ public class TaskAssignmentService {
 
         TaskAssignment assignment = optionalAssignment.get();
         String oldStatus = assignment.getStatus();
+        String taskId = assignment.getTask().getTaskId();
 
         // Set completion date if status changed to COMPLETED
-        java.time.LocalDate completionDate = assignment.getCompletionDate();
+        LocalDate completionDate = assignment.getCompletionDate();
         if ("COMPLETED".equals(newStatus) && !"COMPLETED".equals(oldStatus)) {
-            completionDate = java.time.LocalDate.now();
+            completionDate = LocalDate.now();
         } else if (!"COMPLETED".equals(newStatus) && "COMPLETED".equals(oldStatus)) {
             completionDate = null;
         }
 
-        // Use the custom update method
-        taskAssignmentRepository.updateAssignmentStatus(assignmentId, newStatus, completionDate, actualHours);
-
-        // Reload the assignment to return updated entity
-        Optional<TaskAssignment> updatedAssignment = taskAssignmentRepository.findById(assignmentId);
-
-        // Update the task status based on all assignments
-        if (updatedAssignment.isPresent() && updatedAssignment.get().getTask() != null) {
-            updateTaskStatusBasedOnAssignments(updatedAssignment.get().getTask().getTaskId());
-            return updatedAssignment.get();
+        // Update the assignment
+        assignment.setStatus(newStatus);
+        assignment.setCompletionDate(completionDate);
+        if (actualHours != null) {
+            assignment.setActualHours(actualHours);
         }
 
-        return null;
+        // Save the assignment
+        taskAssignmentRepository.updateAssignment(assignment);
+
+        // IMPORTANT: Update task status based on ALL assignments for this task
+        updateTaskStatusBasedOnAssignments(taskId);
+
+        logger.info("Updated assignment {} status from {} to {}. Task {} status will be updated accordingly.",
+                assignmentId, oldStatus, newStatus, taskId);
+
+        return assignment;
     }
 
 }
