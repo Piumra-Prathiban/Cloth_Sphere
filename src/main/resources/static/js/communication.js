@@ -96,9 +96,12 @@ function showSection(sectionId, event) {
     // Load section-specific content
     switch(sectionId) {
         case 'compose':
+            // Clear form and ensure it's ready
             setTimeout(() => {
+                clearComposeForm();
                 loadAvailableUsers();
                 setupFormHandlers();
+                console.log('✅ Compose section initialized');
             }, 50);
             break;
         case 'inbox': loadInbox(); break;
@@ -504,20 +507,43 @@ function displayActiveCommunicators(activeUsers) {
 
 function viewMessage(messageId, source) {
     console.log(`👁️ Viewing message ${messageId} from ${source}`);
-    currentMessageId = messageId;
 
-    fetch(`/communication/message/${messageId}`)
-        .then(response => response.json())
+    // Validate messageId
+    if (!messageId || messageId <= 0) {
+        console.error('❌ Invalid messageId:', messageId);
+        showMessage('Invalid message ID', 'error');
+        return;
+    }
+
+    currentMessageId = parseInt(messageId); // Ensure it's a number
+
+    console.log('📡 Fetching message details for ID:', currentMessageId);
+
+    fetch(`/communication/message/${currentMessageId}`)
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status} - ${response.statusText}`);
+            }
+            return response.json();
+        })
         .then(data => {
+            console.log('Message details response:', data);
             if (data.success && data.message) {
                 displayMessageModal(data.message, source);
                 // MARK AS READ IMMEDIATELY when viewing from inbox
                 if (source === 'inbox') {
-                    markMessageAsRead(messageId);
+                    markMessageAsRead(currentMessageId);
                 }
+            } else {
+                console.error('❌ Failed to get message details:', data.message);
+                showMessage('Error loading message: ' + (data.message || 'Unknown error'), 'error');
             }
         })
-        .catch(error => console.error('❌ View message error:', error));
+        .catch(error => {
+            console.error('❌ View message error:', error);
+            showMessage('Error loading message: ' + error.message, 'error');
+        });
 }
 
 // Update the markMessageAsRead function to refresh inbox
@@ -598,7 +624,17 @@ function deleteCurrentMessage() {
 }
 
 function replyToMessage() {
-    if (!currentMessageId) return;
+    console.log('🔄 Reply button clicked, currentMessageId:', currentMessageId);
+
+    // Validate currentMessageId
+    if (!currentMessageId || currentMessageId <= 0) {
+        console.error('❌ No valid message ID for reply');
+        showMessage('No message selected for reply', 'error');
+        return;
+    }
+
+    // Store the message ID before closing modal
+    const messageIdToReply = currentMessageId;
 
     // First close the modal
     closeMessageModal();
@@ -606,49 +642,86 @@ function replyToMessage() {
     // Switch to compose section
     showSection('compose');
 
-    // Wait for compose section to render
+    // Wait a bit for the compose section to load, then populate the form
     setTimeout(() => {
-        fetch(`/communication/message/${currentMessageId}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success && data.message) {
-                    const msg = data.message;
+        populateReplyForm(messageIdToReply);
+    }, 300);
+}
 
-                    const receiverSelect = document.getElementById('receiver-select');
-                    const subjectInput = document.getElementById('message-subject');
-                    const messageTextarea = document.getElementById('message-text');
+function populateReplyForm(messageId) {
+    console.log('📨 Populating reply form for message:', messageId);
 
-                    if (receiverSelect && subjectInput && messageTextarea) {
-                        // Set receiver to the original sender
-                        receiverSelect.value = msg.sender_email;
+    fetch(`/communication/message/${messageId}`)
+        .then(response => {
+            console.log('Reply fetch response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status} - ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Reply message data:', data);
+            if (data.success && data.message) {
+                const msg = data.message;
 
-                        // Set subject with Re: prefix (avoid duplicates)
-                        const currentSubject = msg.subject || '';
-                        if (!currentSubject.startsWith('Re: ')) {
-                            subjectInput.value = `Re: ${currentSubject}`;
-                        } else {
-                            subjectInput.value = currentSubject;
-                        }
+                // Get form elements
+                const receiverSelect = document.getElementById('receiver-select');
+                const subjectInput = document.getElementById('message-subject');
+                const messageTextarea = document.getElementById('message-text');
 
-                        // Set message content with original message
-                        const originalMessage = `\n\n--- Original Message ---\nFrom: ${msg.sender_name} (${msg.sender_role})\nDate: ${formatDateTime(msg.sent_date)}\nSubject: ${msg.subject}\n\n${msg.message_text}`;
-                        messageTextarea.value = originalMessage;
-
-                        // Update character count
-                        document.getElementById('char-count').textContent = messageTextarea.value.length;
-
-                        // Scroll to message area
-                        messageTextarea.focus();
-
-                        console.log('✅ Reply form populated successfully');
-                    }
+                if (!receiverSelect || !subjectInput || !messageTextarea) {
+                    console.error('❌ Form elements not found');
+                    showMessage('Error: Compose form not loaded properly', 'error');
+                    return;
                 }
-            })
-            .catch(error => {
-                console.error('❌ Error fetching message for reply:', error);
-                showMessage('Error loading message for reply', 'error');
-            });
-    }, 300); // Increased delay to ensure DOM is ready
+
+                // Set receiver to the original sender
+                if (msg.sender_email) {
+                    receiverSelect.value = msg.sender_email;
+                    console.log('✅ Set receiver to:', msg.sender_email);
+
+                    // Trigger any change events if needed
+                    const event = new Event('change', { bubbles: true });
+                    receiverSelect.dispatchEvent(event);
+                }
+
+                // Set subject with Re: prefix
+                const currentSubject = msg.subject || 'No Subject';
+                if (!currentSubject.startsWith('Re: ')) {
+                    subjectInput.value = `Re: ${currentSubject}`;
+                } else {
+                    subjectInput.value = currentSubject;
+                }
+                console.log('✅ Set subject to:', subjectInput.value);
+
+                // Set message content with original message
+                const originalMessage = `\n\n--- Original Message ---\nFrom: ${msg.sender_name || 'Unknown'} (${msg.sender_role || 'Unknown'})\nDate: ${formatDateTime(msg.sent_date)}\nSubject: ${msg.subject || 'No Subject'}\n\n${msg.message_text || 'No content'}`;
+                messageTextarea.value = originalMessage.trim();
+
+                // Update character count
+                const charCount = document.getElementById('char-count');
+                if (charCount) {
+                    charCount.textContent = messageTextarea.value.length;
+                }
+
+                console.log('✅ Set message body, length:', messageTextarea.value.length);
+
+                // Focus on message area
+                setTimeout(() => {
+                    messageTextarea.focus();
+                    messageTextarea.scrollTop = 0;
+                }, 100);
+
+                showMessage('Reply form populated successfully', 'success');
+            } else {
+                console.error('❌ Failed to get message for reply:', data.message);
+                showMessage('Error loading message for reply: ' + (data.message || 'Unknown error'), 'error');
+            }
+        })
+        .catch(error => {
+            console.error('❌ Error fetching message for reply:', error);
+            showMessage('Error loading message for reply: ' + error.message, 'error');
+        });
 }
 
 function updateUnreadBadge(count) {
