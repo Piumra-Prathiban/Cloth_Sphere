@@ -1,7 +1,9 @@
 package com.clothsphere.model;
 
+import com.clothsphere.model.HR.Communication;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "system_user_login_details")
@@ -14,7 +16,7 @@ public class SystemUser {
     @Column(name = "password", length = 100, nullable = false)
     private String password;
 
-    @Column(name = "email", length = 100)
+    @Column(name = "email", length = 100, nullable = false, unique = true)
     private String email;
 
     @Column(name = "phone_number", length = 20)
@@ -42,6 +44,12 @@ public class SystemUser {
         this.logCount = 0;
         this.createdAt = LocalDateTime.now();
     }
+    // Communication relationships
+    @OneToMany(mappedBy = "sender", fetch = FetchType.LAZY)
+    private List<Communication> sentMessages;
+
+    @OneToMany(mappedBy = "receiver", fetch = FetchType.LAZY)
+    private List<Communication> receivedMessages;
 
     // Getters and setters
     public String getUserName() { return userName; }
@@ -74,4 +82,5 @@ public class SystemUser {
                 ", phoneNumber='" + phoneNumber + '\'' +
                 '}';
     }
+
 }

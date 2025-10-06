@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Internal Communication - ClothSphere</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/communication.css">
+</head>
+<body>
+<div class="communication-container">
+    <!-- Hidden field for JavaScript to access current user email -->
+    <input type="hidden" id="current-user-email" th:value="${currentUserEmail}">
+
+    <!-- Header -->
+    <div class="communication-header">
+        <h1><i class="fas fa-comments"></i> Internal Communication</h1>
+        <div class="user-info">
+            <span id="current-user" th:text="${currentUser != null ? currentUser.userName : 'User'}">User</span>
+            <span class="user-role" id="current-role" th:text="${currentUser != null ? currentUser.role : 'Role'}">Role</span>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="communication-nav">
+        <button class="nav-btn active" onclick="showSection('compose')">
+            <i class="fas fa-edit"></i> Compose
+        </button>
+        <button class="nav-btn" onclick="showSection('inbox')">
+            <i class="fas fa-inbox"></i> Inbox
+            <span class="badge" id="unread-badge">0</span>
+        </button>
+        <button class="nav-btn" onclick="showSection('sent')">
+            <i class="fas fa-paper-plane"></i> Sent
+        </button>
+        <button class="nav-btn" onclick="showSection('statistics')">
+            <i class="fas fa-chart-bar"></i> Statistics
+        </button>
+    </div>
+
+    <!-- Compose Section -->
+    <div id="compose" class="communication-section active">
+        <div class="card">
+            <h3>Compose New Message</h3>
+            <form id="compose-form">
+                <div class="form-group">
+                    <label for="receiver-select">To: <span style="color: red;">*</span></label>
+                    <select id="receiver-select" class="form-control" required>
+                        <option value="">Select recipient...</option>
+                    </select>
+                    <small class="form-text">Note: Employees cannot message Factory Manager directly</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="message-subject">Subject: <span style="color: red;">*</span></label>
+                    <input type="text" id="message-subject" class="form-control"
+                           placeholder="Enter message subject" required maxlength="500">
+                </div>
+
+                <div class="form-group">
+                    <label for="message-text">Message: <span style="color: red;">*</span></label>
+                    <textarea id="message-text" class="form-control" rows="10"
+                              placeholder="Type your message here..." required maxlength="4000"></textarea>
+                    <div class="char-count">
+                        <span id="char-count">0</span>/4000 characters
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane"></i> Send Message
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="clearComposeForm()">
+                        <i class="fas fa-times"></i> Clear
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Inbox Section -->
+    <div id="inbox" class="communication-section">
+        <div class="card">
+            <h3>Inbox <span class="subtitle" id="inbox-subtitle"></span></h3>
+
+            <div class="filter-controls">
+                <div class="filter-group">
+                    <input type="text" id="inbox-search" class="form-control"
+                           placeholder="Search inbox..." onkeyup="filterInbox()">
+                </div>
+                <div class="filter-group">
+                    <button class="btn btn-secondary" onclick="refreshInbox()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table" id="inbox-table">
+                    <thead>
+                    <tr>
+                        <th>From</th>
+                        <th>Role</th>
+                        <th>Subject</th>
+                        <th>Preview</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody id="inbox-body">
+                    <!-- Inbox messages will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="inbox-empty" class="empty-state" style="display: none;">
+                <i class="fas fa-inbox"></i>
+                <h4>No Messages</h4>
+                <p>Your inbox is empty</p>
+            </div>
+
+            <div id="inbox-loading" class="loading-state" style="display: none;">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading inbox...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sent Section -->
+    <div id="sent" class="communication-section">
+        <div class="card">
+            <h3>Sent Messages</h3>
+
+            <div class="filter-controls">
+                <div class="filter-group">
+                    <input type="text" id="sent-search" class="form-control"
+                           placeholder="Search sent messages..." onkeyup="filterSent()">
+                </div>
+                <div class="filter-group">
+                    <button class="btn btn-secondary" onclick="refreshSent()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table" id="sent-table">
+                    <thead>
+                    <tr>
+                        <th>To</th>
+                        <th>Role</th>
+                        <th>Subject</th>
+                        <th>Preview</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                    </tr>
+                    </thead>
+                    <tbody id="sent-body">
+                    <!-- Sent messages will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="sent-empty" class="empty-state" style="display: none;">
+                <i class="fas fa-paper-plane"></i>
+                <h4>No Sent Messages</h4>
+                <p>You haven't sent any messages yet</p>
+            </div>
+
+            <div id="sent-loading" class="loading-state" style="display: none;">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading sent messages...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Section -->
+    <div id="statistics" class="communication-section">
+        <div class="card">
+            <h3>Communication Statistics</h3>
+
+            <!-- Message Statistics -->
+            <div class="stats-grid">
+                <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <div class="stat-number" id="total-messages">0</div>
+                    <div class="stat-label">Total Messages Sent</div>
+                </div>
+                <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                    <div class="stat-number" id="unread-messages">0</div>
+                    <div class="stat-label">Unread Messages</div>
+                </div>
+                <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                    <div class="stat-number" id="avg-message-length">0</div>
+                    <div class="stat-label">Avg Message Length</div>
+                </div>
+            </div>
+
+            <!-- Role-based Statistics (GROUPING WITH HAVING) -->
+            <h4 style="margin-top: 30px; color: #333;">Messages by Role (Grouping with HAVING)</h4>
+            <p style="color: #6c757d; font-size: 14px; margin-bottom: 15px;">
+                Shows statistics for roles that have sent at least 1 message
+            </p>
+            <div class="table-responsive">
+                <table class="table" id="stats-table">
+                    <thead>
+                    <tr>
+                        <th>Role</th>
+                        <th>Total Messages</th>
+                        <th>Average Length</th>
+                    </tr>
+                    </thead>
+                    <tbody id="stats-body">
+                    <tr>
+                        <td colspan="3" class="text-center">Loading statistics...</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Active Communicators (SUBQUERY) -->
+            <h4 style="margin-top: 30px; color: #333;">Active Communicators (Subquery)</h4>
+            <p style="color: #6c757d; font-size: 14px; margin-bottom: 15px;">
+                Users who have sent more than 5 messages
+            </p>
+            <div class="table-responsive">
+                <table class="table" id="active-users-table">
+                    <thead>
+                    <tr>
+                        <th>User Name</th>
+                        <th>Role</th>
+                        <th>Messages Sent</th>
+                    </tr>
+                    </thead>
+                    <tbody id="active-users-body">
+                    <tr>
+                        <td colspan="3" class="text-center">Loading active communicators...</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Message Detail Modal -->
+<div id="message-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h4 id="modal-subject">Message Subject</h4>
+            <button class="btn-close" onclick="closeMessageModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="message-header">
+                <div class="message-info">
+                    <strong>From:</strong> <span id="modal-sender">Sender Name</span>
+                    (<span id="modal-sender-role">Role</span>)
+                </div>
+                <div class="message-info">
+                    <strong>To:</strong> <span id="modal-receiver">Receiver Name</span>
+                    (<span id="modal-receiver-role">Role</span>)
+                </div>
+                <div class="message-info">
+                    <strong>Date:</strong> <span id="modal-date">Date</span>
+                </div>
+            </div>
+            <div class="message-content" id="modal-content">
+                Message content will appear here...
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeMessageModal()">Close</button>
+            <button class="btn btn-danger" id="delete-btn" onclick="deleteCurrentMessage()">
+                <i class="fas fa-trash"></i> Delete
+            </button>
+            <button class="btn btn-primary" id="reply-btn" onclick="replyToMessage()">
+                <i class="fas fa-reply"></i> Reply
+            </button>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/js/communication.js}"></script>
+</body>
+</html>

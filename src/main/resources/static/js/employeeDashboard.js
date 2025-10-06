@@ -1575,7 +1575,7 @@
      document.getElementById('pending-payrolls').textContent = stats.pendingCount || 0;
 
      const totalNetSalary = stats.totalNetSalary || 0;
-     document.getElementById('total-net-salary').textContent = 'LKR ' + totalNetSalary.toLocaleString('en-US', {
+     document.getElementById('total-net-salary').textContent = '$ ' + totalNetSalary.toLocaleString('en-US', {
          minimumFractionDigits: 2,
          maximumFractionDigits: 2
      });
@@ -1839,10 +1839,10 @@
  }
 
  function formatCurrency(amount) {
-     if (!amount) return 'LKR 0.00';
+     if (!amount) return '$ 0.00';
 
      const value = typeof amount === 'object' ? amount.toString() : amount;
-     return 'LKR ' + parseFloat(value).toLocaleString('en-US', {
+     return '$ ' + parseFloat(value).toLocaleString('en-US', {
          minimumFractionDigits: 2,
          maximumFractionDigits: 2
      });

@@ -2,9 +2,11 @@ package com.clothsphere.service;
 
 import com.clothsphere.model.HR.Employee;
 import com.clothsphere.model.SystemUser;
+import com.clothsphere.repository.HR.CommunicationRepository;
 import com.clothsphere.repository.HR.DepartmentRepository;
 import com.clothsphere.repository.HR.EmployeeRepository;
 import com.clothsphere.repository.SystemUserRepository;
+import com.clothsphere.service.HR.CommunicationService;
 import com.clothsphere.service.HR.EmployeeService;
 import com.clothsphere.util.PasswordEncoder;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +15,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class SystemUserService {
@@ -28,6 +35,9 @@ public class SystemUserService {
 
     @Autowired
     private EmployeeService employeeService;
+
+    @Autowired
+    private CommunicationService communicationService;
 
     /**
      * Validate user by username and password using BCrypt.
@@ -283,5 +293,135 @@ public class SystemUserService {
 
     public boolean emailExists(String email) {
         return employeeRepository.findByEmail(email) != null;
+    }
+
+    /**
+     * Get user by email
+     */
+    @Transactional(readOnly = true)
+    public Optional<SystemUser> getUserByEmail(String email) {
+        return systemUserRepository.findByEmail(email);
+    }
+
+    /**
+     * Get all users by role
+     */
+    @Transactional(readOnly = true)
+    public List<SystemUser> getUsersByRole(String role) {
+        return systemUserRepository.findByRole(role);
+    }
+
+    /**
+     * Get all users except specific role
+     */
+    @Transactional(readOnly = true)
+    public List<SystemUser> getUsersByRoleNot(String role) {
+        return systemUserRepository.findByRoleNot(role);
+    }
+
+    /**
+     * Check if user can communicate with another user
+     */
+    @Transactional(readOnly = true)
+    public boolean canCommunicate(String senderEmail, String receiverEmail) {
+        Optional<SystemUser> senderOpt = systemUserRepository.findByEmail(senderEmail);
+        Optional<SystemUser> receiverOpt = systemUserRepository.findByEmail(receiverEmail);
+
+        if (senderOpt.isEmpty() || receiverOpt.isEmpty()) {
+            return false;
+        }
+
+        SystemUser sender = senderOpt.get();
+        SystemUser receiver = receiverOpt.get();
+
+        // Employees cannot message Factory Manager directly
+        if (sender.getRole().equals("Employee") && receiver.getRole().equals("Factory Manager")) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Get user communication statistics
+     */
+    @Transactional(readOnly = true)
+    public Map<String, Object> getUserCommunicationStats(String userEmail) {
+        Map<String, Object> stats = new HashMap<>();
+
+        Optional<SystemUser> userOpt = systemUserRepository.findByEmail(userEmail);
+        if (userOpt.isPresent()) {
+            SystemUser user = userOpt.get();
+
+            // Get sent messages count
+            Map<String, Object> sentResult = communicationService.getSentMessages(userEmail);
+            long sentCount = sentResult.get("success").equals(true) ?
+                    ((List<?>) sentResult.get("messages")).size() : 0;
+
+            // Get received messages count
+            Map<String, Object> inboxResult = communicationService.getInboxMessages(userEmail);
+            long receivedCount = inboxResult.get("success").equals(true) ?
+                    ((List<?>) inboxResult.get("messages")).size() : 0;
+
+            long unreadCount = (Long) inboxResult.get("unreadCount");
+
+            stats.put("userName", user.getUserName());
+            stats.put("role", user.getRole());
+            stats.put("sentCount", sentCount);
+            stats.put("receivedCount", receivedCount);
+            stats.put("unreadCount", unreadCount);
+            stats.put("totalMessages", sentCount + receivedCount);
+        }
+
+        return stats;
+    }
+
+    /**
+     * Search users by name
+     */
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> searchUsersByName(String name) {
+        List<SystemUser> users = systemUserRepository.findByUserNameContainingIgnoreCase(name);
+
+        return users.stream()
+                .map(user -> {
+                    Map<String, Object> userMap = new HashMap<>();
+                    userMap.put("email", user.getEmail());
+                    userMap.put("userName", user.getUserName());
+                    userMap.put("role", user.getRole());
+                    userMap.put("phoneNumber", user.getPhoneNumber());
+                    return userMap;
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get all roles in the system
+     */
+    @Transactional(readOnly = true)
+    public List<String> getAllRoles() {
+        return List.of("Factory Manager", "HR Manager", "Inventory Manager",
+                "Sales and Order Manager", "Product Manager", "Employee");
+    }
+
+    /**
+     * Validate user credentials
+     */
+    @Transactional(readOnly = true)
+    public boolean validateUserCredentials(String email, String password) {
+        Optional<SystemUser> userOpt = systemUserRepository.findByEmail(email);
+        return userOpt.isPresent() && userOpt.get().getPassword().equals(password);
+    }
+
+    /**
+     * Update user login count
+     */
+    public void updateLoginCount(String email) {
+        Optional<SystemUser> userOpt = systemUserRepository.findByEmail(email);
+        if (userOpt.isPresent()) {
+            SystemUser user = userOpt.get();
+            user.setLogCount(user.getLogCount() + 1);
+            systemUserRepository.save(user);
+        }
     }
 }

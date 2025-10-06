@@ -9,9 +9,16 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface SystemUserRepository extends JpaRepository<SystemUser, String> {
+
+    Optional<SystemUser> findByEmail(String email);
+
+    List<SystemUser> findByRole(String role);
+
+    List<SystemUser> findByRoleNot(String role);
 
     @Query("SELECT u FROM SystemUser u WHERE u.userName = :userName")
     SystemUser findByUserName(@Param("userName") String userName);
@@ -85,4 +92,23 @@ public interface SystemUserRepository extends JpaRepository<SystemUser, String> 
                          @Param("phoneNumber") String phoneNumber,
                          @Param("role") String role,
                          @Param("logCount") Integer logCount);
+
+    @Query("SELECT su FROM SystemUser su WHERE su.role IN :roles")
+    List<SystemUser> findByRoles(@Param("roles") List<String> roles);
+
+    // Find users by name pattern
+    @Query("SELECT su FROM SystemUser su WHERE LOWER(su.userName) LIKE LOWER(CONCAT('%', :name, '%'))")
+    List<SystemUser> findByUserNameContainingIgnoreCase(@Param("name") String name);
+
+    // Check if user exists and is active
+    @Query("SELECT CASE WHEN COUNT(su) > 0 THEN true ELSE false END FROM SystemUser su WHERE su.email = :email")
+    boolean existsByEmail(@Param("email") String email);
+
+    // Get all employee emails
+    @Query("SELECT su.email FROM SystemUser su WHERE su.role = 'Employee'")
+    List<String> findAllEmployeeEmails();
+
+    // Get all manager emails (non-employees)
+    @Query("SELECT su.email FROM SystemUser su WHERE su.role != 'Employee'")
+    List<String> findAllManagerEmails();
 }

@@ -47,7 +47,6 @@ public class LoginController {
         System.out.println("=== LOGIN ATTEMPT ===");
         System.out.println("Username: " + username);
 
-        // Find user by username only
         SystemUser user = systemUserService.findByUserName(username);
 
         if (user == null) {
@@ -58,91 +57,77 @@ public class LoginController {
         String userRole = user.getRole();
         System.out.println("User role: " + userRole);
 
-        // Get actual employee ID from employee table
         String actualEmployeeId = null;
         if ("employee".equalsIgnoreCase(userRole.trim())) {
-            // Look up employee by username to get the actual employee ID
             Employee employee = employeeRepository.findByUsername(username);
             if (employee != null) {
-                actualEmployeeId = employee.getId(); // This is the actual employee ID
-                System.out.println("Found employee ID: " + actualEmployeeId + " for username: " + username);
-            } else {
-                System.out.println("No employee record found for username: " + username);
+                actualEmployeeId = employee.getId();
+                System.out.println("Found employee ID: " + actualEmployeeId);
             }
         }
 
         // Special handling for first-time employee login
         if ("employee".equalsIgnoreCase(userRole.trim())) {
-            // Check if first-time login (logCount = 0)
             if (user.getLogCount() == 0) {
-                System.out.println("First-time employee login detected for: " + username);
+                System.out.println("First-time employee login detected");
 
-                // For first-time login, validate against default password
                 if (password == null || password.trim().isEmpty()) {
-                    System.out.println("No password provided for first-time login - allowing access");
-                    // Set session attributes with ACTUAL employee ID
+                    // Set ALL session attributes including userEmail
                     session.setAttribute("currentUser", user);
-                    session.setAttribute("employeeId", actualEmployeeId); // Use actual employee ID
+                    session.setAttribute("employeeId", actualEmployeeId);
                     session.setAttribute("username", username);
+                    session.setAttribute("userEmail", user.getEmail()); // ADD THIS
                     session.setAttribute("firstLogin", true);
                     session.setAttribute("requirePasswordChange", true);
                     return "redirect:/employeeDashboard?firstLogin=true";
                 } else {
-                    // If password is provided, validate it against the encrypted default password
                     if (PasswordEncoder.matches(password, user.getPassword())) {
-                        System.out.println("First-time employee password validated: " + username);
-                        // Set session attributes with ACTUAL employee ID
+                        // Set ALL session attributes including userEmail
                         session.setAttribute("currentUser", user);
-                        session.setAttribute("employeeId", actualEmployeeId); // Use actual employee ID
+                        session.setAttribute("employeeId", actualEmployeeId);
                         session.setAttribute("username", username);
+                        session.setAttribute("userEmail", user.getEmail()); // ADD THIS
                         session.setAttribute("firstLogin", true);
                         session.setAttribute("requirePasswordChange", true);
                         return "redirect:/employeeDashboard?firstLogin=true";
                     } else {
-                        System.out.println("Invalid password for first-time employee: " + username);
                         return "redirect:/systemUserLogin?error=true";
                     }
                 }
             } else {
-                // Not first-time login, require password validation
+                // Returning employee
                 if (password == null || password.trim().isEmpty()) {
-                    System.out.println("Password required for returning employee: " + username);
                     return "redirect:/systemUserLogin?error=true";
                 }
 
-                // Use BCrypt to validate password
                 if (PasswordEncoder.matches(password, user.getPassword())) {
-                    System.out.println("Returning employee login successful: " + username);
-
                     user.setLogCount(user.getLogCount() + 1);
                     systemUserService.updateLogCount(username, user.getLogCount());
 
-                    // Set session attributes with ACTUAL employee ID
+                    // Set ALL session attributes including userEmail
                     session.setAttribute("currentUser", user);
-                    session.setAttribute("employeeId", actualEmployeeId); // Use actual employee ID
+                    session.setAttribute("employeeId", actualEmployeeId);
                     session.setAttribute("username", username);
+                    session.setAttribute("userEmail", user.getEmail()); // ADD THIS
                     return "redirect:/employeeDashboard";
                 } else {
-                    System.out.println("Invalid password for returning employee: " + username);
                     return "redirect:/systemUserLogin?error=true";
                 }
             }
         }
 
-        // Normal login validation for all other roles using BCrypt
+        // Normal login for other roles
         if (password == null || password.trim().isEmpty()) {
-            System.out.println("Password required for user: " + username);
             return "redirect:/systemUserLogin?error=true";
         }
 
-        // Validate password for non-employee users
         if (PasswordEncoder.matches(password, user.getPassword())) {
-            System.out.println("User validation successful for: " + username);
+            // Set ALL session attributes including userEmail
             session.setAttribute("currentUser", user);
             session.setAttribute("username", username);
+            session.setAttribute("userEmail", user.getEmail()); // ADD THIS
 
             String lowerRole = userRole.toLowerCase().trim();
-            System.out.println("Redirecting to dashboard for role: '" + lowerRole + "'");
 
             switch (lowerRole) {
                 case "hr-manager":
@@ -156,14 +141,12 @@ public class LoginController {
                 case "sales-executive":
                     return "redirect:/salesDashboard";
                 case "employee":
-                    // Set ACTUAL employee ID for employee role
                     session.setAttribute("employeeId", actualEmployeeId);
                     return "redirect:/employeeDashboard";
                 default:
                     return "redirect:/dashboard";
             }
         } else {
-            System.out.println("User validation failed for: " + username);
             return "redirect:/systemUserLogin?error=true";
         }
     }
