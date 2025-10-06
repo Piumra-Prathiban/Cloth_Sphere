@@ -591,6 +591,189 @@ IF OBJECT_ID('tr_PreventSelfMessage', 'TR') IS NOT NULL
     DROP TRIGGER tr_PreventSelfMessage;
 GO
 
+
+--//////////////////////////////////////////////////////////////////////////
+-- Inventory Manager
 -- Check available users in the system
 SELECT email, user_name, role 
 FROM system_user_login_details;
+
+-- Fabric Table
+
+CREATE TABLE Fabrics (
+                         fabric_id VARCHAR(6) PRIMARY KEY,
+                         fabric_type VARCHAR(100) NOT NULL,
+                         color VARCHAR(50) NOT NULL,
+                         current_stock DECIMAL(10,2) DEFAULT 0.00,
+                         created_at DATETIME DEFAULT GETDATE(),
+                         updated_at DATETIME DEFAULT GETDATE(),
+                         CONSTRAINT uq_fabric UNIQUE (fabric_type, color)
+);
+ GO
+
+
+-- Movements Table
+
+ CREATE TABLE Movements (
+                            movement_id VARCHAR(10) PRIMARY KEY,
+                            fabric_id VARCHAR(6) NOT NULL,
+                            status VARCHAR(20) CHECK (status IN ('In', 'Out', 'Special Release')),
+                            approval_status VARCHAR(20) DEFAULT 'Pending' CHECK (approval_status IN ('Pending', 'Approved', 'Rejected')),
+                            quantity DECIMAL(10,2) NOT NULL CHECK (quantity > 0),
+                            movement_date DATE NOT NULL,
+                            rejection_reason NVARCHAR(MAX),
+                            created_at DATETIME DEFAULT GETDATE(),
+                            updated_at DATETIME DEFAULT GETDATE(),
+                            CONSTRAINT fk_fabric FOREIGN KEY (fabric_id) REFERENCES Fabrics(fabric_id) ON DELETE CASCADE
+ );
+ GO
+
+
+-- View: Movement with Fabric Details
+
+ CREATE VIEW v_movement_details AS
+ SELECT
+     m.movement_id,
+     m.fabric_id,
+     f.fabric_type,
+     f.color,
+     m.status,
+     m.approval_status,
+     m.quantity,
+     m.movement_date,
+     f.current_stock AS total_stock,
+     m.rejection_reason,
+     m.created_at
+ FROM Movements m
+          INNER JOIN Fabrics f ON m.fabric_id = f.fabric_id
+ ORDER BY m.movement_date DESC, m.created_at DESC;
+ GO
+
+
+-- Function: Check Stock Threshold
+
+ CREATE FUNCTION can_stock_out
+ (
+     @fabric_id VARCHAR(6),
+     @quantity DECIMAL(10,2)
+ )
+     RETURNS BIT
+ AS
+ BEGIN
+     DECLARE @current_stock DECIMAL(10,2);
+
+     SELECT @current_stock = current_stock
+     FROM Fabrics
+     WHERE fabric_id = @fabric_id;
+
+     IF @current_stock IS NULL RETURN 0;
+     IF @current_stock <= 10 RETURN 0;
+     IF @quantity > @current_stock RETURN 0;
+
+     RETURN 1;
+ END;
+ GO
+
+
+-- Trigger: Auto-approve Stock Out movements
+
+ CREATE TRIGGER trg_auto_approve_stock_out
+     ON Movements
+     INSTEAD OF INSERT
+     AS
+ BEGIN
+     INSERT INTO Movements (
+         movement_id, fabric_id, status, approval_status, quantity, movement_date, rejection_reason, created_at, updated_at
+     )
+     SELECT
+         i.movement_id,
+         i.fabric_id,
+         i.status,
+         CASE WHEN i.status IN ('Out', 'Special Release') THEN 'Approved' ELSE ISNULL(i.approval_status, 'Pending') END,
+         i.quantity,
+         i.movement_date,
+         i.rejection_reason,
+         GETDATE(),
+         GETDATE()
+     FROM inserted i;
+ END;
+ GO
+
+
+-- Trigger: Update fabric stock on approval
+
+ CREATE TRIGGER trg_update_stock_on_approval
+     ON Movements
+     AFTER UPDATE
+     AS
+ BEGIN
+     UPDATE f
+     SET f.current_stock =
+             CASE
+                 WHEN i.status = 'In' THEN f.current_stock + i.quantity
+                 WHEN i.status IN ('Out', 'Special Release') THEN f.current_stock - i.quantity
+                 ELSE f.current_stock
+                 END,
+         f.updated_at = GETDATE()
+     FROM Fabrics f
+              INNER JOIN inserted i ON f.fabric_id = i.fabric_id
+              INNER JOIN deleted d ON i.movement_id = d.movement_id
+     WHERE d.approval_status = 'Pending' AND i.approval_status = 'Approved';
+ END;
+ GO
+
+
+-- Trigger: Update stock for auto-approved movements
+
+ CREATE TRIGGER trg_update_stock_auto_approved
+     ON Movements
+     AFTER INSERT
+     AS
+ BEGIN
+     UPDATE f
+     SET f.current_stock =
+             CASE
+                 WHEN i.status = 'In' THEN f.current_stock + i.quantity
+                 WHEN i.status IN ('Out', 'Special Release') THEN f.current_stock - i.quantity
+                 ELSE f.current_stock
+                 END,
+         f.updated_at = GETDATE()
+     FROM Fabrics f
+              INNER JOIN inserted i ON f.fabric_id = i.fabric_id
+     WHERE i.approval_status = 'Approved';
+ END;
+ GO
+
+
+-- Stored Procedure: Get Dashboard Stats
+
+ CREATE PROCEDURE sp_get_dashboard_stats
+ @date DATE
+ AS
+ BEGIN
+     SELECT
+         (SELECT COUNT(DISTINCT fabric_id) FROM Fabrics) AS total_fabric_types,
+         (SELECT COALESCE(SUM(current_stock), 0) FROM Fabrics) AS total_meters,
+         (SELECT COALESCE(SUM(quantity), 0)
+          FROM Movements
+          WHERE status = 'In'
+            AND approval_status = 'Approved'
+            AND movement_date = @date) AS stock_in_today,
+         (SELECT COALESCE(SUM(quantity), 0)
+          FROM Movements
+          WHERE status IN ('Out', 'Special Release')
+            AND approval_status = 'Approved'
+            AND movement_date = @date) AS stock_out_today;
+ END;
+ GO
+
+
+-- Indexes for Performance
+
+ CREATE INDEX idx_fabric_type ON Fabrics(fabric_type);
+ CREATE INDEX idx_fabric_color ON Fabrics(color);
+ CREATE INDEX idx_movement_date ON Movements(movement_date);
+ CREATE INDEX idx_movement_status ON Movements(status);
+ CREATE INDEX idx_approval_status ON Movements(approval_status);
+ CREATE INDEX idx_fabric_id_fk ON Movements(fabric_id);
+ GO
