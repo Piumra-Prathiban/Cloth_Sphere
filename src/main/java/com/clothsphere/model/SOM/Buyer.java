@@ -6,6 +6,8 @@ import jakarta.persistence.*;
 @IdClass(BuyerId.class)
 public class Buyer {
 
+    // PIUMARA:- ONLINE REGISTER BUYERS PID IS OBY(online Buyer)(OBY01, OBY02 like vise) not LBY(Local Buyer)
+
     @Id
     @Column(name = "buyer_id", length = 10)
     private String buyerId;
