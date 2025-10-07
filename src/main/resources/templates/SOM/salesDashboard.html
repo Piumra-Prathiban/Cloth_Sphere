@@ -359,7 +359,109 @@
 
     <!-- Summary Report Section -->
     <div id="summaryReport" class="content-section">
-        <!-- ... existing summary report content ... -->
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3>Summary Report Generator</h3>
+                <div class="filters">
+                    <button class="btn btn-success" onclick="generateReport()">
+                        <i class="fas fa-file-export"></i> Generate Report
+                    </button>
+                    <button class="btn btn-primary" onclick="loadQuickStats()">
+                        <i class="fas fa-sync-alt"></i> Refresh Stats
+                    </button>
+                </div>
+            </div>
+
+            <!-- Report Generation Form -->
+            <div class="report-filters">
+                <div class="filter-row">
+                    <div class="filter-group">
+                        <label for="reportType">Report Type:</label>
+                        <select id="reportType">
+                            <option value="MONTHLY">Monthly</option>
+                            <option value="WEEKLY">Weekly</option>
+                            <option value="DAILY">Daily</option>
+                            <option value="YEARLY">Yearly</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="startDate">Start Date:</label>
+                        <input type="date" id="startDate">
+                    </div>
+                    <div class="filter-group">
+                        <label for="endDate">End Date:</label>
+                        <input type="date" id="endDate">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Stats Cards -->
+            <div class="summary-cards">
+                <div class="summary-card">
+                    <div class="summary-icon">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <div class="summary-content">
+                        <div class="summary-value" id="totalOrdersReport">0</div>
+                        <div class="summary-label">Total Orders</div>
+                    </div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-icon">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <div class="summary-content">
+                        <div class="summary-value" id="totalRevenueReport">$0</div>
+                        <div class="summary-label">Total Revenue</div>
+                    </div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="summary-content">
+                        <div class="summary-value" id="totalCustomersReport">0</div>
+                        <div class="summary-label">Total Customers</div>
+                    </div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="summary-content">
+                        <div class="summary-value" id="successRateReport">0%</div>
+                        <div class="summary-label">Success Rate</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="chart-container">
+                <h4>Monthly Revenue Overview</h4>
+                <canvas id="monthlyRevenueChart" height="100"></canvas>
+            </div>
+
+            <!-- Generated Reports List -->
+            <div class="card">
+                <h4>Generated Reports</h4>
+                <div class="table-container">
+                    <table id="reportsTable">
+                        <thead>
+                        <tr>
+                            <th>Report Name</th>
+                            <th>Type</th>
+                            <th>Period</th>
+                            <th>Total Orders</th>
+                            <th>Total Revenue</th>
+                            <th>Generated At</th>
+                            <th>Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Customer Message Section -->

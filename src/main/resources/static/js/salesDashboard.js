@@ -1760,6 +1760,236 @@ function logout() {
     }
 }
 
+//==========================================================================\
+// Summary Report Functions
+let monthlyRevenueChart = null;
+
+async function loadSummaryReport() {
+    await loadQuickStats();
+    await loadGeneratedReports();
+    initializeMonthlyChart();
+}
+
+async function loadQuickStats() {
+    try {
+        // Set default dates (last 30 days)
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - 30);
+
+        const startDateStr = startDate.toISOString().split('T')[0];
+        const endDateStr = endDate.toISOString().split('T')[0];
+
+        // Set date inputs
+        document.getElementById('startDate').value = startDateStr;
+        document.getElementById('endDate').value = endDateStr;
+
+        const response = await fetch(`/api/summary-reports/quick-stats?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`);
+        if (!response.ok) throw new Error('Failed to load quick stats');
+
+        const stats = await response.json();
+
+        // Update UI
+        document.getElementById('totalOrdersReport').textContent = stats.totalOrders || 0;
+        document.getElementById('totalRevenueReport').textContent = '$' + (stats.totalRevenue || 0).toLocaleString();
+        document.getElementById('totalCustomersReport').textContent = stats.totalCustomers || 0;
+        document.getElementById('successRateReport').textContent = (stats.successRate || 0).toFixed(1) + '%';
+
+        // Update chart if detailed data is available
+        if (stats.detailedData && stats.detailedData.monthlyBreakdown) {
+            updateMonthlyChart(stats.detailedData.monthlyBreakdown);
+        }
+
+    } catch (error) {
+        console.error('Error loading quick stats:', error);
+    }
+}
+
+async function loadGeneratedReports() {
+    try {
+        const response = await fetch('/api/summary-reports');
+        if (!response.ok) throw new Error('Failed to load reports');
+
+        const reports = await response.json();
+        refreshReportsTable(reports);
+
+    } catch (error) {
+        console.error('Error loading reports:', error);
+    }
+}
+
+function refreshReportsTable(reports) {
+    const tbody = document.querySelector('#reportsTable tbody');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+
+    if (reports.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No reports generated yet</td></tr>';
+        return;
+    }
+
+    reports.forEach(report => {
+        const row = document.createElement('tr');
+        const periodStart = new Date(report.periodStart).toLocaleDateString();
+        const periodEnd = new Date(report.periodEnd).toLocaleDateString();
+        const generatedAt = new Date(report.generatedAt).toLocaleString();
+
+        row.innerHTML = `
+            <td>${report.reportName}</td>
+            <td>${report.reportType}</td>
+            <td>${periodStart} to ${periodEnd}</td>
+            <td>${report.totalOrders}</td>
+            <td>$${report.totalRevenue.toLocaleString()}</td>
+            <td>${generatedAt}</td>
+            <td>
+                <button class="btn btn-primary btn-sm" onclick="downloadReport(${report.id})">
+                    <i class="fas fa-download"></i> CSV
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="deleteReport(${report.id})">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+async function generateReport() {
+    try {
+        const reportType = document.getElementById('reportType').value;
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+
+        if (!startDate || !endDate) {
+            showAlert('Please select start and end dates', 'error');
+            return;
+        }
+
+        const startDateTime = new Date(startDate + 'T00:00:00');
+        const endDateTime = new Date(endDate + 'T23:59:59');
+
+        const response = await fetch('/api/summary-reports/generate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `reportType=${reportType}&startDate=${startDateTime.toISOString()}&endDate=${endDateTime.toISOString()}&generatedBy=SalesManager`
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to generate report');
+        }
+
+        const report = await response.json();
+        showAlert('Report generated successfully!', 'success');
+        loadGeneratedReports();
+
+    } catch (error) {
+        console.error('Error generating report:', error);
+        showAlert('Error generating report: ' + error.message, 'error');
+    }
+}
+
+async function downloadReport(reportId) {
+    try {
+        const response = await fetch(`/api/summary-reports/${reportId}/download`);
+        if (!response.ok) throw new Error('Failed to download report');
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `order_report_${reportId}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        showAlert('Report downloaded successfully!', 'success');
+
+    } catch (error) {
+        console.error('Error downloading report:', error);
+        showAlert('Error downloading report: ' + error.message, 'error');
+    }
+}
+
+async function deleteReport(reportId) {
+    if (!confirm('Are you sure you want to delete this report?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/summary-reports/${reportId}`, {
+            method: 'DELETE'
+        });
+
+        if (!response.ok) throw new Error('Failed to delete report');
+
+        showAlert('Report deleted successfully!', 'success');
+        loadGeneratedReports();
+
+    } catch (error) {
+        console.error('Error deleting report:', error);
+        showAlert('Error deleting report: ' + error.message, 'error');
+    }
+}
+
+function initializeMonthlyChart() {
+    const ctx = document.getElementById('monthlyRevenueChart')?.getContext('2d');
+    if (!ctx) return;
+
+    monthlyRevenueChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Monthly Revenue ($)',
+                data: [],
+                backgroundColor: 'rgba(76, 175, 80, 0.8)',
+                borderColor: 'rgba(76, 175, 80, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: true
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function updateMonthlyChart(monthlyBreakdown) {
+    if (!monthlyRevenueChart) return;
+
+    const labels = monthlyBreakdown.map(item => item.month);
+    const data = monthlyBreakdown.map(item => item.revenue);
+
+    monthlyRevenueChart.data.labels = labels;
+    monthlyRevenueChart.data.datasets[0].data = data;
+    monthlyRevenueChart.update();
+}
+
+// Export functions
+window.loadSummaryReport = loadSummaryReport;
+window.generateReport = generateReport;
+window.downloadReport = downloadReport;
+window.deleteReport = deleteReport;
+
 // Export functions for global access
 window.showSection = showSection;
 window.logout = logout;
