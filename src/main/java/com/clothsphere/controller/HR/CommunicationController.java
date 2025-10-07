@@ -10,7 +10,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpSession;
-import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Optional;
@@ -18,6 +17,8 @@ import java.util.Optional;
 @Controller
 @RequestMapping("/communication")
 public class CommunicationController {
+
+
 
     @Autowired
     private CommunicationService communicationService;
@@ -57,8 +58,9 @@ public class CommunicationController {
     /**
      * Send message using service layer
      */
-    @PostMapping("/send")
+    //@PostMapping("/send")
     @ResponseBody
+
     public ResponseEntity<Map<String, Object>> sendMessage(
             @RequestParam String senderEmail,
             @RequestParam String receiverEmail,
