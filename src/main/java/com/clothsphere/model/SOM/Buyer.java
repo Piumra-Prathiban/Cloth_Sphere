@@ -7,6 +7,7 @@ import jakarta.persistence.*;
 public class Buyer {
 
     // PIUMARA:- ONLINE REGISTER BUYERS PID IS OBY(online Buyer)(OBY01, OBY02 like vise) not LBY(Local Buyer)
+    //ONLINE BUYER LOGIN CREDENTIAL SAVE THE DIFFERENT TABLE(Online_Buyer_login) add the Password(Encrypt using PasswordEncoder),user_name and some role or something
 
     @Id
     @Column(name = "buyer_id", length = 10)
