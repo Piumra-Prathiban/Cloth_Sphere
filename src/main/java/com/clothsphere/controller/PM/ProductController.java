@@ -7,7 +7,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/products")
@@ -104,4 +107,46 @@ public class ProductController {
         String nextId = productService.generateNextProductId();
         return new ResponseEntity<>(nextId, HttpStatus.OK);
     }
+
+    // In ProductController.java - ADD THESE ENDPOINTS
+    @GetMapping("/{productId}/stock")
+    public ResponseEntity<Integer> getProductStock(@PathVariable String productId) {
+        Integer stock = productService.getProductStock(productId);
+        return new ResponseEntity<>(stock, HttpStatus.OK);
+    }
+
+    @PutMapping("/{productId}/stock")
+    public ResponseEntity<?> updateProductStock(@PathVariable String productId,
+                                                @RequestParam Integer quantitySold) {
+        boolean success = productService.updateProductStock(productId, quantitySold);
+        if (success) {
+            return new ResponseEntity<>("Stock updated successfully", HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>("Insufficient stock or product not found", HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    // In ProductController.java - Add this endpoint for sales dashboard
+    @GetMapping("/for-sales")
+    public ResponseEntity<List<Map<String, Object>>> getProductsForSales() {
+        List<Product> products = productService.getAllProducts();
+
+        List<Map<String, Object>> productList = products.stream()
+                .map(product -> {
+                    Map<String, Object> productMap = new HashMap<>();
+                    productMap.put("id", product.getId());
+                    productMap.put("productId", product.getProductId());
+                    productMap.put("name", product.getName());
+                    productMap.put("code", product.getCode());
+                    productMap.put("price", product.getPrice());
+                    productMap.put("stock", product.getStock());
+                    productMap.put("category", product.getCategory());
+                    productMap.put("description", product.getDescription());
+                    return productMap;
+                })
+                .collect(Collectors.toList());
+
+        return new ResponseEntity<>(productList, HttpStatus.OK);
+    }
+
 }

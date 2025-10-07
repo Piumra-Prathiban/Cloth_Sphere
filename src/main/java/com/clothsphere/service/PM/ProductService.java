@@ -91,4 +91,29 @@ public class ProductService{
     public boolean isProductIdExists(String productId) {
         return productRepository.existsByProductId(productId);
     }
+
+    public boolean updateProductStock(String productId, Integer quantitySold) {
+        Optional<Product> productOpt = productRepository.findByProductId(productId);
+        if (productOpt.isPresent()) {
+            Product product = productOpt.get();
+            if (product.getStock() >= quantitySold) {
+                product.setStock(product.getStock() - quantitySold);
+                productRepository.save(product);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public Integer getProductStock(String productId) {
+        Optional<Product> product = productRepository.findByProductId(productId);
+        return product.map(Product::getStock).orElse(0);
+    }
+
+    // In ProductService.java - ADD THIS METHOD
+    public Product getProductByName(String name) {
+        Optional<Product> product = productRepository.findByName(name);
+        return product.orElse(null);
+    }
+
 }

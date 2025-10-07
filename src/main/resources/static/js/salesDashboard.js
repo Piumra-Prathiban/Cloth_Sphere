@@ -28,7 +28,7 @@ function showSection(sectionId) {
     }
 }
 
-// Initialize dashboard
+// Update DOMContentLoaded function
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Sales Dashboard initialized');
 
@@ -41,12 +41,23 @@ document.addEventListener('DOMContentLoaded', function() {
     // Set up form event listeners
     setupFormListeners();
 
-    // Load buyers for selection
-    loadBuyersForSelection();
+    // Setup quantity validation
+    setupQuantityValidation();
 
-    // Load products for product dropdown
-    loadProducts();
-    setupProductSelection();
+    // Load products with proper sequencing
+    loadProducts().then((products) => {
+        console.log('Products loaded successfully, count:', products.length);
+
+        setTimeout(() => {
+            setupProductSelection();
+            console.log('Product selection setup complete');
+        }, 200);
+    }).catch(error => {
+        console.error('Failed to load products:', error);
+        setTimeout(() => {
+            setupProductSelection();
+        }, 200);
+    });
 
     // Start auto-refresh for stats
     startStatsAutoRefresh();
@@ -54,8 +65,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add real-time search listeners
     setupRealTimeSearch();
 
-    // Test product loading
-    setTimeout(debugProductLoading, 1000);
+    console.log('Dashboard initialization complete');
 });
 
 // Setup real-time search functionality
@@ -228,158 +238,410 @@ function updateQuickStatsAfterOrderChange() {
     }
 }
 
-// Form setup
+// Form setup - FIXED VERSION
 function setupFormListeners() {
     // Order form submission
-    document.getElementById('orderForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        createOrder();
-    });
+    const orderForm = document.getElementById('orderForm');
+    if (orderForm) {
+        orderForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (validateOrderForm()) {
+                createOrder();
+            }
+        });
+    }
 
-    // Message form submission
-    document.getElementById('messageForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        sendMessage();
-    });
-}
+    // Message form submission (only if it exists)
+    const messageForm = document.getElementById('messageForm');
+    if (messageForm) {
+        messageForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            sendMessage();
+        });
+    }
 
-// Load products for product type dropdown
-async function loadProducts() {
-    try {
-        const response = await fetch('/api/products');
-        if (!response.ok) throw new Error('Failed to load products');
+    // Add event listeners for real-time calculation
+    const quantityInput = document.getElementById('quantity');
+    const discountInput = document.getElementById('discountPercentage');
 
-        const products = await response.json();
-        console.log('Loaded products from API:', products); // Debug log
-        populateProductDropdown(products);
-
-    } catch (error) {
-        console.error('Error loading products:', error);
-        showAlert('Error loading products: ' + error.message, 'error');
-        // Fallback to static products if API fails
-        loadFallbackProducts();
+    if (quantityInput) {
+        quantityInput.addEventListener('input', calculateTotal);
+    }
+    if (discountInput) {
+        discountInput.addEventListener('input', calculateTotal);
     }
 }
 
-// Populate product type dropdown with actual products
+// Enhanced product loading with better error handling
+async function loadProducts() {
+    try {
+        console.log('Loading products from API...');
+        const response = await fetch('/api/products');
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const products = await response.json();
+        console.log('Products loaded successfully:', products);
+
+        // Validate and transform product data
+        const validProducts = products.filter(product =>
+            product && product.name && (product.price !== undefined && product.price !== null)
+        ).map(product => ({
+            name: product.name,
+            price: parseFloat(product.price) || 0,
+            code: product.code || 'N/A',
+            category: product.category || 'General',
+            productId: product.productId || product.id?.toString(),
+            stock: product.stock || 0
+        }));
+
+        if (validProducts.length === 0) {
+            console.warn('No valid products found');
+            useFallbackProducts();
+            return;
+        }
+
+        populateProductDropdown(validProducts);
+        return validProducts;
+
+    } catch (error) {
+        console.error('Error loading products:', error);
+        useFallbackProducts();
+    }
+}
+
+function useFallbackProducts() {
+    const fallbackProducts = [
+        {
+            name: "Classic Cotton T-Shirt",
+            price: 19.99,
+            code: "TS001",
+            category: "Shirts",
+            productId: "P01"
+        },
+        {
+            name: "Premium V-Neck Tee",
+            price: 24.99,
+            code: "TS002",
+            category: "Shirts",
+            productId: "P02"
+        },
+        {
+            name: "Designer Polo Shirt",
+            price: 34.99,
+            code: "PL001",
+            category: "Shirts",
+            productId: "P03"
+        }
+    ];
+
+    populateProductDropdown(fallbackProducts);
+}
+// Enhanced product loading
 function populateProductDropdown(products) {
+    const productTypeSelect = document.getElementById('productType');
+    if (!productTypeSelect) return;
+
+    productTypeSelect.innerHTML = '<option value="">Select Product Type</option>';
+
+    products.forEach(product => {
+        const option = document.createElement('option');
+        option.value = product.name;
+
+        // Ensure all product data is available
+        const productData = {
+            name: product.name,
+            price: product.price || 0,
+            code: product.code || 'N/A',
+            category: product.category || 'General',
+            productId: product.productId || product.id?.toString() || 'UNKNOWN',
+            stock: product.stock || 0
+        };
+
+        option.textContent = `${product.name} - $${productData.price.toFixed(2)} (Stock: ${productData.stock})`;
+        option.setAttribute('data-product', JSON.stringify(productData));
+
+        // Store individual attributes as backup
+        option.setAttribute('data-product-id', productData.productId);
+        option.setAttribute('data-price', productData.price);
+        option.setAttribute('data-stock', productData.stock);
+        option.setAttribute('data-code', productData.code);
+
+        if (productData.stock <= 0) {
+            option.disabled = true;
+            option.textContent += ' - OUT OF STOCK';
+        }
+
+        productTypeSelect.appendChild(option);
+    });
+}
+
+// Enhanced quantity input with stock validation
+function setupQuantityValidation() {
+    const quantityInput = document.getElementById('quantity');
+    if (quantityInput) {
+        quantityInput.addEventListener('change', validateQuantityAgainstStock);
+        quantityInput.addEventListener('input', validateQuantityAgainstStock);
+    }
+}
+
+// Validate quantity against available stock
+async function validateQuantityAgainstStock() {
+    const productTypeSelect = document.getElementById('productType');
+    const selectedOption = productTypeSelect.options[productTypeSelect.selectedIndex];
+    const quantity = parseInt(this.value) || 0;
+
+    if (!selectedOption.value || quantity <= 0) {
+        return;
+    }
+
+    try {
+        const productJson = selectedOption.getAttribute('data-product');
+        if (productJson) {
+            const productData = JSON.parse(productJson);
+            const availableStock = productData.stock || 0;
+
+            if (quantity > availableStock) {
+                this.style.borderColor = '#dc3545';
+                showAlert(`Warning: Only ${availableStock} units available in stock`, 'warning');
+            } else {
+                this.style.borderColor = '';
+                // Clear any existing warning alerts
+                const existingAlerts = document.querySelectorAll('.alert');
+                existingAlerts.forEach(alert => {
+                    if (alert.textContent.includes('Warning:')) {
+                        alert.remove();
+                    }
+                });
+            }
+        }
+    } catch (error) {
+        console.error('Error validating quantity:', error);
+    }
+}
+
+// Improved product selection handler
+function setupProductSelection() {
     const productTypeSelect = document.getElementById('productType');
     if (!productTypeSelect) {
         console.error('Product type select element not found');
         return;
     }
 
-    // Clear existing options except the first one
-    productTypeSelect.innerHTML = '<option value="">Select Product Type</option>';
+    // Remove existing event listeners
+    const newSelect = productTypeSelect.cloneNode(true);
+    productTypeSelect.parentNode.replaceChild(newSelect, productTypeSelect);
 
-    if (!products || products.length === 0) {
-        console.warn('No products available');
-        const option = document.createElement('option');
-        option.value = '';
-        option.textContent = 'No products available';
-        productTypeSelect.appendChild(option);
+    // Add new event listener
+    document.getElementById('productType').addEventListener('change', function() {
+        handleProductSelection(this);
+    });
+}
+
+
+function handleProductSelection(selectElement) {
+    const selectedOption = selectElement.options[selectElement.selectedIndex];
+
+    if (!selectedOption.value) {
+        clearProductDetails();
         return;
     }
 
-    // Group products by category
-    const productsByCategory = {};
-    products.forEach(product => {
-        if (!productsByCategory[product.category]) {
-            productsByCategory[product.category] = [];
+    try {
+        let productData;
+        const productJson = selectedOption.getAttribute('data-product');
+
+        if (productJson) {
+            productData = JSON.parse(productJson);
+        } else {
+            // Fallback: get data from individual attributes
+            productData = {
+                name: selectedOption.getAttribute('data-name') || selectedOption.textContent.split(' - ')[0],
+                price: parseFloat(selectedOption.getAttribute('data-price')) || 0,
+                code: selectedOption.getAttribute('data-code') || 'N/A',
+                productId: selectedOption.getAttribute('data-product-id') || '',
+                stock: parseInt(selectedOption.getAttribute('data-stock')) || 0
+            };
         }
-        productsByCategory[product.category].push(product);
-    });
 
-    // Add products organized by category
-    Object.keys(productsByCategory).forEach(category => {
-        const optgroup = document.createElement('optgroup');
-        optgroup.label = category;
+        if (productData && productData.price > 0) {
+            autoFillProductDetails(productData);
+        } else {
+            showAlert('Invalid product price. Please select another product.', 'error');
+            selectElement.selectedIndex = 0;
+            clearProductDetails();
+        }
 
-        productsByCategory[category].forEach(product => {
-            const option = document.createElement('option');
-            option.value = product.productId || product.name; // Use productId as value
-            option.textContent = `${product.name} - $${product.price} (Code: ${product.code})`;
-            option.setAttribute('data-product', JSON.stringify(product));
-            optgroup.appendChild(option);
-        });
-
-        productTypeSelect.appendChild(optgroup);
-    });
-
-    console.log('Product dropdown populated with', products.length, 'products');
-}
-
-// Fallback product data in case API fails
-function loadFallbackProducts() {
-    const fallbackProducts = [
-        { name: "Classic Cotton T-Shirt", category: "Shirts", price: 19.99, code: "75001", productId: "P01" },
-        { name: "Premium V-Neck Tee", category: "Shirts", price: 24.99, code: "75002", productId: "P02" },
-        { name: "Graphic Print T-Shirt", category: "Shirts", price: 29.99, code: "75003", productId: "P03" },
-        { name: "Slim Fit Jeans", category: "Jeans", price: 59.99, code: "JN001", productId: "P04" },
-        { name: "Relaxed Fit Jeans", category: "Jeans", price: 49.99, code: "JN002", productId: "P05" },
-        { name: "Designer Ripped Jeans", category: "Jeans", price: 79.99, code: "JN003", productId: "P06" },
-        { name: "Summer Floral Dress", category: "Dresses", price: 45.99, code: "DR001", productId: "P07" },
-        { name: "Elegant Cocktail Dress", category: "Dresses", price: 89.99, code: "DR002", productId: "P08" },
-        { name: "Denim Jacket", category: "Jackets", price: 65.99, code: "JK001", productId: "P09" },
-        { name: "Bomber Jacket", category: "Jackets", price: 75.99, code: "JK002", productId: "P10" }
-    ];
-
-    populateProductDropdown(fallbackProducts);
-    showAlert('Using fallback product data. Some features may be limited.', 'warning');
-}
-
-// Setup product selection handler
-function setupProductSelection() {
-    const productTypeSelect = document.getElementById('productType');
-    if (productTypeSelect) {
-        productTypeSelect.addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
-            if (selectedOption.value && selectedOption.getAttribute('data-product')) {
-                try {
-                    const product = JSON.parse(selectedOption.getAttribute('data-product'));
-                    autoFillProductDetails(product);
-                } catch (e) {
-                    console.error('Error parsing product data:', e);
-                    showAlert('Error loading product details', 'error');
-                }
-            } else {
-                // Clear product details if no product selected
-                document.getElementById('unitPrice').value = '';
-                calculateTotal();
-            }
-        });
+    } catch (error) {
+        console.error('Error handling product selection:', error);
+        showAlert('Error loading product details.', 'error');
+        selectElement.selectedIndex = 0;
+        clearProductDetails();
     }
 }
 
-// Auto-fill product details when product is selected
-function autoFillProductDetails(product) {
-    document.getElementById('unitPrice').value = product.price;
+// Extract product info from option text
+function extractProductFromText(text) {
+    console.log('Extracting product from text:', text);
 
-    // Set quantity to 1 by default if empty
+    // Pattern: "Product Name - $Price (Code: CODE)"
+    const pattern = /(.+?)\s*-\s*\$\s*(\d+\.?\d*)\s*\(Code:\s*([^)]+)\)/;
+    const match = text.match(pattern);
+
+    if (match) {
+        return {
+            name: match[1].trim(),
+            price: parseFloat(match[2]),
+            code: match[3].trim()
+        };
+    }
+
+    // Alternative pattern: "Product Name - Price (Code: CODE)"
+    const altPattern = /(.+?)\s*-\s*(\d+\.?\d*)\s*\(Code:\s*([^)]+)\)/;
+    const altMatch = text.match(altPattern);
+
+    if (altMatch) {
+        return {
+            name: altMatch[1].trim(),
+            price: parseFloat(altMatch[2]),
+            code: altMatch[3].trim()
+        };
+    }
+
+    return null;
+}
+
+// Clear product details function
+function clearProductDetails() {
+    const unitPriceInput = document.getElementById('unitPrice');
+    if (unitPriceInput) {
+        unitPriceInput.removeAttribute('readonly');
+        unitPriceInput.value = '';
+        unitPriceInput.setAttribute('readonly', 'readonly');
+    }
+
+    const subtotalInput = document.getElementById('subtotalAmount');
+    if (subtotalInput) subtotalInput.value = '';
+
+    const totalInput = document.getElementById('totalAmount');
+    if (totalInput) totalInput.value = '';
+
+    console.log('Product details cleared');
+}
+
+// Autofill product details - ENHANCED VERSION
+function autoFillProductDetails(product) {
+    console.log('Auto-filling product details with:', product);
+
+    const unitPriceInput = document.getElementById('unitPrice');
     const quantityInput = document.getElementById('quantity');
-    if (!quantityInput.value || quantityInput.value === '0') {
+
+    if (!unitPriceInput) {
+        console.error('Unit price input not found!');
+        return;
+    }
+
+    // Get the price - handle different field names
+    let price = product.price || product.unitPrice || product.cost || 0;
+
+    // Ensure price is a number
+    if (typeof price === 'string') {
+        price = parseFloat(price);
+    }
+
+    console.log('Final price to set:', price);
+
+    if (isNaN(price) || price <= 0) {
+        console.error('Invalid price:', price);
+        showAlert('Invalid product price. Please select another product.', 'error');
+        return;
+    }
+
+    // Update unit price field
+    unitPriceInput.removeAttribute('readonly');
+    unitPriceInput.value = price.toFixed(2);
+    unitPriceInput.setAttribute('readonly', 'readonly');
+
+    console.log('Unit price set to:', unitPriceInput.value);
+
+    // Ensure quantity has a value
+    if (!quantityInput.value || quantityInput.value === '0' || quantityInput.value === '') {
         quantityInput.value = '1';
     }
 
-    // Trigger calculation
+    // Calculate totals
     calculateTotal();
 
-    showAlert(`Product "${product.name}" selected. Price: $${product.price}`, 'success');
+    // Show success message
+    const productName = product.name || 'Product';
+    showAlert(`Product "${productName}" selected - Price: $${price.toFixed(2)}`, 'success');
 }
 
-// Calculate order total with discount
+// Calculate order total with discount - ROBUST VERSION
 function calculateTotal() {
     const quantity = parseInt(document.getElementById('quantity').value) || 0;
     const unitPrice = parseFloat(document.getElementById('unitPrice').value) || 0;
     const discountPercentage = parseFloat(document.getElementById('discountPercentage').value) || 0;
 
+    console.log('Calculation inputs:', { quantity, unitPrice, discountPercentage });
+
+    // Validate inputs
+    if (quantity <= 0 || unitPrice <= 0) {
+        document.getElementById('subtotalAmount').value = '0.00';
+        document.getElementById('totalAmount').value = '0.00';
+        console.log('Invalid inputs, setting totals to 0');
+        return;
+    }
+
     const subtotal = quantity * unitPrice;
     const discountAmount = subtotal * (discountPercentage / 100);
-    const total = subtotal - discountAmount;
+    const total = Math.max(0, subtotal - discountAmount);
 
     document.getElementById('subtotalAmount').value = subtotal.toFixed(2);
     document.getElementById('totalAmount').value = total.toFixed(2);
+
+    console.log('Calculated totals:', {
+        subtotal: subtotal.toFixed(2),
+        total: total.toFixed(2)
+    });
 }
+
+// Add this function to validate the form before submission
+function validateOrderForm() {
+    const unitPrice = parseFloat(document.getElementById('unitPrice').value);
+    const productType = document.getElementById('productType').value;
+
+    if (!productType) {
+        showAlert('Please select a product', 'error');
+        return false;
+    }
+
+    if (isNaN(unitPrice) || unitPrice <= 0) {
+        showAlert('Please select a valid product with a price', 'error');
+        return false;
+    }
+
+    return true;
+}
+
+// Debug function to check form data before submission
+function debugFormData() {
+    const formData = new FormData(document.getElementById('orderForm'));
+    const productTypeSelect = document.getElementById('productType');
+    const selectedProduct = productTypeSelect.options[productTypeSelect.selectedIndex];
+
+    console.log('=== FORM DEBUG INFO ===');
+    console.log('Selected Product:', selectedProduct.textContent);
+    console.log('Product Value:', selectedProduct.value);
+    console.log('Product Data Attribute:', selectedProduct.getAttribute('data-product'));
+    console.log('Unit Price Input Value:', document.getElementById('unitPrice').value);
+    console.log('Unit Price Input Type:', typeof document.getElementById('unitPrice').value);
+    console.log('Parsed Unit Price:', parseFloat(document.getElementById('unitPrice').value));
+    console.log('========================');
+}
+
 
 // Order Management
 async function loadOrders() {
@@ -507,43 +769,85 @@ function filterOrders() {
     }
 }
 
+// Fixed order creation function with proper product ID handling
 async function createOrder() {
     try {
         const formData = new FormData(document.getElementById('orderForm'));
         const productTypeSelect = document.getElementById('productType');
-        const selectedProduct = productTypeSelect.options[productTypeSelect.selectedIndex];
+        const selectedOption = productTypeSelect.options[productTypeSelect.selectedIndex];
 
-        if (!selectedProduct.value) {
+        if (!selectedOption.value) {
             showAlert('Please select a product', 'error');
             return;
         }
 
-        const productData = JSON.parse(selectedProduct.getAttribute('data-product'));
+        // Get product data safely
+        let productData;
+        try {
+            const productJson = selectedOption.getAttribute('data-product');
+            productData = productJson ? JSON.parse(productJson) : null;
+        } catch (e) {
+            console.error('Error parsing product data:', e);
+            productData = null;
+        }
 
-        const orderData = {
-            customerName: formData.get('customerName'),
-            customerEmail: formData.get('customerEmail'),
-            customerPhone: formData.get('customerPhone'),
-            customerAddress: formData.get('customerAddress'),
-            productType: productData.name,
-            quantity: parseInt(formData.get('quantity')),
-            unitPrice: parseFloat(formData.get('unitPrice')),
-            discountPercentage: parseFloat(formData.get('discountPercentage')) || 0,
-            totalAmount: parseFloat(formData.get('totalAmount')),
-            orderType: 'PHYSICAL',
-            orderNotes: `Product: ${productData.name}, Code: ${productData.code}, Category: ${productData.category}`
-        };
+        // If no product data, extract from option attributes
+        if (!productData) {
+            productData = {
+                name: selectedOption.value,
+                price: parseFloat(document.getElementById('unitPrice').value) || 0,
+                code: selectedOption.getAttribute('data-code') || 'N/A',
+                productId: selectedOption.getAttribute('data-product-id') || 'UNKNOWN',
+                stock: parseInt(selectedOption.getAttribute('data-stock')) || 0
+            };
+        }
 
-        // Validation
-        if (!orderData.customerName || !orderData.customerEmail || !orderData.customerPhone) {
+        // Validate required fields
+        const customerName = formData.get('customerName');
+        const customerEmail = formData.get('customerEmail');
+        const customerPhone = formData.get('customerPhone');
+        const quantity = parseInt(formData.get('quantity'));
+        const unitPrice = parseFloat(document.getElementById('unitPrice').value);
+
+        if (!customerName || !customerEmail || !customerPhone) {
             showAlert('Please fill in all required customer fields', 'error');
             return;
         }
 
-        if (orderData.quantity <= 0) {
+        if (isNaN(quantity) || quantity <= 0) {
             showAlert('Please enter a valid quantity', 'error');
             return;
         }
+
+        if (isNaN(unitPrice) || unitPrice <= 0) {
+            showAlert('Please select a valid product with a price', 'error');
+            return;
+        }
+
+        // Stock validation
+        if (productData.stock !== undefined && productData.stock < quantity) {
+            showAlert(`Insufficient stock! Only ${productData.stock} units available.`, 'error');
+            return;
+        }
+
+        // Prepare order data with proper product ID
+        const orderData = {
+            customerName: customerName,
+            customerEmail: customerEmail,
+            customerPhone: customerPhone,
+            customerAddress: formData.get('customerAddress'),
+            productType: productData.name,
+            quantity: quantity,
+            unitPrice: unitPrice,
+            discountPercentage: parseFloat(formData.get('discountPercentage')) || 0,
+            totalAmount: parseFloat(document.getElementById('totalAmount').value) || 0,
+            orderType: 'PHYSICAL',
+            // CRITICAL: Make sure productId is included in the notes in this exact format
+            orderNotes: `Product: ${productData.name}, Code: ${productData.code}, ProductId: ${productData.productId}, Category: ${productData.category}`,
+            status: 'PENDING'
+        };
+
+        console.log('Sending order data:', orderData);
 
         const response = await fetch('/api/orders?createdBy=SalesManager', {
             method: 'POST',
@@ -554,27 +858,120 @@ async function createOrder() {
         });
 
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to create order');
+            const errorText = await response.text();
+            throw new Error(errorText || 'Failed to create order');
         }
 
         const createdOrder = await response.json();
-        showAlert('Order created successfully! Order ID: ' + createdOrder.orderId, 'success');
-        resetOrderForm();
+        showAlert(`Order created successfully! Order ID: ${createdOrder.orderId}`, 'success');
 
-        // Refresh orders list if on order view
-        if (document.getElementById('orderView').classList.contains('active')) {
-            loadOrders();
-        }
-
-        // Refresh quick stats - UPDATED
-        updateQuickStatsAfterOrderChange();
+        // Reset form and refresh data
+        resetOrderFormOnly();
+        refreshAfterOrderCreation();
 
     } catch (error) {
         console.error('Error creating order:', error);
         showAlert('Error creating order: ' + error.message, 'error');
     }
 }
+// Refresh data after order creation
+function refreshAfterOrderCreation() {
+    // Refresh orders list if on order view
+    if (document.getElementById('orderView').classList.contains('active')) {
+        loadOrders();
+    }
+
+    // Refresh quick stats
+    updateQuickStatsAfterOrderChange();
+
+    // Reload products to get updated stock
+    loadProducts();
+}
+
+// Reset only the order form (not the entire page)
+function resetOrderFormOnly() {
+    // Reset form fields
+    document.getElementById('orderForm').reset();
+
+    // Clear calculated fields
+    document.getElementById('subtotalAmount').value = '';
+    document.getElementById('totalAmount').value = '';
+
+    // Clear customer selection but keep customer management data
+    document.getElementById('existingCustomer').value = '';
+
+    // Reset product selection
+    const productTypeSelect = document.getElementById('productType');
+    if (productTypeSelect) {
+        productTypeSelect.selectedIndex = 0;
+    }
+
+    // Clear unit price
+    const unitPriceInput = document.getElementById('unitPrice');
+    if (unitPriceInput) {
+        unitPriceInput.removeAttribute('readonly');
+        unitPriceInput.value = '';
+        unitPriceInput.setAttribute('readonly', 'readonly');
+    }
+
+    console.log('Order form reset successfully');
+}
+
+// Update Product Stock Function
+async function updateProductStock(productId, soldQuantity) {
+    try {
+        const response = await fetch(`/api/products/productId/${productId}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch product for stock update');
+        }
+
+        const product = await response.json();
+        const newStock = product.stock - soldQuantity;
+
+        // Update product stock
+        const updateResponse = await fetch(`/api/products/${product.id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                ...product,
+                stock: newStock
+            })
+        });
+
+        if (!updateResponse.ok) {
+            throw new Error('Failed to update product stock');
+        }
+
+        console.log(`Stock updated for ${product.name}: ${product.stock} -> ${newStock}`);
+
+    } catch (error) {
+        console.error('Error updating product stock:', error);
+        // Don't show alert to user as order was already created
+    }
+}
+
+// Stock Validation Function
+async function validateStock(productId, requestedQuantity) {
+    try {
+        const response = await fetch(`/api/products/productId/${productId}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch product details');
+        }
+
+        const product = await response.json();
+        return {
+            valid: product.stock >= requestedQuantity,
+            availableStock: product.stock,
+            product: product
+        };
+    } catch (error) {
+        console.error('Error validating stock:', error);
+        return { valid: false, availableStock: 0 };
+    }
+}
+
 
 function resetOrderForm() {
     document.getElementById('orderForm').reset();

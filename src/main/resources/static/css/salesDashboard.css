@@ -1008,3 +1008,27 @@ input:invalid {
 input:valid {
     border-color: #28a745;
 }
+/* Ensure readonly fields can still display values */
+input[readonly] {
+    background-color: #f8f9fa !important;
+    color: #495057; /* Ensure text is visible */
+    cursor: not-allowed;
+}
+
+/* Remove any styles that might hide the content */
+.readonly-field {
+    background-color: #f8f9fa;
+    color: #495057;
+}
+
+/* Add to salesDashboard.css */
+input[readonly] {
+    background-color: #f8f9fa !important;
+    color: #495057 !important; /* Ensure text is visible */
+    cursor: not-allowed;
+}
+
+.readonly-field {
+    background-color: #f8f9fa;
+    color: #495057;
+}

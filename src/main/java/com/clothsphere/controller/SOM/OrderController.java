@@ -20,14 +20,25 @@ public class OrderController {
     @Autowired
     private OrderService orderService;
 
-    // Create new order (Sales Manager - only PHYSICAL orders)
+    // In OrderController.java - FIXED CREATE ORDER ENDPOINT
     @PostMapping
     public ResponseEntity<?> createOrder(@RequestBody Order order,
                                          @RequestParam String createdBy) {
         try {
+            System.out.println("Received order creation request:");
+            System.out.println("Customer: " + order.getCustomerName());
+            System.out.println("Product: " + order.getProductType());
+            System.out.println("Quantity: " + order.getQuantity());
+            System.out.println("Notes: " + order.getOrderNotes());
+            System.out.println("Created By: " + createdBy);
+
             Order createdOrder = orderService.createOrder(order, createdBy);
+
+            System.out.println("Order created successfully: " + createdOrder.getOrderId());
             return new ResponseEntity<>(createdOrder, HttpStatus.CREATED);
+
         } catch (Exception e) {
+            System.err.println("Error in order controller: " + e.getMessage());
             Map<String, String> response = new HashMap<>();
             response.put("error", e.getMessage());
             return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);

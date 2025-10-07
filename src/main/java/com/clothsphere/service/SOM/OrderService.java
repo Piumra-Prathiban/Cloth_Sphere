@@ -2,6 +2,7 @@ package com.clothsphere.service.SOM;
 
 import com.clothsphere.model.SOM.Order;
 import com.clothsphere.repository.SOM.OrderRepository;
+import com.clothsphere.service.PM.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,20 +16,47 @@ public class OrderService {
     @Autowired
     private OrderRepository orderRepository;
 
-    // Generate next order ID (PHY01, PHY02, etc. for PHYSICAL type)
+    @Autowired
+    private ProductService productService;
+
+    // FIXED: Generate next order ID with proper prefix handling
     public String generateNextOrderId(String orderType) {
+        // Get all orders of this type
         String maxId = orderRepository.findMaxOrderIdByOrderType(orderType);
-        if (maxId == null) {
-            return orderType.substring(0, 3).toUpperCase() + "01";
+
+        // Determine prefix based on order type
+        String prefix;
+        if (orderType.equals("PHYSICAL")) {
+            prefix = "PHY";
+        } else if (orderType.equals("ONLINE")) {
+            prefix = "ONL";
+        } else {
+            prefix = orderType.substring(0, Math.min(3, orderType.length())).toUpperCase();
+        }
+
+        // If no orders exist yet, start from 01
+        if (maxId == null || maxId.isEmpty()) {
+            return prefix + "01";
         }
 
         try {
-            String prefix = orderType.substring(0, 3).toUpperCase();
-            int number = Integer.parseInt(maxId.substring(3));
+            // Extract the numeric part from the order ID
+            // Handles both PHY01, PHY02 and ONL01, ONL02 formats
+            String numericPart = maxId.replaceAll("[^0-9]", "");
+
+            if (numericPart.isEmpty()) {
+                return prefix + "01";
+            }
+
+            int number = Integer.parseInt(numericPart);
             number++;
+
+            // Format with leading zeros (2 digits)
             return String.format("%s%02d", prefix, number);
+
         } catch (NumberFormatException e) {
-            return orderType.substring(0, 3).toUpperCase() + "01";
+            System.err.println("Error parsing order ID: " + maxId);
+            return prefix + "01";
         }
     }
 
@@ -42,30 +70,109 @@ public class OrderService {
         return subtotal;
     }
 
-    // Create new order (Sales Manager can only create PHYSICAL orders)
+    // Create order with proper ID generation
     public Order createOrder(Order order, String createdBy) {
-        // Set order type to PHYSICAL for sales manager
-        order.setOrderType("PHYSICAL");
+        try {
+            // Extract product ID from order notes
+            String productId = extractProductIdFromOrder(order);
 
-        // Generate order ID if not provided
-        if (order.getOrderId() == null || order.getOrderId().isEmpty()) {
-            order.setOrderId(generateNextOrderId(order.getOrderType()));
+            System.out.println("Creating order for product ID: " + productId);
+            System.out.println("Order quantity: " + order.getQuantity());
+
+            // Validate stock before creating order
+            if (productId != null && !productId.equals("UNKNOWN")) {
+                Integer availableStock = productService.getProductStock(productId);
+                System.out.println("Available stock: " + availableStock);
+
+                if (availableStock < order.getQuantity()) {
+                    throw new RuntimeException("Insufficient stock. Available: " + availableStock + ", Requested: " + order.getQuantity());
+                }
+            }
+
+            // Set order type to PHYSICAL for sales manager
+            order.setOrderType("PHYSICAL");
+
+            // CRITICAL FIX: Always generate a NEW order ID
+            String nextOrderId = generateNextOrderId(order.getOrderType());
+            order.setOrderId(nextOrderId);
+            System.out.println("Generated NEW order ID: " + nextOrderId);
+
+            // Calculate total amount
+            Double totalAmount = calculateTotalAmount(
+                    order.getQuantity(),
+                    order.getUnitPrice(),
+                    order.getDiscountPercentage()
+            );
+            order.setTotalAmount(totalAmount);
+
+            // Set default values
+            order.setStatus("PENDING");
+            order.setPlaceDate(LocalDateTime.now());
+            order.setCreatedBy(createdBy);
+
+            // Save the order
+            Order savedOrder = orderRepository.save(order);
+            System.out.println("Order saved successfully: " + savedOrder.getOrderId());
+
+            // Update stock after successful order creation
+            if (productId != null && !productId.equals("UNKNOWN")) {
+                System.out.println("Updating stock for product: " + productId + ", quantity: " + order.getQuantity());
+                boolean stockUpdated = productService.updateProductStock(productId, order.getQuantity());
+                if (stockUpdated) {
+                    System.out.println("Stock updated successfully");
+                } else {
+                    System.out.println("Warning: Stock update failed for product: " + productId);
+                }
+            }
+
+            return savedOrder;
+
+        } catch (Exception e) {
+            System.err.println("Error creating order: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to create order: " + e.getMessage());
+        }
+    }
+
+    // Extract product ID from order notes
+    private String extractProductIdFromOrder(Order order) {
+        if (order.getOrderNotes() == null) {
+            return "UNKNOWN";
         }
 
-        // Calculate total amount
-        Double totalAmount = calculateTotalAmount(
-                order.getQuantity(),
-                order.getUnitPrice(),
-                order.getDiscountPercentage()
-        );
-        order.setTotalAmount(totalAmount);
+        String notes = order.getOrderNotes();
+        System.out.println("Extracting product ID from notes: " + notes);
 
-        // Set default values
-        order.setStatus("PENDING");
-        order.setPlaceDate(LocalDateTime.now());
-        order.setCreatedBy(createdBy);
+        // Look for "ProductId: P01" pattern
+        if (notes.contains("ProductId:")) {
+            try {
+                String[] parts = notes.split("ProductId:");
+                if (parts.length > 1) {
+                    String productIdPart = parts[1].split(",")[0].trim();
+                    System.out.println("Found product ID in notes: " + productIdPart);
+                    return productIdPart;
+                }
+            } catch (Exception e) {
+                System.err.println("Error extracting product ID from notes: " + e.getMessage());
+            }
+        }
 
-        return orderRepository.save(order);
+        // Look for product code as fallback
+        if (notes.contains("Code:")) {
+            try {
+                String[] parts = notes.split("Code:");
+                if (parts.length > 1) {
+                    String code = parts[1].split(",")[0].trim();
+                    System.out.println("Using code as product ID: " + code);
+                    return code;
+                }
+            } catch (Exception e) {
+                System.err.println("Error extracting code from notes: " + e.getMessage());
+            }
+        }
+
+        System.out.println("Could not extract product ID from notes");
+        return "UNKNOWN";
     }
 
     // Get all orders
@@ -83,7 +190,7 @@ public class OrderService {
         return orderRepository.findByOrderTypeAndOrderId(orderType, orderId);
     }
 
-    // Update order status (Sales Manager can only update from PENDING to IN_PRODUCTION or READY_TO_SHIP)
+    // Update order status
     public Order updateOrderStatus(String orderType, String orderId, String newStatus, String updatedBy) {
         Optional<Order> existingOrder = orderRepository.findByOrderTypeAndOrderId(orderType, orderId);
         if (existingOrder.isPresent()) {
@@ -102,10 +209,6 @@ public class OrderService {
 
     // Validate status transition rules
     private boolean isValidStatusTransition(String currentStatus, String newStatus) {
-        // Sales Manager can only:
-        // - PENDING → IN_PRODUCTION
-        // - PENDING → READY_TO_SHIP
-        // - IN_PRODUCTION → READY_TO_SHIP
         return (currentStatus.equals("PENDING") && (newStatus.equals("IN_PRODUCTION") || newStatus.equals("READY_TO_SHIP"))) ||
                 (currentStatus.equals("IN_PRODUCTION") && newStatus.equals("READY_TO_SHIP"));
     }

@@ -19,6 +19,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     List<Product> findByCategory(String category);
 
+    Optional<Product> findByName(String name);
+
     @Query("SELECT MAX(p.productId) FROM Product p WHERE p.productId LIKE 'P%'")
     String findMaxProductId();
 

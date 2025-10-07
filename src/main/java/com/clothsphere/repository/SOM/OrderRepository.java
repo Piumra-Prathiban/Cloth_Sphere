@@ -30,8 +30,9 @@ public interface OrderRepository extends JpaRepository<Order, OrderId> {
     @Query("SELECT o FROM Order o WHERE o.customerName LIKE %:customerName% ORDER BY o.placeDate DESC")
     List<Order> findByCustomerNameContaining(@Param("customerName") String customerName);
 
-    // Get the maximum order ID for a specific order type
-    @Query("SELECT MAX(o.orderId) FROM Order o WHERE o.orderType = :orderType AND o.orderId LIKE :orderType%")
+    // FIXED: Get the maximum order ID for a specific order type
+    // This now properly handles the prefix pattern matching
+    @Query("SELECT MAX(o.orderId) FROM Order o WHERE o.orderType = :orderType")
     String findMaxOrderIdByOrderType(@Param("orderType") String orderType);
 
     // Find all orders ordered by place date
