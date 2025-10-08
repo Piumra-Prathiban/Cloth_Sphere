@@ -243,6 +243,13 @@ public class PayrollService {
             if (payrollOpt.isPresent()) {
                 Payroll payroll = payrollOpt.get();
 
+                // Verify the payroll belongs to the requested employee
+                if (!payroll.getEmployeeId().equals(employeeId)) {
+                    result.put("success", false);
+                    result.put("message", "Access denied: Payroll does not belong to this employee");
+                    return result;
+                }
+
                 // Get employee details
                 String employeeName = getEmployeeName(employeeId);
 
@@ -440,5 +447,126 @@ public class PayrollService {
 
         return result;
     }
+
+    /**
+     * Get payroll for current employee only
+     */
+    @Transactional(readOnly = true)
+    public Map<String, Object> getCurrentEmployeePayroll(String employeeId, int year, int month) {
+        Map<String, Object> result = new HashMap<>();
+        String payrollMonth = String.format("%d-%02d", year, month);
+
+        try {
+            Optional<Payroll> payrollOpt = payrollRepository.findByEmployeeAndMonth(employeeId, payrollMonth);
+
+            if (payrollOpt.isPresent()) {
+                Payroll payroll = payrollOpt.get();
+
+                // Double-check this payroll belongs to the employee
+                if (!payroll.getEmployeeId().equals(employeeId)) {
+                    result.put("success", false);
+                    result.put("message", "Access denied");
+                    return result;
+                }
+
+                String employeeName = getEmployeeName(employeeId);
+
+                result.put("success", true);
+                result.put("payroll", payroll);
+                result.put("employeeName", employeeName);
+            } else {
+                result.put("success", false);
+                result.put("message", "No payroll found for the selected month");
+            }
+
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "Error fetching payroll: " + e.getMessage());
+        }
+
+        return result;
+    }
+
+    /**
+     * Get payroll history for current employee only
+     */
+    @Transactional(readOnly = true)
+    public Map<String, Object> getCurrentEmployeePayrollHistory(String employeeId) {
+        Map<String, Object> result = new HashMap<>();
+
+        try {
+            List<Payroll> employeePayrolls = payrollRepository.findAllByEmployee(employeeId);
+
+            List<Map<String, Object>> payrollDetails = new ArrayList<>();
+
+            for (Payroll payroll : employeePayrolls) {
+                // Ensure payroll belongs to this employee
+                if (payroll.getEmployeeId().equals(employeeId)) {
+                    Map<String, Object> detail = new HashMap<>();
+                    detail.put("payroll", payroll);
+                    detail.put("employeeName", getEmployeeName(employeeId));
+                    payrollDetails.add(detail);
+                }
+            }
+
+            result.put("success", true);
+            result.put("payrolls", payrollDetails);
+            result.put("totalRecords", payrollDetails.size());
+
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "Error fetching payroll history: " + e.getMessage());
+        }
+
+        return result;
+    }
+
+    /**
+     * Get payroll statistics for current employee
+     */
+    @Transactional(readOnly = true)
+    public Map<String, Object> getCurrentEmployeePayrollStatistics(String employeeId) {
+        Map<String, Object> result = new HashMap<>();
+
+        try {
+            List<Payroll> employeePayrolls = payrollRepository.findAllByEmployee(employeeId);
+
+            int totalPayrolls = 0;
+            int paidCount = 0;
+            int pendingCount = 0;
+            BigDecimal totalNetSalary = BigDecimal.ZERO;
+
+            for (Payroll payroll : employeePayrolls) {
+                if (payroll.getEmployeeId().equals(employeeId)) {
+                    totalPayrolls++;
+                    if ("PAID".equals(payroll.getStatus())) {
+                        paidCount++;
+                    } else if ("PENDING".equals(payroll.getStatus()) || "CALCULATED".equals(payroll.getStatus())) {
+                        pendingCount++;
+                    }
+                    if (payroll.getNetSalary() != null) {
+                        totalNetSalary = totalNetSalary.add(payroll.getNetSalary());
+                    }
+                }
+            }
+
+            Map<String, Object> stats = new HashMap<>();
+            stats.put("totalPayrolls", totalPayrolls);
+            stats.put("paidCount", paidCount);
+            stats.put("pendingCount", pendingCount);
+            stats.put("totalNetSalary", totalNetSalary);
+
+            result.put("success", true);
+            result.put("statistics", stats);
+
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "Error fetching payroll statistics: " + e.getMessage());
+        }
+
+        return result;
+    }
+
+
 
 }

@@ -1599,6 +1599,7 @@
      document.getElementById('current-payroll-month').textContent =
          `${monthNames[parseInt(month) - 1]} ${year}`;
 
+     // Use employee-specific endpoint
      fetch(`/employee/payroll/my-paysheet?year=${year}&month=${month}`, {
          method: 'GET',
          credentials: 'include'
@@ -1672,6 +1673,7 @@
      if (tableBody) tableBody.innerHTML = '';
      if (noHistoryElement) noHistoryElement.style.display = 'none';
 
+     // Use employee-specific endpoint
      fetch('/employee/payroll/my-paysheets', {
          method: 'GET',
          credentials: 'include'
