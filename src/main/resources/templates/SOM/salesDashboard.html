@@ -366,7 +366,7 @@
                     <button class="btn btn-success" onclick="generateReport()">
                         <i class="fas fa-file-export"></i> Generate Report
                     </button>
-                    <button class="btn btn-primary" onclick="loadQuickStats()">
+                    <button class="btn btn-primary" onclick="loadQuickStatsForReport()">
                         <i class="fas fa-sync-alt"></i> Refresh Stats
                     </button>
                 </div>
@@ -377,7 +377,7 @@
                 <div class="filter-row">
                     <div class="filter-group">
                         <label for="reportType">Report Type:</label>
-                        <select id="reportType">
+                        <select id="reportType" onchange="updateReportFilters()">
                             <option value="MONTHLY">Monthly</option>
                             <option value="WEEKLY">Weekly</option>
                             <option value="DAILY">Daily</option>
@@ -386,11 +386,11 @@
                     </div>
                     <div class="filter-group">
                         <label for="startDate">Start Date:</label>
-                        <input type="date" id="startDate">
+                        <input type="date" id="startDate" onchange="loadSummaryData()">
                     </div>
                     <div class="filter-group">
                         <label for="endDate">End Date:</label>
-                        <input type="date" id="endDate">
+                        <input type="date" id="endDate" onchange="loadSummaryData()">
                     </div>
                 </div>
             </div>

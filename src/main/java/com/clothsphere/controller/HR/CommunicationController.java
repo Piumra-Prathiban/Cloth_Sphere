@@ -57,7 +57,7 @@ public class CommunicationController {
     /**
      * Send message using service layer
      */
-    //@PostMapping("/send")
+    @PostMapping("/send")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> sendMessage(
             @RequestParam String senderEmail,
