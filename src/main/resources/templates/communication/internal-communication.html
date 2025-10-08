@@ -14,14 +14,7 @@
     <h2>Internal Communication</h2>
     <ul>
         <li>
-            <a th:href="@{${currentUser != null ?
-        (currentUser.role == 'employee' ? '/employeeDashboard' :
-         currentUser.role == 'hr-manager' ? '/hrDashboard' :
-         currentUser.role == 'factory-manager' ? '/factoryDashboard' :
-         currentUser.role == 'inventory-manager' ? '/inventoryDashboard' :
-         currentUser.role == 'sales-and-order-manager' ? '/salesDashboard' : '/'
-        ) : '/systemUserLogin'}}"
-               class="nav-link">
+            <a th:href="@{${dashboardUrl}}" class="nav-link">
                 <i class="fas fa-arrow-left"></i> Back to Dashboard
             </a>
         </li>

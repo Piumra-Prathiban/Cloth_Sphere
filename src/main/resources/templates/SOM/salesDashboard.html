@@ -24,8 +24,11 @@
             <i class="fas fa-list-alt"></i> Order View</a></li>
         <li><a href="#" onclick="showSection('summaryReport')" class="nav-link">
             <i class="fas fa-chart-bar"></i> Summary Report</a></li>
-        <li><a href="#" onclick="showSection('customerMessage')" class="nav-link">
-            <i class="fas fa-comments"></i> Send Message</a></li>
+        <li>
+            <a href="/communication/internal">
+                <i class="fas fa-comments"></i> Internal Communication
+            </a>
+        </li>
     </ul>
 </div>
 
@@ -466,7 +469,14 @@
 
     <!-- Customer Message Section -->
     <div id="customerMessage" class="content-section">
-        <!-- ... existing customer message content ... -->
+        <!-- Add this to your sales-dashboard.html -->
+        <div class="dashboard-card">
+            <a href="/communication/internal" class="card-link">
+                <i class="fas fa-comments"></i>
+                <h3>Internal Communication</h3>
+                <p>Send and receive messages with colleagues</p>
+            </a>
+        </div>
     </div>
 </div>
 

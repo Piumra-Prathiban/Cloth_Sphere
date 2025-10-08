@@ -41,7 +41,35 @@ public class CommunicationController {
         model.addAttribute("currentUser", currentUser);
         model.addAttribute("currentUserEmail", currentUser.getEmail());
 
+        // Determine dashboard URL based on role
+        String dashboardUrl = determineDashboardUrl(currentUser.getRole());
+        model.addAttribute("dashboardUrl", dashboardUrl);
+
         return "communication/internal-communication";
+    }
+
+    private String determineDashboardUrl(String role) {
+        if (role == null) return "/";
+
+        switch (role.toLowerCase()) {
+            case "employee":
+                return "/employeeDashboard";
+            case "hr manager":
+            case "hr-manager":
+                return "/hrDashboard";
+            case "factory manager":
+            case "factory-manager":
+                return "/factoryDashboard";
+            case "inventory manager":
+            case "inventory-manager":
+                return "/inventoryDashboard";
+            case "sales and order manager":
+            case "sales-and-order-manager":
+            case "sales-executive":
+                return "/salesDashboard";
+            default:
+                return "/";
+        }
     }
 
     /**
