@@ -5,6 +5,7 @@ import com.clothsphere.dto.FabricMovementDTO;
 import com.clothsphere.service.Inventory.FabricService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -27,8 +28,12 @@ public class FabricController {
 
     // Get a single fabric by ID
     @GetMapping("/{fabricId}")
-    public FabricDTO getFabricById(@PathVariable String fabricId) {
-        return fabricService.getFabricById(fabricId);
+    public ResponseEntity<FabricDTO> getFabricById(@PathVariable String fabricId) {
+        FabricDTO fabric = fabricService.getFabricById(fabricId);
+        if (fabric == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(fabric);
     }
 
     // Add new fabric

@@ -8,9 +8,8 @@ import java.time.LocalDateTime;
 public class GarmentMovement {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "movement_id")
-    private String movementId; // Use int, not String
+    private String movementId;
 
     @Column(name = "garment_id", nullable = false, length = 6)
     private String garmentId;

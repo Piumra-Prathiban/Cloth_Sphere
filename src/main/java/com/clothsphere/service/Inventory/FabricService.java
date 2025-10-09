@@ -44,6 +44,9 @@ public class FabricService {
 
     public FabricDTO getFabricById(String fabricId) {
         Fabric f = fabricRepository.getFabricById(fabricId);
+        if (f == null) {
+            return null;
+        }
         return new FabricDTO(f.getFabricId(), f.getFabricType(), f.getColor(), f.getCurrentStock());
     }
 

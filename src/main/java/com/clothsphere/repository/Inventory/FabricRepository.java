@@ -42,7 +42,11 @@ public class FabricRepository {
     // Get fabric by ID
     public Fabric getFabricById(String fabricId) {
         String sql = "SELECT * FROM fabric WHERE fabric_id = ?";
-        return jdbcTemplate.queryForObject(sql, new Object[]{fabricId}, fabricRowMapper);
+        List<Fabric> fabrics = jdbcTemplate.query(sql, new Object[]{fabricId}, fabricRowMapper);
+        if (fabrics.isEmpty()) {
+            return null;
+        }
+        return fabrics.get(0);
     }
 
     // Add new fabric
