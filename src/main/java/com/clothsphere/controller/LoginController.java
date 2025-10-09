@@ -32,6 +32,11 @@ public class LoginController {
         return "getstart";
     }
 
+    @GetMapping("/buyerLogin")
+    public String showBuyerLoginPage() {
+        return "redirect:/buyer/login";
+    }
+
     @GetMapping("/systemUserLogin")
     public String showSystemUserLoginPage() {
         return "systemUserLogin";

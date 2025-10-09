@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloth Sphere - Buyer Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-blue-gray: #5A738A;
+            --secondary-darker: #425A6C;
+            --background-cream: #F7F5EC;
+            --accent-yellow: #EBD372;
+            --white: #FFFFFF;
+            --light-gray: #F5F5F5;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Open Sans', sans-serif;
+            background-color: var(--background-cream);
+            color: var(--secondary-darker);
+            line-height: 1.6;
+        }
+
+        /* Header Styles */
+        header {
+            background-color: var(--white);
+            padding: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: 300;
+            letter-spacing: 3px;
+            color: var(--primary-blue-gray);
+            text-decoration: none;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 40px;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: var(--primary-blue-gray);
+            font-size: 15px;
+            letter-spacing: 1px;
+            transition: color 0.3s ease;
+            font-weight: 400;
+        }
+
+        nav a:hover {
+            color: var(--secondary-darker);
+        }
+
+        .header-icons {
+            display: flex;
+            gap: 25px;
+            align-items: center;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 8px 15px;
+            background: var(--light-gray);
+            border-radius: 6px;
+        }
+
+        .user-details {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .user-name {
+            font-weight: 500;
+            color: var(--secondary-darker);
+            font-size: 14px;
+        }
+
+        .user-id {
+            font-size: 12px;
+            color: var(--primary-blue-gray);
+            letter-spacing: 0.5px;
+        }
+
+        .logout-btn {
+            padding: 10px 20px;
+            background: var(--primary-blue-gray);
+            color: var(--white);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: var(--secondary-darker);
+        }
+
+        .icon {
+            cursor: pointer;
+            color: var(--primary-blue-gray);
+            transition: transform 0.3s ease;
+        }
+
+        .icon:hover {
+            transform: scale(1.1);
+        }
+
+        /* Hero Section */
+        .hero {
+            position: relative;
+            height: 400px;
+            background: linear-gradient(rgba(90, 115, 138, 0.1), rgba(90, 115, 138, 0.1)),
+                        url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 600"><rect fill="%23E8E6DD" width="1920" height="600"/><path fill="%23D4D0C5" d="M0 300L80 325L160 300L240 350L320 300L400 325L480 300L560 350L640 300L720 325L800 300L880 350L960 300L1040 325L1120 300L1200 350L1280 300L1360 325L1440 300L1520 350L1600 300L1680 325L1760 300L1840 350L1920 300V600H0V300Z"/></svg>');
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 60px;
+        }
+
+        .hero-content {
+            text-align: center;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 8px;
+            max-width: 700px;
+        }
+
+        .hero h1 {
+            font-size: 42px;
+            color: var(--primary-blue-gray);
+            margin-bottom: 15px;
+            font-weight: 300;
+            letter-spacing: 2px;
+        }
+
+        .hero p {
+            font-size: 18px;
+            color: var(--secondary-darker);
+            line-height: 1.8;
+        }
+
+        .welcome-name {
+            color: var(--accent-yellow);
+            font-weight: 500;
+        }
+
+        /* Section Styles */
+        .section {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 40px 60px;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .section-header h2 {
+            font-size: 36px;
+            color: var(--primary-blue-gray);
+            font-weight: 300;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+        }
+
+        .section-header p {
+            color: var(--secondary-darker);
+            font-size: 16px;
+        }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            margin-bottom: 60px;
+        }
+
+        .dashboard-card {
+            background: var(--white);
+            border-radius: 8px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(90, 115, 138, 0.1);
+        }
+
+        .card-icon-section {
+            width: 100%;
+            height: 150px;
+            background: linear-gradient(135deg, #F0EFE8 0%, #E5E3DA 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 60px;
+        }
+
+        .card-info {
+            padding: 25px;
+        }
+
+        .card-title {
+            font-size: 20px;
+            color: var(--secondary-darker);
+            margin-bottom: 10px;
+            font-weight: 400;
+            letter-spacing: 1px;
+        }
+
+        .card-description {
+            color: var(--primary-blue-gray);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* Profile Section */
+        .profile-section {
+            background: var(--white);
+            border-radius: 8px;
+            padding: 40px;
+            margin-bottom: 60px;
+        }
+
+        .profile-title {
+            font-size: 28px;
+            color: var(--primary-blue-gray);
+            font-weight: 300;
+            letter-spacing: 2px;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--background-cream);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .info-item {
+            padding: 15px 0;
+            border-bottom: 1px solid var(--light-gray);
+        }
+
+        .info-label {
+            font-weight: 500;
+            color: var(--primary-blue-gray);
+            margin-bottom: 5px;
+            font-size: 13px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .info-value {
+            font-size: 16px;
+            color: var(--secondary-darker);
+        }
+
+        .status-active {
+            color: #4caf50;
+            font-weight: 500;
+        }
+
+        .status-inactive {
+            color: #f44336;
+            font-weight: 500;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--primary-blue-gray);
+            color: var(--white);
+            padding: 60px 0 30px;
+            margin-top: 80px;
+        }
+
+        .footer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 40px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .footer-section h3 {
+            font-size: 18px;
+            margin-bottom: 20px;
+            font-weight: 400;
+            letter-spacing: 1px;
+        }
+
+        .footer-section ul {
+            list-style: none;
+        }
+
+        .footer-section li {
+            margin-bottom: 10px;
+        }
+
+        .footer-section a {
+            color: var(--white);
+            text-decoration: none;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+        }
+
+        .footer-section a:hover {
+            opacity: 1;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 30px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            opacity: 0.8;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header-container {
+                padding: 0 20px;
+                flex-wrap: wrap;
+            }
+
+            nav ul {
+                gap: 15px;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            nav a {
+                font-size: 13px;
+            }
+
+            .hero {
+                height: 350px;
+            }
+
+            .hero h1 {
+                font-size: 32px;
+            }
+
+            .section {
+                padding: 0 20px 40px;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .user-info {
+                display: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            nav {
+                display: none;
+            }
+
+            .hero h1 {
+                font-size: 28px;
+            }
+
+            .hero p {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-container">
+            <a href="#" class="logo">CLOTH SPHERE</a>
+            <nav>
+                <ul>
+                    <li><a href="#">Home</a></li>
+                    <li><a href="#">Shop</a></li>
+                    <li><a href="#">My Orders</a></li>
+                    <li><a href="#">Wishlist</a></li>
+                    <li><a href="#">Profile</a></li>
+                </ul>
+            </nav>
+            <div class="header-icons">
+                <div class="user-info">
+                    <div class="user-details">
+                        <span class="user-name" th:text="${buyer.customerName}">Customer Name</span>
+                        <span class="user-id" th:text="${buyer.buyerId}">OBY01</span>
+                    </div>
+                </div>
+                <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                </svg>
+                <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="9" cy="21" r="1"></circle>
+                    <circle cx="20" cy="21" r="1"></circle>
+                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                </svg>
+                <a href="/buyer/logout" class="logout-btn">Logout</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Welcome Back, <span class="welcome-name" th:text="${buyer.customerName}">Customer</span></h1>
+            <p>Discover timeless elegance with our carefully curated selection of premium clothing, designed for the modern lifestyle.</p>
+        </div>
+    </section>
+
+    <!-- Dashboard Section -->
+    <section class="section">
+        <div class="section-header">
+            <h2>Your Dashboard</h2>
+            <p>Manage your shopping experience</p>
+        </div>
+        <div class="dashboard-grid">
+            <div class="dashboard-card">
+                <div class="card-icon-section">🛍️</div>
+                <div class="card-info">
+                    <h3 class="card-title">BROWSE PRODUCTS</h3>
+                    <p class="card-description">Explore our extensive collection of fashion items and discover the latest trends.</p>
+                </div>
+            </div>
+
+            <div class="dashboard-card">
+                <div class="card-icon-section">📦</div>
+                <div class="card-info">
+                    <h3 class="card-title">MY ORDERS</h3>
+                    <p class="card-description">Track your current orders and view your order history.</p>
+                </div>
+            </div>
+
+            <div class="dashboard-card">
+                <div class="card-icon-section">❤️</div>
+                <div class="card-info">
+                    <h3 class="card-title">WISHLIST</h3>
+                    <p class="card-description">Save your favorite items for later and get notified of price drops.</p>
+                </div>
+            </div>
+
+            <div class="dashboard-card">
+                <div class="card-icon-section">👤</div>
+                <div class="card-info">
+                    <h3 class="card-title">PROFILE SETTINGS</h3>
+                    <p class="card-description">Update your personal information and manage account settings.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Profile Information -->
+    <section class="section">
+        <div class="profile-section">
+            <h2 class="profile-title">Account Information</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">Buyer ID</div>
+                    <div class="info-value" th:text="${buyer.buyerId}">OBY01</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Username</div>
+                    <div class="info-value" th:text="${buyer.username}">username</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Full Name</div>
+                    <div class="info-value" th:text="${buyer.customerName}">Customer Name</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Email Address</div>
+                    <div class="info-value" th:text="${buyer.email}">email@example.com</div>
+                </div>
+                <div class="info-item" th:if="${buyer.phone}">
+                    <div class="info-label">Phone Number</div>
+                    <div class="info-value" th:text="${buyer.phone}">+1234567890</div>
+                </div>
+                <div class="info-item" th:if="${buyer.company}">
+                    <div class="info-label">Company</div>
+                    <div class="info-value" th:text="${buyer.company}">Company Name</div>
+                </div>
+                <div class="info-item" th:if="${buyer.address}">
+                    <div class="info-label">Address</div>
+                    <div class="info-value" th:text="${buyer.address}">Address</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Account Status</div>
+                    <div class="info-value">
+                        <span th:if="${buyer.isActive}" class="status-active">✓ ACTIVE</span>
+                        <span th:unless="${buyer.isActive}" class="status-inactive">✗ INACTIVE</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>About Cloth Sphere</h3>
+                <p style="opacity: 0.8; line-height: 1.6;">Premium clothing for the modern lifestyle. Quality, sustainability, and timeless design.</p>
+            </div>
+            <div class="footer-section">
+                <h3>Customer Service</h3>
+                <ul>
+                    <li><a href="#">Contact Us</a></li>
+                    <li><a href="#">Shipping & Returns</a></li>
+                    <li><a href="#">Size Guide</a></li>
+                    <li><a href="#">Care Instructions</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <ul>
+                    <li><a href="#">New Arrivals</a></li>
+                    <li><a href="#">Best Sellers</a></li>
+                    <li><a href="#">Sale</a></li>
+                    <li><a href="#">Gift Cards</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>My Account</h3>
+                <ul>
+                    <li><a href="#">My Orders</a></li>
+                    <li><a href="#">Wishlist</a></li>
+                    <li><a href="#">Profile Settings</a></li>
+                    <li><a href="/buyer/logout">Logout</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 Cloth Sphere. All rights reserved. | Privacy Policy | Terms of Service</p>
+        </div>
+    </footer>
+</body>
+</html>
