@@ -6,6 +6,7 @@ import com.clothsphere.repository.HR.EmployeeRepository;
 import com.clothsphere.repository.Production.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.*;
@@ -58,13 +59,31 @@ public class ProductionService {
     }
 
     /**
-     * Create a new production order
+     * Create a new production order using manual insert
      */
+    @Transactional
     public ProductionOrder createOrder(ProductionOrder order) {
         if (order.getOrderId() == null || order.getOrderId().isEmpty()) {
             order.setOrderId(generateNextOrderId());
         }
-        return orderRepository.save(order);
+
+        // Use manual insert method
+        orderRepository.insertProductionOrder(
+                order.getOrderId(),
+                order.getProductName(),
+                order.getProductType(),
+                order.getQuantity(),
+                order.getOrderDate(),
+                order.getDeadline(),
+                order.getPriority(),
+                order.getStatus(),
+                order.getCustomerName(),
+                order.getCustomerId(),
+                order.getCompletedQuantity() != null ? order.getCompletedQuantity() : 0,
+                order.getNotes()
+        );
+
+        return order;
     }
 
     /**
@@ -82,22 +101,49 @@ public class ProductionService {
     }
 
     /**
-     * Update production order
+     * Update production order using manual update
      */
+    @Transactional
     public ProductionOrder updateOrder(ProductionOrder order) {
-        return orderRepository.save(order);
+        int rowsAffected = orderRepository.updateProductionOrder(
+                order.getOrderId(),
+                order.getProductName(),
+                order.getProductType(),
+                order.getQuantity(),
+                order.getDeadline(),
+                order.getPriority(),
+                order.getStatus(),
+                order.getCustomerName(),
+                order.getCompletedQuantity(),
+                order.getNotes()
+        );
+
+        if (rowsAffected > 0) {
+            return order;
+        }
+        return null;
     }
 
     /**
-     * Delete production order
+     * Delete production order using manual delete
      */
+    @Transactional
     public boolean deleteOrder(String orderId) {
         try {
-            orderRepository.deleteById(orderId);
-            return true;
+            int rowsAffected = orderRepository.deleteProductionOrder(orderId);
+            return rowsAffected > 0;
         } catch (Exception e) {
             return false;
         }
+    }
+
+    /**
+     * Update order status only
+     */
+    @Transactional
+    public boolean updateOrderStatus(String orderId, String status) {
+        int rowsAffected = orderRepository.updateOrderStatus(orderId, status);
+        return rowsAffected > 0;
     }
 
     /**
@@ -149,13 +195,31 @@ public class ProductionService {
     }
 
     /**
-     * Create production schedule
+     * Create production schedule using manual insert
      */
+    @Transactional
     public ProductionSchedule createSchedule(ProductionSchedule schedule) {
         if (schedule.getScheduleId() == null || schedule.getScheduleId().isEmpty()) {
             schedule.setScheduleId(generateNextScheduleId());
         }
-        return scheduleRepository.save(schedule);
+
+        scheduleRepository.insertProductionSchedule(
+                schedule.getScheduleId(),
+                schedule.getOrderId(),
+                schedule.getWorkstationId(),
+                schedule.getScheduledDate(),
+                schedule.getStartTime(),
+                schedule.getEndTime(),
+                schedule.getEstimatedHours(),
+                schedule.getActualHours(),
+                schedule.getAssignedQuantity(),
+                schedule.getCompletedQuantity() != null ? schedule.getCompletedQuantity() : 0,
+                schedule.getStatus(),
+                schedule.getShift(),
+                schedule.getNotes()
+        );
+
+        return schedule;
     }
 
     /**
@@ -187,19 +251,40 @@ public class ProductionService {
     }
 
     /**
-     * Update schedule
+     * Update schedule using manual update
      */
+    @Transactional
     public ProductionSchedule updateSchedule(ProductionSchedule schedule) {
-        return scheduleRepository.save(schedule);
+        int rowsAffected = scheduleRepository.updateProductionSchedule(
+                schedule.getScheduleId(),
+                schedule.getOrderId(),
+                schedule.getWorkstationId(),
+                schedule.getScheduledDate(),
+                schedule.getStartTime(),
+                schedule.getEndTime(),
+                schedule.getEstimatedHours(),
+                schedule.getActualHours(),
+                schedule.getAssignedQuantity(),
+                schedule.getCompletedQuantity(),
+                schedule.getStatus(),
+                schedule.getShift(),
+                schedule.getNotes()
+        );
+
+        if (rowsAffected > 0) {
+            return schedule;
+        }
+        return null;
     }
 
     /**
-     * Delete schedule
+     * Delete schedule using manual delete
      */
+    @Transactional
     public boolean deleteSchedule(String scheduleId) {
         try {
-            scheduleRepository.deleteById(scheduleId);
-            return true;
+            int rowsAffected = scheduleRepository.deleteProductionSchedule(scheduleId);
+            return rowsAffected > 0;
         } catch (Exception e) {
             return false;
         }
@@ -231,13 +316,28 @@ public class ProductionService {
     }
 
     /**
-     * Create workstation
+     * Create workstation using manual insert
      */
+    @Transactional
     public WorkStation createWorkstation(WorkStation workStation) {
         if (workStation.getWorkstationId() == null || workStation.getWorkstationId().isEmpty()) {
             workStation.setWorkstationId(generateNextWorkstationId());
         }
-        return workStationRepository.save(workStation);
+
+        workStationRepository.insertWorkStation(
+                workStation.getWorkstationId(),
+                workStation.getWorkstationName(),
+                workStation.getWorkstationType(),
+                workStation.getCapacity(),
+                workStation.getCurrentLoad() != null ? workStation.getCurrentLoad() : 0,
+                workStation.getStatus(),
+                workStation.getLocation(),
+                workStation.getSupervisorId(),
+                workStation.getSupervisorName(),
+                workStation.getEquipmentDetails()
+        );
+
+        return workStation;
     }
 
     /**
@@ -269,19 +369,37 @@ public class ProductionService {
     }
 
     /**
-     * Update workstation
+     * Update workstation using manual update
      */
+    @Transactional
     public WorkStation updateWorkstation(WorkStation workStation) {
-        return workStationRepository.save(workStation);
+        int rowsAffected = workStationRepository.updateWorkStation(
+                workStation.getWorkstationId(),
+                workStation.getWorkstationName(),
+                workStation.getWorkstationType(),
+                workStation.getCapacity(),
+                workStation.getCurrentLoad(),
+                workStation.getStatus(),
+                workStation.getLocation(),
+                workStation.getSupervisorId(),
+                workStation.getSupervisorName(),
+                workStation.getEquipmentDetails()
+        );
+
+        if (rowsAffected > 0) {
+            return workStation;
+        }
+        return null;
     }
 
     /**
-     * Delete workstation
+     * Delete workstation using manual delete
      */
+    @Transactional
     public boolean deleteWorkstation(String workstationId) {
         try {
-            workStationRepository.deleteById(workstationId);
-            return true;
+            int rowsAffected = workStationRepository.deleteWorkStation(workstationId);
+            return rowsAffected > 0;
         } catch (Exception e) {
             return false;
         }
@@ -313,13 +431,31 @@ public class ProductionService {
     }
 
     /**
-     * Create staff assignment
+     * Create staff assignment using manual insert
      */
+    @Transactional
     public StaffAssignment createAssignment(StaffAssignment assignment) {
         if (assignment.getAssignmentId() == null || assignment.getAssignmentId().isEmpty()) {
             assignment.setAssignmentId(generateNextAssignmentId());
         }
-        return staffAssignmentRepository.save(assignment);
+
+        staffAssignmentRepository.insertStaffAssignment(
+                assignment.getAssignmentId(),
+                assignment.getScheduleId(),
+                assignment.getEmployeeId(),
+                assignment.getWorkstationId(),
+                assignment.getAssignmentDate(),
+                assignment.getShift(),
+                assignment.getRole(),
+                assignment.getStatus(),
+                assignment.getAssignedQuantity(),
+                assignment.getCompletedQuantity() != null ? assignment.getCompletedQuantity() : 0,
+                assignment.getStartTime(),
+                assignment.getEndTime(),
+                assignment.getNotes()
+        );
+
+        return assignment;
     }
 
     /**
@@ -351,19 +487,40 @@ public class ProductionService {
     }
 
     /**
-     * Update assignment
+     * Update assignment using manual update
      */
+    @Transactional
     public StaffAssignment updateAssignment(StaffAssignment assignment) {
-        return staffAssignmentRepository.save(assignment);
+        int rowsAffected = staffAssignmentRepository.updateStaffAssignment(
+                assignment.getAssignmentId(),
+                assignment.getScheduleId(),
+                assignment.getEmployeeId(),
+                assignment.getWorkstationId(),
+                assignment.getAssignmentDate(),
+                assignment.getShift(),
+                assignment.getRole(),
+                assignment.getStatus(),
+                assignment.getAssignedQuantity(),
+                assignment.getCompletedQuantity(),
+                assignment.getStartTime(),
+                assignment.getEndTime(),
+                assignment.getNotes()
+        );
+
+        if (rowsAffected > 0) {
+            return assignment;
+        }
+        return null;
     }
 
     /**
-     * Delete assignment
+     * Delete assignment using manual delete
      */
+    @Transactional
     public boolean deleteAssignment(String assignmentId) {
         try {
-            staffAssignmentRepository.deleteById(assignmentId);
-            return true;
+            int rowsAffected = staffAssignmentRepository.deleteStaffAssignment(assignmentId);
+            return rowsAffected > 0;
         } catch (Exception e) {
             return false;
         }
@@ -395,14 +552,35 @@ public class ProductionService {
     }
 
     /**
-     * Create performance metric
+     * Create performance metric using manual insert
      */
+    @Transactional
     public PerformanceMetrics createMetric(PerformanceMetrics metric) {
         if (metric.getMetricId() == null || metric.getMetricId().isEmpty()) {
             metric.setMetricId(generateNextMetricId());
         }
         metric.calculateMetrics();
-        return metricsRepository.save(metric);
+
+        metricsRepository.insertPerformanceMetric(
+                metric.getMetricId(),
+                metric.getRecordDate(),
+                metric.getWorkstationId(),
+                metric.getEmployeeId(),
+                metric.getOrderId(),
+                metric.getScheduleId(),
+                metric.getTargetQuantity(),
+                metric.getActualQuantity(),
+                metric.getDefectQuantity() != null ? metric.getDefectQuantity() : 0,
+                metric.getEfficiencyRate(),
+                metric.getQualityRate(),
+                metric.getDowntimeHours() != null ? metric.getDowntimeHours() : 0.0,
+                metric.getWorkingHours(),
+                metric.getOvertimeHours() != null ? metric.getOvertimeHours() : 0.0,
+                metric.getDelayHours() != null ? metric.getDelayHours() : 0.0,
+                metric.getRemarks()
+        );
+
+        return metric;
     }
 
     /**
