@@ -87,4 +87,7 @@ public class GarmentMovementRepository {
                 movement.getTotalStock()
         );
     }
+
 }
+
+

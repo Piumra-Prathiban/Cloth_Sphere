@@ -64,4 +64,8 @@ public class GarmentRepository {
     public void delete(String id) {
         jdbcTemplate.update("DELETE FROM garments WHERE id=?", id);
     }
+
+
 }
+
+

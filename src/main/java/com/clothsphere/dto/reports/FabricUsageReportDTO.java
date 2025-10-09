@@ -1,5 +1,4 @@
 package com.clothsphere.dto.reports;
-
 import java.util.List;
 
 public class FabricUsageReportDTO {

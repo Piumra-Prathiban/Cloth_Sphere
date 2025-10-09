@@ -1,4 +1,5 @@
 package com.clothsphere.dto.reports;
+import java.util.List;
 
 public class GarmentMovementItemDTO {
     private String garmentId;
