@@ -33,3 +33,5 @@ public interface SystemUserRepository extends JpaRepository<SystemUser, SystemUs
     @Query("SELECT DISTINCT u.role FROM SystemUser u ORDER BY u.role")
     List<String> findAllDistinctRoles();
 }
+
+

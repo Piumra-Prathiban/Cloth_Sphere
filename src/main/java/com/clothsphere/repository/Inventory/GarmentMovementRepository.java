@@ -1,43 +1,90 @@
 package com.clothsphere.repository.Inventory;
 
 import com.clothsphere.model.Inventory.GarmentMovement;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
-import java.time.LocalDate;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
-public interface GarmentMovementRepository extends JpaRepository<GarmentMovement, String> {
+public class GarmentMovementRepository {
 
-    // Find all movements for a specific garment
-    List<GarmentMovement> findByGarmentIdOrderByMovementDateDesc(String garmentId);
+    private final JdbcTemplate jdbcTemplate;
 
-    // Find movements by status
-    List<GarmentMovement> findByStatus(String status);
+    public GarmentMovementRepository(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
 
-    // Find movements by date
-    List<GarmentMovement> findByMovementDate(LocalDate movementDate);
+    // RowMapper with null checks
+    private final RowMapper<GarmentMovement> movementMapper = (rs, rowNum) -> {
+        GarmentMovement gm = new GarmentMovement(
+                rs.getString("garment_id"),
+                rs.getString("fabric_id"),
+                rs.getString("status"),
+                rs.getInt("quantity"),
+                rs.getInt("total_stock")
+        );
 
-    // Find movements by date range
-    List<GarmentMovement> findByMovementDateBetween(LocalDate startDate, LocalDate endDate);
+        gm.setMovementId(rs.getString("movement_id")); // GMI001 format
 
-    // Get latest movement for a garment (to get current total)
-    @Query("SELECT gm FROM GarmentMovement gm WHERE gm.garmentId = :garmentId ORDER BY gm.movementDate DESC, gm.movementId DESC")
-    List<GarmentMovement> findLatestMovementByGarmentId(@Param("garmentId") String garmentId);
+        Timestamp ts = rs.getTimestamp("movement_date");
+        if (ts != null) {
+            gm.setMovementDate(ts.toLocalDateTime());
+        }
 
-    // Get stock in movements for today
-    @Query("SELECT gm FROM GarmentMovement gm WHERE gm.status = 'In' AND gm.movementDate = :today")
-    List<GarmentMovement> findStockInToday(@Param("today") LocalDate today);
+        return gm;
+    };
 
-    // Get shipped movements for today
-    @Query("SELECT gm FROM GarmentMovement gm WHERE gm.status = 'Shipped' AND gm.movementDate = :today")
-    List<GarmentMovement> findShippedToday(@Param("today") LocalDate today);
+    // Generate custom ID like GMI001
+    public String generateMovementId() {
+        String lastId = jdbcTemplate.queryForObject(
+                "SELECT movement_id FROM garment_movements ORDER BY movement_id DESC LIMIT 1",
+                String.class
+        );
 
-    // Find movements by fabric ID
-    List<GarmentMovement> findByFabricId(String fabricId);
+        if (lastId == null) return "GMI001";
 
-    // Check if movement ID exists
-    boolean existsByMovementId(String movementId);
+        int num = Integer.parseInt(lastId.substring(3)); // extract number part
+        num++;
+        return String.format("GMI%03d", num); // GMI002, GMI003...
+    }
+
+    // Get all movements
+    public List<GarmentMovement> findAll() {
+        return jdbcTemplate.query(
+                "SELECT * FROM garment_movements ORDER BY movement_date DESC",
+                movementMapper
+        );
+    }
+
+    // Get movements by garment ID
+    public List<GarmentMovement> findByGarmentId(String garmentId) {
+        return jdbcTemplate.query(
+                "SELECT * FROM garment_movements WHERE garment_id=? ORDER BY movement_date DESC",
+                movementMapper,
+                garmentId
+        );
+    }
+
+    // Save a new movement
+    public void save(GarmentMovement movement) {
+        movement.setMovementId(generateMovementId());
+        movement.setMovementDate(LocalDateTime.now());
+
+        jdbcTemplate.update(
+                "INSERT INTO garment_movements (movement_id, garment_id, fabric_id, status, movement_date, quantity, total_stock) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                movement.getMovementId(),
+                movement.getGarmentId(),
+                movement.getFabricId(),
+                movement.getStatus(),
+                movement.getMovementDate(),
+                movement.getQuantity(),
+                movement.getTotalStock()
+        );
+    }
 }

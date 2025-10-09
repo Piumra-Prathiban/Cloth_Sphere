@@ -3,79 +3,90 @@ package com.clothsphere.controller.Inventory;
 import com.clothsphere.service.Inventory.ReportService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import java.time.LocalDate;
-import java.util.Map;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
-@RestController
-@RequestMapping("/api/reports")
-@CrossOrigin(origins = "*")
+import java.time.LocalDate;
+
+@Controller
+@RequestMapping("/reports")
 public class ReportController {
 
     @Autowired
     private ReportService reportService;
 
-    // ========== FABRIC REPORTS ==========
-
-    @GetMapping("/fabric-usage")
-    public ResponseEntity<Map<String, Object>> getFabricUsageReport(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-        try {
-            Map<String, Object> report = reportService.getFabricUsageReport(startDate, endDate);
-            return ResponseEntity.ok(report);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-        }
-    }
-
-    @GetMapping("/fabric-availability")
-    public ResponseEntity<Map<String, Object>> getFabricAvailabilityReport() {
-        try {
-            Map<String, Object> report = reportService.getFabricAvailabilityReport();
-            return ResponseEntity.ok(report);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-        }
-    }
-
-    // ========== GARMENT REPORTS ==========
-
-    @GetMapping("/garment-movement")
-    public ResponseEntity<Map<String, Object>> getGarmentMovementReport(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-        try {
-            Map<String, Object> report = reportService.getGarmentMovementReport(startDate, endDate);
-            return ResponseEntity.ok(report);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-        }
-    }
-
+    /**
+     * Garment Availability Report
+     */
     @GetMapping("/garment-availability")
-    public ResponseEntity<Map<String, Object>> getGarmentAvailabilityReport() {
-        try {
-            Map<String, Object> report = reportService.getGarmentAvailabilityReport();
-            return ResponseEntity.ok(report);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-        }
+    public String getGarmentAvailabilityReport(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            Model model) {
+
+        if (startDate == null) startDate = LocalDate.now().minusMonths(1);
+        if (endDate == null) endDate = LocalDate.now();
+
+        model.addAttribute("startDate", startDate);
+        model.addAttribute("endDate", endDate);
+        model.addAttribute("report", reportService.generateGarmentAvailabilityReport(startDate, endDate));
+
+        return "garment-availability-report";
     }
 
-    // ========== SUMMARY ==========
+    /**
+     * Fabric Availability Report
+     */
+    @GetMapping("/fabric-availability")
+    public String getFabricAvailabilityReport(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            Model model) {
 
-    @GetMapping("/summary")
-    public ResponseEntity<Map<String, Object>> getReportSummary() {
-        try {
-            Map<String, Object> summary = reportService.getReportSummary();
-            return ResponseEntity.ok(summary);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-        }
+        if (startDate == null) startDate = LocalDate.now().minusMonths(1);
+        if (endDate == null) endDate = LocalDate.now();
+
+        model.addAttribute("startDate", startDate);
+        model.addAttribute("endDate", endDate);
+        model.addAttribute("report", reportService.generateFabricAvailabilityReport(startDate, endDate));
+
+        return "fabric-availability-report";
+    }
+
+    /**
+     * Garment Movement Report (Shipped)
+     */
+    @GetMapping("/garment-movement")
+    public String getGarmentMovementReport(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            Model model) {
+
+        if (startDate == null) startDate = LocalDate.now().minusMonths(1);
+        if (endDate == null) endDate = LocalDate.now();
+
+        model.addAttribute("report", reportService.generateGarmentMovementReport(startDate, endDate));
+
+        return "garment-shipped-report";
+    }
+
+    /**
+     * Fabric Usage Report
+     */
+    @GetMapping("/fabric-usage")
+    public String getFabricUsageReport(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            Model model) {
+
+        if (startDate == null) startDate = LocalDate.now().minusMonths(1);
+        if (endDate == null) endDate = LocalDate.now();
+
+        model.addAttribute("report", reportService.generateFabricUsageReport(startDate, endDate));
+
+        return "fabric-usage-report";
     }
 }

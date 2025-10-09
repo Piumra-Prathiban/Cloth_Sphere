@@ -1,81 +1,72 @@
 package com.clothsphere.model.Inventory;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
+import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "Garments")
+@Table(name = "garments")
 public class Garment {
 
     @Id
-    @Pattern(regexp = "^GAR\\d{3}$", message = "Garment ID must start with GAR followed by 3 digits")
-    @Column(nullable = false, unique = true, length = 6)
+    @Column(name = "garment_id", length = 6)
     private String garmentId;
 
-    @NotBlank(message = "Garment type is required")
-    @Column(nullable = false)
-    private String garmentType;
+    @Column(name = "type", nullable = false, length = 50)
+    private String type;
 
-    @NotBlank(message = "Size is required")
-    @Column(nullable = false)
+    @Column(name = "size", nullable = false, length = 10)
     private String size;
 
-    @Column(name = "low_stock_threshold")
-    private Integer lowStockThreshold = 50; // Default threshold: 50 pieces
+    @Column(name = "fabric_id", nullable = false, length = 6)
+    private String fabricId;
 
-    @Column(name = "reorder_level")
-    private Integer reorderLevel = 100; // Default reorder level: 100 pieces
+    @Column(name = "stock", nullable = false)
+    private int stock = 0;
 
-    // Constructors
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    // ----------------- Constructors -----------------
     public Garment() {}
 
-    public Garment(String garmentId, String garmentType, String size) {
+    public Garment(String garmentId, String type, String size, String fabricId, int stock) {
         this.garmentId = garmentId;
-        this.garmentType = garmentType;
+        this.type = type;
         this.size = size;
-        this.lowStockThreshold = 50;
-        this.reorderLevel = 100;
+        this.fabricId = fabricId;
+        this.stock = stock;
     }
 
-    // Getters and Setters
-    public String getGarmentId() {
-        return garmentId;
+    // ----------------- Getters & Setters -----------------
+    public String getId() { return garmentId; }
+    public void setId(String id) { this.garmentId = garmentId; }
+
+    public String getType() { return type; }
+    public void setType(String type) { this.type = type; }
+
+    public String getSize() { return size; }
+    public void setSize(String size) { this.size = size; }
+
+    public String getFabricId() { return fabricId; }
+    public void setFabricId(String fabricId) { this.fabricId = fabricId; }
+
+    public int getStock() { return stock; }
+    public void setStock(int stock) { this.stock = stock; }
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
     }
 
-    public void setGarmentId(String garmentId) {
-        this.garmentId = garmentId;
-    }
-
-    public String getGarmentType() {
-        return garmentType;
-    }
-
-    public void setGarmentType(String garmentType) {
-        this.garmentType = garmentType;
-    }
-
-    public String getSize() {
-        return size;
-    }
-
-    public void setSize(String size) {
-        this.size = size;
-    }
-
-    public Integer getLowStockThreshold() {
-        return lowStockThreshold;
-    }
-
-    public void setLowStockThreshold(Integer lowStockThreshold) {
-        this.lowStockThreshold = lowStockThreshold;
-    }
-
-    public Integer getReorderLevel() {
-        return reorderLevel;
-    }
-
-    public void setReorderLevel(Integer reorderLevel) {
-        this.reorderLevel = reorderLevel;
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 }

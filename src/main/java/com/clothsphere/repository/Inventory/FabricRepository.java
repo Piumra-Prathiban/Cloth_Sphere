@@ -1,27 +1,74 @@
 package com.clothsphere.repository.Inventory;
 
 import com.clothsphere.model.Inventory.Fabric;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
 
 @Repository
-public interface FabricRepository extends JpaRepository<Fabric, String> {
+public class FabricRepository {
 
-    // Find fabrics by type
-    List<Fabric> findByFabricType(String fabricType);
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
-    // Find fabrics by color
-    List<Fabric> findByColor(String color);
+    private RowMapper<Fabric> fabricRowMapper = new RowMapper<Fabric>() {
+        @Override
+        public Fabric mapRow(ResultSet rs, int rowNum) throws SQLException {
+            Fabric fabric = new Fabric();
+            fabric.setFabricId(rs.getString("fabric_id"));
+            fabric.setFabricType(rs.getString("fabric_type"));
+            fabric.setColor(rs.getString("color"));
+            fabric.setCurrentStock(rs.getDouble("current_stock"));
+            if (rs.getTimestamp("created_at") != null)
+                fabric.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
+            if (rs.getTimestamp("updated_at") != null)
+                fabric.setUpdatedAt(rs.getTimestamp("updated_at").toLocalDateTime());
+            return fabric;
+        }
+    };
 
-    // Find fabrics by type and color (returns LIST now, not single item)
-    List<Fabric> findByFabricTypeAndColor(String fabricType, String color);
+    // Get all fabrics
+    public List<Fabric> getAllFabrics() {
+        String sql = "SELECT * FROM fabric ORDER BY fabric_id";
+        return jdbcTemplate.query(sql, fabricRowMapper);
+    }
 
-    // Check if fabric ID exists
-    boolean existsByFabricId(String fabricId);
+    // Get fabric by ID
+    public Fabric getFabricById(String fabricId) {
+        String sql = "SELECT * FROM fabric WHERE fabric_id = ?";
+        return jdbcTemplate.queryForObject(sql, new Object[]{fabricId}, fabricRowMapper);
+    }
 
-    // Get all distinct fabric types
-    @Query("SELECT DISTINCT f.fabricType FROM Fabric f")
-    List<String> findDistinctFabricTypes();
+    // Add new fabric
+    public int addFabric(Fabric fabric) {
+        String sql = "INSERT INTO fabric (fabric_id, fabric_type, color, current_stock, created_at, updated_at) " +
+                "VALUES (?, ?, ?, ?, GETDATE(), GETDATE())";
+        return jdbcTemplate.update(sql,
+                fabric.getFabricId(),
+                fabric.getFabricType(),
+                fabric.getColor(),
+                fabric.getCurrentStock());
+    }
+
+    // Update fabric
+    public int updateFabric(Fabric fabric) {
+        String sql = "UPDATE fabric SET fabric_type = ?, color = ?, current_stock = ?, updated_at = GETDATE() " +
+                "WHERE fabric_id = ?";
+        return jdbcTemplate.update(sql,
+                fabric.getFabricType(),
+                fabric.getColor(),
+                fabric.getCurrentStock(),
+                fabric.getFabricId());
+    }
+
+    // Delete fabric
+    public int deleteFabric(String fabricId) {
+        String sql = "DELETE FROM fabric WHERE fabric_id = ?";
+        return jdbcTemplate.update(sql, fabricId);
+    }
 }

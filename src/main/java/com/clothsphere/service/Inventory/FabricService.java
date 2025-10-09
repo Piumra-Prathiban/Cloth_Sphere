@@ -1,15 +1,19 @@
 package com.clothsphere.service.Inventory;
 
-import com.clothsphere.model.Inventory.FabricMovement;
+import com.clothsphere.dto.FabricDTO;
+import com.clothsphere.dto.FabricMovementDTO;
 import com.clothsphere.model.Inventory.Fabric;
-import com.clothsphere.repository.Inventory.FabricRepository;
+import com.clothsphere.model.Inventory.FabricMovement;
+import com.clothsphere.observer.Fabric.LowStockAlert;
+import com.clothsphere.service.Inventory.FabricStock;
 import com.clothsphere.repository.Inventory.FabricMovementRepository;
-
+import com.clothsphere.repository.Inventory.FabricRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+
 import java.time.LocalDate;
-import java.util.*;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class FabricService {
@@ -20,297 +24,152 @@ public class FabricService {
     @Autowired
     private FabricMovementRepository movementRepository;
 
-    // ========== FABRIC OPERATIONS ==========
+    // Observable for low stock
+    private final FabricStock fabricStock = new FabricStock();
 
-    // Add new fabric type - ONLY CHECK FABRIC ID, NOT TYPE/COLOR COMBINATION
-    @Transactional
-    public Fabric addFabric(Fabric fabric) {
-        // Only check if Fabric ID already exists
-        if (fabricRepository.existsByFabricId(fabric.getFabricId())) {
-            throw new RuntimeException("Fabric ID already exists: " + fabric.getFabricId());
+    // Constructor to attach observer
+    public FabricService() {
+        // Example threshold: 50 meters
+        fabricStock.addObserver(new LowStockAlert(50.0));
+    }
+
+    // ------------------- Fabric -------------------
+
+    public List<FabricDTO> getAllFabrics() {
+        List<Fabric> fabrics = fabricRepository.getAllFabrics();
+        return fabrics.stream()
+                .map(f -> new FabricDTO(f.getFabricId(), f.getFabricType(), f.getColor(), f.getCurrentStock()))
+                .collect(Collectors.toList());
+    }
+
+    public FabricDTO getFabricById(String fabricId) {
+        Fabric f = fabricRepository.getFabricById(fabricId);
+        return new FabricDTO(f.getFabricId(), f.getFabricType(), f.getColor(), f.getCurrentStock());
+    }
+
+    public boolean addFabric(FabricDTO fabricDTO, double initialStock) {
+        Fabric fabric = new Fabric(fabricDTO.getFabricId(), fabricDTO.getFabricType(),
+                fabricDTO.getColor(), initialStock);
+        boolean result = fabricRepository.addFabric(fabric) > 0;
+
+        // Notify observer after adding new fabric
+        if (result) {
+            fabricStock.checkStock(fabric.getFabricId(), initialStock);
+        }
+        return result;
+    }
+
+    public boolean updateFabric(FabricDTO fabricDTO) {
+        Fabric fabric = new Fabric();
+        fabric.setFabricId(fabricDTO.getFabricId());
+        fabric.setFabricType(fabricDTO.getFabricType());
+        fabric.setColor(fabricDTO.getColor());
+        fabric.setCurrentStock(fabricDTO.getCurrentStock());
+
+        boolean result = fabricRepository.updateFabric(fabric) > 0;
+
+        // Notify observer after stock update
+        if (result) {
+            fabricStock.checkStock(fabric.getFabricId(), fabric.getCurrentStock());
+        }
+        return result;
+    }
+
+    public boolean deleteFabric(String fabricId) {
+        return fabricRepository.deleteFabric(fabricId) > 0;
+    }
+
+    // ------------------- Fabric Movements -------------------
+
+    public List<FabricMovementDTO> getAllMovements() {
+        List<FabricMovement> movements = movementRepository.getAllMovements();
+        return movements.stream().map(this::toDTO).collect(Collectors.toList());
+    }
+
+    public List<FabricMovementDTO> getMovementsByFabric(String fabricId) {
+        List<FabricMovement> movements = movementRepository.getMovementsByFabricId(fabricId);
+        return movements.stream().map(this::toDTO).collect(Collectors.toList());
+    }
+
+    private String generateMovementId() {
+        // Implement your ID generation logic
+        return "MOV" + System.currentTimeMillis(); // Example
+    }
+
+    public boolean addMovement(FabricMovementDTO dto) {
+        Fabric fabric = fabricRepository.getFabricById(dto.getFabricId());
+
+        double totalStock = fabric.getCurrentStock();
+        if ("IN".equalsIgnoreCase(dto.getStatus())) {
+            totalStock += dto.getQuantity();
+        } else if ("OUT".equalsIgnoreCase(dto.getStatus())) {
+            totalStock -= dto.getQuantity();
         }
 
-        // REMOVED: duplicate type/color check
-        // We allow FAB001 Blue Cotton and FAB002 Blue Cotton
+        FabricMovement movement = new FabricMovement(
+                dto.getMovementId(),
+                dto.getFabricId(),
+                dto.getStatus(),
+                dto.getMovementDate() != null ? dto.getMovementDate() : LocalDate.now(),
+                dto.getQuantity(),
+                totalStock
+        );
 
-        return fabricRepository.save(fabric);
+        int result = movementRepository.addMovement(movement);
+        return result > 0;
     }
 
-    // Get all fabrics
-    public List<Fabric> getAllFabrics() {
-        return fabricRepository.findAll();
-    }
+    // Approve or reject a movement
+    public boolean approveMovement(FabricMovementDTO dto) {
+        FabricMovement movement = movementRepository.getMovementsByFabricId(dto.getFabricId()).stream()
+                .filter(m -> m.getMovementId().equals(dto.getMovementId()))
+                .findFirst().orElse(null);
 
-    // Get fabric by ID
-    public Fabric getFabricById(String fabricId) {
-        return fabricRepository.findById(fabricId)
-                .orElseThrow(() -> new RuntimeException("Fabric not found: " + fabricId));
-    }
+        if (movement == null) return false;
 
-    // Update fabric
-    @Transactional
-    public Fabric updateFabric(String fabricId, Fabric fabric) {
-        Fabric existing = getFabricById(fabricId);
-        existing.setFabricType(fabric.getFabricType());
-        existing.setColor(fabric.getColor());
-        if (fabric.getLowStockThreshold() != null) {
-            existing.setLowStockThreshold(fabric.getLowStockThreshold());
-        }
-        if (fabric.getReorderLevel() != null) {
-            existing.setReorderLevel(fabric.getReorderLevel());
-        }
-        return fabricRepository.save(existing);
-    }
+        movement.setApprovedQuantity(dto.getApprovedQuantity());
+        movement.setRejectedQuantity(dto.getRejectedQuantity());
+        movement.setApprovalStatus(dto.getApprovalStatus());
+        movement.setRejectionReason(dto.getRejectionReason());
 
-    // Delete fabric
-    @Transactional
-    public void deleteFabric(String fabricId) {
-        fabricRepository.deleteById(fabricId);
-    }
+        Fabric fabric = fabricRepository.getFabricById(movement.getFabricId());
+        double newStock = fabric.getCurrentStock();
 
-    // ========== MOVEMENT OPERATIONS ==========
+        Double approvedQty = dto.getApprovedQuantity();
+        double qty = approvedQty != null ? approvedQty : 0.0;
 
-    // Add fabric movement (Stock In/Out)
-    @Transactional
-    public FabricMovement addMovement(FabricMovement movement) {
-        // Validate fabric exists
-        if (!fabricRepository.existsByFabricId(movement.getFabricId())) {
-            throw new RuntimeException("Fabric not found: " + movement.getFabricId());
+        if ("IN".equalsIgnoreCase(movement.getStatus())) {
+            newStock += qty;
+        } else if ("OUT".equalsIgnoreCase(movement.getStatus()) || "SPECIAL RELEASE".equalsIgnoreCase(movement.getStatus())) {
+            newStock -= qty;
         }
 
-        // Set movement date to today if not provided
-        if (movement.getMovementDate() == null) {
-            movement.setMovementDate(LocalDate.now());
+        fabric.setCurrentStock(newStock);
+
+        int updatedMovement = movementRepository.updateMovement(movement);
+        int updatedFabric = fabricRepository.updateFabric(fabric);
+
+        // Notify observer after stock update
+        if (updatedFabric > 0) {
+            fabricStock.checkStock(fabric.getFabricId(), newStock);
         }
 
-        // Get current total quantity
-        double currentTotal = getCurrentTotalQuantity(movement.getFabricId());
-
-        // Calculate new total based on status
-        double newTotal;
-        if ("In".equals(movement.getStatus())) {
-            newTotal = currentTotal + movement.getQuantity();
-        } else { // "Out"
-            newTotal = currentTotal - movement.getQuantity();
-            if (newTotal < 0) {
-                throw new RuntimeException("Insufficient stock. Available: " + currentTotal + " meters");
-            }
-        }
-
-        movement.setTotalQuantity(newTotal);
-        return movementRepository.save(movement);
+        return updatedMovement > 0 && updatedFabric > 0;
     }
 
-    // Get all movements
-    public List<FabricMovement> getAllMovements() {
-        return movementRepository.findAll();
-    }
-
-    // Get movements by fabric ID
-    public List<FabricMovement> getMovementsByFabricId(String fabricId) {
-        return movementRepository.findByFabricIdOrderByMovementDateDesc(fabricId);
-    }
-
-    // Get movement by ID
-    public FabricMovement getMovementById(String movementId) {
-        return movementRepository.findById(movementId)
-                .orElseThrow(() -> new RuntimeException("Movement not found: " + movementId));
-    }
-
-    // Delete movement
-    @Transactional
-    public void deleteMovement(String movementId) {
-        movementRepository.deleteById(movementId);
-    }
-
-    // ========== DASHBOARD DATA ==========
-
-    // Get current total quantity for a fabric
-    public double getCurrentTotalQuantity(String fabricId) {
-        List<FabricMovement> movements = movementRepository.findLatestMovementByFabricId(fabricId);
-        if (movements.isEmpty()) {
-            return 0.0;
-        }
-        return movements.get(0).getTotalQuantity();
-    }
-
-    // Get fabric stock summary (for dashboard)
-    public Map<String, Object> getFabricStockSummary() {
-        List<Fabric> allFabrics = fabricRepository.findAll();
-        Map<String, Object> summary = new HashMap<>();
-
-        List<Map<String, Object>> stockDetails = new ArrayList<>();
-
-        for (Fabric fabric : allFabrics) {
-            Map<String, Object> detail = new HashMap<>();
-            detail.put("fabricId", fabric.getFabricId());
-            detail.put("type", fabric.getFabricType());
-            detail.put("color", fabric.getColor());
-            detail.put("totalQuantity", getCurrentTotalQuantity(fabric.getFabricId()));
-            stockDetails.add(detail);
-        }
-
-        summary.put("fabrics", stockDetails);
-        return summary;
-    }
-
-    // Get low stock alerts - ONLY for fabrics with existing movements
-    // NOT for newly added fabrics with 0 stock
-    public List<Map<String, Object>> getLowStockAlerts() {
-        List<Fabric> allFabrics = fabricRepository.findAll();
-        List<Map<String, Object>> lowStockItems = new ArrayList<>();
-
-        for (Fabric fabric : allFabrics) {
-            double total = getCurrentTotalQuantity(fabric.getFabricId());
-            double threshold = fabric.getLowStockThreshold() != null ? fabric.getLowStockThreshold() : 50.0;
-
-            // ONLY alert if fabric has movements AND is below threshold
-            // Skip newly added fabrics with 0 stock (no movements)
-            boolean hasMovements = !movementRepository.findByFabricIdOrderByMovementDateDesc(fabric.getFabricId()).isEmpty();
-
-            if (hasMovements && total > 0 && total < threshold) {
-                Map<String, Object> alert = new HashMap<>();
-                alert.put("fabricId", fabric.getFabricId());
-                alert.put("type", fabric.getFabricType());
-                alert.put("color", fabric.getColor());
-                alert.put("currentQuantity", total);
-                alert.put("threshold", threshold);
-                alert.put("shortage", threshold - total);
-                alert.put("reorderLevel", fabric.getReorderLevel() != null ? fabric.getReorderLevel() : 100.0);
-                alert.put("criticalLevel", total < (threshold * 0.5));
-                lowStockItems.add(alert);
-            }
-        }
-
-        // Sort by criticality and shortage amount
-        lowStockItems.sort((a, b) -> {
-            boolean aCritical = (boolean) a.get("criticalLevel");
-            boolean bCritical = (boolean) b.get("criticalLevel");
-            if (aCritical != bCritical) {
-                return bCritical ? 1 : -1;
-            }
-            double aShortage = (double) a.get("shortage");
-            double bShortage = (double) b.get("shortage");
-            return Double.compare(bShortage, aShortage);
-        });
-
-        return lowStockItems;
-    }
-
-    // Get dashboard stats
-    public Map<String, Object> getDashboardStats() {
-        Map<String, Object> stats = new HashMap<>();
-        LocalDate today = LocalDate.now();
-
-        // Total fabric types
-        stats.put("totalFabricTypes", fabricRepository.count());
-
-        // Total meters (sum all current totals)
-        double totalMeters = fabricRepository.findAll().stream()
-                .mapToDouble(f -> getCurrentTotalQuantity(f.getFabricId()))
-                .sum();
-        stats.put("totalMeters", Math.round(totalMeters * 100.0) / 100.0);
-
-        // Stock in today
-        double stockInToday = movementRepository.findStockInToday(today).stream()
-                .mapToDouble(FabricMovement::getQuantity)
-                .sum();
-        stats.put("stockInToday", Math.round(stockInToday * 100.0) / 100.0);
-
-        // Stock out today
-        double stockOutToday = movementRepository.findStockOutToday(today).stream()
-                .mapToDouble(FabricMovement::getQuantity)
-                .sum();
-        stats.put("stockOutToday", Math.round(stockOutToday * 100.0) / 100.0);
-
-        // Low stock count
-        stats.put("lowStockCount", getLowStockAlerts().size());
-
-        return stats;
-    }
-
-    // Get chart data for fabric quantities
-    public Map<String, Object> getFabricChartData() {
-        List<Fabric> allFabrics = fabricRepository.findAll();
-        Map<String, Object> chartData = new HashMap<>();
-
-        List<String> labels = new ArrayList<>();
-        List<Double> quantities = new ArrayList<>();
-
-        for (Fabric fabric : allFabrics) {
-            labels.add(fabric.getFabricId() + " - " + fabric.getFabricType() + " (" + fabric.getColor() + ")");
-            quantities.add(getCurrentTotalQuantity(fabric.getFabricId()));
-        }
-
-        chartData.put("labels", labels);
-        chartData.put("quantities", quantities);
-
-        return chartData;
-    }
-
-    // ========== CATEGORY OPERATIONS ==========
-
-    // Get all distinct fabric types
-    public List<String> getAllFabricTypes() {
-        return fabricRepository.findDistinctFabricTypes();
-    }
-
-    // Get fabrics by type with stock information
-    public List<Map<String, Object>> getFabricsByType(String fabricType) {
-        List<Fabric> fabrics = fabricRepository.findByFabricType(fabricType);
-        List<Map<String, Object>> fabricsWithStock = new ArrayList<>();
-
-        for (Fabric fabric : fabrics) {
-            Map<String, Object> fabricData = new HashMap<>();
-            fabricData.put("fabricId", fabric.getFabricId());
-            fabricData.put("fabricType", fabric.getFabricType());
-            fabricData.put("color", fabric.getColor());
-            double currentStock = getCurrentTotalQuantity(fabric.getFabricId());
-            fabricData.put("currentStock", currentStock);
-            fabricData.put("lowStockThreshold", fabric.getLowStockThreshold());
-            fabricData.put("reorderLevel", fabric.getReorderLevel());
-            fabricData.put("status", currentStock < fabric.getLowStockThreshold() ? "Low" : "Normal");
-            fabricsWithStock.add(fabricData);
-        }
-
-        return fabricsWithStock;
-    }
-
-    // Get fabric category summary (grouped by type)
-    public Map<String, Object> getFabricCategorySummary() {
-        List<String> types = getAllFabricTypes();
-        Map<String, Object> summary = new HashMap<>();
-        List<Map<String, Object>> categoryData = new ArrayList<>();
-
-        for (String type : types) {
-            List<Fabric> fabricsOfType = fabricRepository.findByFabricType(type);
-
-            Map<String, Object> typeData = new HashMap<>();
-            typeData.put("fabricType", type);
-            typeData.put("totalCount", fabricsOfType.size());
-
-            double totalStock = 0;
-            int lowStockCount = 0;
-
-            for (Fabric fabric : fabricsOfType) {
-                double stock = getCurrentTotalQuantity(fabric.getFabricId());
-                totalStock += stock;
-                double threshold = fabric.getLowStockThreshold() != null ? fabric.getLowStockThreshold() : 50.0;
-                if (stock < threshold && stock > 0) {
-                    lowStockCount++;
-                }
-            }
-
-            typeData.put("totalStock", totalStock);
-            typeData.put("lowStockCount", lowStockCount);
-            typeData.put("averageStock", fabricsOfType.size() > 0 ? totalStock / fabricsOfType.size() : 0);
-
-            categoryData.add(typeData);
-        }
-
-        summary.put("categories", categoryData);
-        summary.put("totalCategories", types.size());
-
-        return summary;
+    // Helper: Convert model → DTO
+    private FabricMovementDTO toDTO(FabricMovement m) {
+        return new FabricMovementDTO(
+                m.getMovementId(),
+                m.getFabricId(),
+                m.getStatus(),
+                m.getMovementDate(),
+                m.getQuantity(),
+                m.getTotalStock(),
+                m.getApprovedQuantity(),
+                m.getRejectedQuantity(),
+                m.getApprovalStatus(),
+                m.getRejectionReason()
+        );
     }
 }

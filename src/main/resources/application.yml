@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:sqlserver://localhost:1433;databaseName=cloth_sphere_db;encrypt=true;trustServerCertificate=true
+    url: jdbc:sqlserver://localhost:1433;databaseName=cloth_sphere_db;encrypt=true;trustServerCertificate=true;
     username: sa
-    password: 12345OHdf%e
+    password: Ama123
     driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
 
   jpa:

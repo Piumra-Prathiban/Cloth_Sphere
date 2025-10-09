@@ -1,32 +1,67 @@
 package com.clothsphere.repository.Inventory;
 
 import com.clothsphere.model.Inventory.Garment;
-
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
 
 @Repository
-public interface GarmentRepository extends JpaRepository<Garment, String> {
+public class GarmentRepository {
 
-    // Find garment by type
-    List<Garment> findByGarmentType(String garmentType);
+    private final JdbcTemplate jdbcTemplate;
 
-    // Find garment by size
-    List<Garment> findBySize(String size);
+    public GarmentRepository(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
 
-    // Find garment by type and size
-    Garment findByGarmentTypeAndSize(String garmentType, String size);
+    private final RowMapper<Garment> garmentMapper = (rs, rowNum) -> new Garment(
+            rs.getString("id"),
+            rs.getString("type"),
+            rs.getString("size"),
+            rs.getString("fabric_id"),
+            rs.getInt("stock")
+    );
 
-    // Check if garment exists
-    boolean existsByGarmentId(String garmentId);
+    public List<Garment> findAll() {
+        return jdbcTemplate.query("SELECT * FROM garments", garmentMapper);
+    }
 
-    // Get all distinct garment types
-    @Query("SELECT DISTINCT g.garmentType FROM Garment g")
-    List<String> findDistinctGarmentTypes();
+    public Garment findById(String id) {
+        List<Garment> list = jdbcTemplate.query(
+                "SELECT * FROM garments WHERE id = ?",
+                garmentMapper,
+                id
+        );
+        return list.isEmpty() ? null : list.get(0);
+    }
 
-    // Get all distinct sizes
-    @Query("SELECT DISTINCT g.size FROM Garment g")
-    List<String> findDistinctSizes();
+    public void save(Garment garment) {
+        jdbcTemplate.update(
+                "INSERT INTO garments (id, type, size, fabric_id, stock) VALUES (?, ?, ?, ?, ?)",
+                garment.getId(),
+                garment.getType(),
+                garment.getSize(),
+                garment.getFabricId(),
+                garment.getStock()
+        );
+    }
+
+    public void update(Garment garment) {
+        jdbcTemplate.update(
+                "UPDATE garments SET type=?, size=?, fabric_id=?, stock=? WHERE id=?",
+                garment.getType(),
+                garment.getSize(),
+                garment.getFabricId(),
+                garment.getStock(),
+                garment.getId()
+        );
+    }
+
+    public void delete(String id) {
+        jdbcTemplate.update("DELETE FROM garments WHERE id=?", id);
+    }
 }

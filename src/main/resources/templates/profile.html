@@ -1,150 +1,152 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Profile - Cloth Sphere</title>
+    <title>Profile - Cloth Sphere</title>
     <link rel="stylesheet" href="/css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-<header class="header">
-    <div class="logo-section">
-        <button class="menu-toggle" id="menuToggle">
-            <i class="fas fa-bars"></i>
-        </button>
-        <div class="logo">
-            <img src="logo.png" alt="Cloth Sphere Logo" class="logo-img">
-        </div>
-        <h1 class="company-name">Cloth Sphere</h1>
-    </div>
-    <div class="user-info">
-        <div class="user-details">
-            <div class="user-name">Ama Berugoda</div>
-            <div class="user-role">Inventory Manager</div>
-        </div>
-        <div class="profile-pic">AB</div>
-    </div>
-</header>
 
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
 <div class="container">
     <nav class="sidebar" id="sidebar">
-        <a href="/inventoryDashboard" class="nav-item"><i class="fas fa-chart-pie"></i><span>Dashboard</span></a>
-        <a href="/fabric" class="nav-item"><i class="fas fa-tshirt"></i><span>Fabrics</span></a>
-        <a href="/garments" class="nav-item"><i class="fas fa-boxes"></i><span>Garments</span></a>
-        <a href="/reports" class="nav-item"><i class="fas fa-file-alt"></i><span>Stock Reports</span></a>
-        <a href="/profile" class="nav-item active"><i class="fas fa-user"></i><span>Edit Profile</span></a>
-        <a href="/logout" class="nav-item logout-btn"><i class="fas fa-sign-out-alt"></i><span>Log Out</span></a>
+        <div class="sidebar-header">
+            <button class="menu-toggle" id="menuToggle">
+                <i class="fas fa-times"></i>
+            </button>
+            <h2>Inventory Management</h2>
+        </div>
+        <ul class="nav-list">
+            <li><a href="/inventoryDashboard" class="nav-item"><i class="fas fa-chart-pie"></i><span>Dashboard</span></a></li>
+            <li><a href="/fabrics" class="nav-item"><i class="fas fa-layer-group"></i><span>Fabrics</span></a></li>
+            <li><a href="/garments" class="nav-item"><i class="fas fa-boxes"></i><span>Garments</span></a></li>
+            <li><a href="/reports" class="nav-item"><i class="fas fa-file-alt"></i><span>Stock Reports</span></a></li>
+            <li><a href="/user/profile" class="nav-item active"><i class="fas fa-user"></i><span>Edit Profile</span></a></li>
+            <li><a href="/logout" class="nav-item logout-btn"><i class="fas fa-sign-out-alt"></i><span>Log Out</span></a></li>
+        </ul>
     </nav>
 
     <main class="main-content">
         <div class="page-header">
-            <h2 class="page-title">
-                <i class="fas fa-user-edit"></i>
-                Edit Profile
-            </h2>
+            <button class="mobile-menu-btn" id="mobileMenuBtn">
+                <i class="fas fa-bars"></i>
+            </button>
+            <h2 class="page-title"><i class="fas fa-user-circle"></i> My Profile</h2>
         </div>
 
         <div class="welcome-text">
-            Manage your personal information, security settings, and account preferences.
+            Manage your personal information and security settings.
         </div>
 
-        <div class="profile-container">
-
-            <!-- Profile Edit Form -->
-            <div class="profile-form-section">
-                <h3 class="section-title">
-                    <i class="fas fa-user"></i>
-                    Personal Information
-                </h3>
-
-                <form id="profileForm" class="profile-form">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="firstName">First Name</label>
-                            <input type="text" id="firstName" name="firstName" value="Ama" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="lastName">Last Name</label>
-                            <input type="text" id="lastName" name="lastName" value="Berugoda" required>
-                        </div>
+        <div class="profile-sections">
+            <!-- Personal Profile Section -->
+            <div class="profile-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-user"></i> Personal Information</h3>
+                </div>
+                <form id="profileForm" class="profile-form" action="/user/update" method="post">
+                    <div class="form-group">
+                        <label for="username"><i class="fas fa-user-tag"></i> User Name</label>
+                        <input type="text"
+                               id="username"
+                               name="username"
+                               th:value="${currentUser?.userName}"
+                               readonly
+                               class="readonly-field">
                     </div>
 
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="email">Email Address</label>
-                            <input type="email" id="email" name="email" value="ama.berugoda@clothsphere.com" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="phone">Phone Number</label>
-                            <input type="tel" id="phone" name="phone" value="+94 77 123 4567" required>
-                        </div>
+                    <div class="form-group">
+                        <label for="role"><i class="fas fa-id-badge"></i> Role</label>
+                        <input type="text"
+                               id="role"
+                               name="role"
+                               th:value="${currentUser?.role}"
+                               readonly
+                               class="readonly-field">
                     </div>
 
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="address">Address</label>
-                            <textarea id="address" name="address" rows="3" required>123 Main Street, Negombo, Western Province, Sri Lanka</textarea>
-                        </div>
-                        <div class="form-group">
-                            <label for="dateOfBirth">Date of Birth</label>
-                            <input type="date" id="dateOfBirth" name="dateOfBirth" value="1990-05-15" required>
-                        </div>
+                    <div class="form-group">
+                        <label for="email"><i class="fas fa-envelope"></i> Email</label>
+                        <input type="email"
+                               id="email"
+                               name="email"
+                               th:value="${currentUser?.email}"
+                               required>
                     </div>
 
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="department">Department</label>
-                            <input type="text" id="department" name="department" value="Inventory Management" readonly>
-                        </div>
-                        <div class="form-group">
-                            <label for="staffId">Staff ID</label>
-                            <input type="text" id="staffId" name="staffId" value="STF001" readonly>
-                        </div>
+                    <div class="form-group">
+                        <label for="phoneNumber"><i class="fas fa-phone"></i> Phone Number</label>
+                        <input type="tel"
+                               id="phoneNumber"
+                               name="phoneNumber"
+                               th:value="${currentUser?.phoneNumber}"
+                               required>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-update">
+                            <i class="fas fa-save"></i> Update Profile
+                        </button>
                     </div>
                 </form>
-
-                <div class="form-actions">
-                    <button type="button" class="btn-primary" onclick="saveProfile()">
-                        <i class="fas fa-save"></i>
-                        Save
-                    </button>
-                </div>
             </div>
 
-            <!-- Security Settings -->
-            <div class="security-section">
-                <h3 class="section-title">
-                    <i class="fas fa-shield-alt"></i>
-                    Change Password
-                </h3>
-
-                <form id="securityForm" class="security-form">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="newPassword">New Password</label>
-                            <input type="password" id="newPassword" name="newPassword" placeholder="Enter new password">
-                            <small class="form-help">Password must be at least 8 characters long</small>
-                        </div>
-                        <div class="form-group">
-                            <label for="confirmPassword">Confirm New Password</label>
-                            <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm new password">
+            <!-- Change Password Section -->
+            <div class="profile-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-lock"></i> Change Password</h3>
+                </div>
+                <form id="passwordForm" class="profile-form" action="/user/updatePassword" method="post">
+                    <div class="form-group">
+                        <label for="currentPassword"><i class="fas fa-key"></i> Current Password</label>
+                        <div class="password-input">
+                            <input type="password" id="currentPassword" name="currentPassword" required>
+                            <button type="button" class="toggle-password" onclick="togglePassword('currentPassword')">
+                                <i class="fas fa-eye"></i>
+                            </button>
                         </div>
                     </div>
-                </form>
 
-                <div class="form-actions">
-                    <button type="button" class="btn-primary" onclick="changePassword()">
-                        <i class="fas fa-key"></i>
-                        Confirm Change Password
-                    </button>
-                </div>
+                    <div class="form-group">
+                        <label for="newPassword"><i class="fas fa-lock"></i> New Password</label>
+                        <div class="password-input">
+                            <input type="password" id="newPassword" name="newPassword" required>
+                            <button type="button" class="toggle-password" onclick="togglePassword('newPassword')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <small class="form-help"><i class="fas fa-info-circle"></i> Password must be at least 8 characters long</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="confirmPassword"><i class="fas fa-check-circle"></i> Confirm New Password</label>
+                        <div class="password-input">
+                            <input type="password" id="confirmPassword" name="confirmPassword" required>
+                            <button type="button" class="toggle-password" onclick="togglePassword('confirmPassword')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-update">
+                            <i class="fas fa-key"></i> Change Password
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </main>
 </div>
+
+<!-- Hidden field to pass update message from server -->
+<input type="hidden" id="updateMessage" th:value="${session.updateMessage}">
+
+<script src="/js/profileim.js"></script>
 
 </body>
 </html>

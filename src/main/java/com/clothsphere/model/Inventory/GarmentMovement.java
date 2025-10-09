@@ -1,137 +1,76 @@
 package com.clothsphere.model.Inventory;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "GarmentMovement")
+@Table(name = "garment_movements")
 public class GarmentMovement {
 
     @Id
-    @Pattern(regexp = "^GMI\\d{3}$", message = "Movement ID must start with GMI followed by 3 digits")
-    @Column(nullable = false, unique = true, length = 6)
-    private String movementId;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "movement_id")
+    private String movementId; // Use int, not String
 
-    @NotBlank(message = "Garment ID is required")
-    @Column(nullable = false, length = 6)
+    @Column(name = "garment_id", nullable = false, length = 6)
     private String garmentId;
 
-    @NotBlank(message = "Fabric ID is required")
-    @Column(nullable = false, length = 6)
+    @Column(name = "fabric_id", nullable = false, length = 6)
     private String fabricId;
 
-    @NotBlank(message = "Status is required")
-    @Pattern(regexp = "^(In|Shipped)$", message = "Status must be 'In' or 'Shipped'")
-    @Column(nullable = false)
+    @Column(name = "status", nullable = false, length = 20) // "In" or "Shipped"
     private String status;
 
-    @NotNull(message = "Movement date is required")
-    @Column(nullable = false)
-    private LocalDate movementDate;
+    @Column(name = "movement_date")
+    private LocalDateTime movementDate;
 
-    @NotNull(message = "Quantity is required")
-    @Min(value = 1, message = "Quantity must be positive")
-    @Column(nullable = false)
-    private Integer quantity;
+    @Column(name = "quantity", nullable = false)
+    private int quantity;
 
-    @Min(value = 0, message = "Total quantity cannot be negative")
-    @Column(nullable = false)
-    private Integer totalQuantity;
+    @Column(name = "total_stock", nullable = false)
+    private int totalStock;
 
-    // References for joins
-    @ManyToOne
-    @JoinColumn(name = "garmentId", insertable = false, updatable = false)
-    private Garment garment;
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 
-    @ManyToOne
-    @JoinColumn(name = "fabricId", insertable = false, updatable = false)
-    private Fabric fabric;
-
-    // Constructors
+    // ----------------- Constructors -----------------
     public GarmentMovement() {}
 
-    public GarmentMovement(String movementId, String garmentId, String fabricId,
-                           String status, LocalDate movementDate, Integer quantity, Integer totalQuantity) {
-        this.movementId = movementId;
+    public GarmentMovement(String garmentId, String fabricId, String status, int quantity, int totalStock) {
         this.garmentId = garmentId;
         this.fabricId = fabricId;
         this.status = status;
-        this.movementDate = movementDate;
         this.quantity = quantity;
-        this.totalQuantity = totalQuantity;
+        this.totalStock = totalStock;
     }
 
-    // Getters and Setters
-    public String getMovementId() {
-        return movementId;
-    }
+    // ----------------- Getters & Setters -----------------
+    public String getMovementId() { return movementId; }
+    public void setMovementId(String movementId) { this.movementId = movementId; }
 
-    public void setMovementId(String movementId) {
-        this.movementId = movementId;
-    }
+    public String getGarmentId() { return garmentId; }
+    public void setGarmentId(String garmentId) { this.garmentId = garmentId; }
 
-    public String getGarmentId() {
-        return garmentId;
-    }
+    public String getFabricId() { return fabricId; }
+    public void setFabricId(String fabricId) { this.fabricId = fabricId; }
 
-    public void setGarmentId(String garmentId) {
-        this.garmentId = garmentId;
-    }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 
-    public String getFabricId() {
-        return fabricId;
-    }
+    public LocalDateTime getMovementDate() { return movementDate; }
+    public void setMovementDate(LocalDateTime movementDate) { this.movementDate = movementDate; }
 
-    public void setFabricId(String fabricId) {
-        this.fabricId = fabricId;
-    }
+    public int getQuantity() { return quantity; }
+    public void setQuantity(int quantity) { this.quantity = quantity; }
 
-    public String getStatus() {
-        return status;
-    }
+    public int getTotalStock() { return totalStock; }
+    public void setTotalStock(int totalStock) { this.totalStock = totalStock; }
 
-    public void setStatus(String status) {
-        this.status = status;
-    }
+    public LocalDateTime getCreatedAt() { return createdAt; }
 
-    public LocalDate getMovementDate() {
-        return movementDate;
-    }
-
-    public void setMovementDate(LocalDate movementDate) {
-        this.movementDate = movementDate;
-    }
-
-    public Integer getQuantity() {
-        return quantity;
-    }
-
-    public void setQuantity(Integer quantity) {
-        this.quantity = quantity;
-    }
-
-    public Integer getTotalQuantity() {
-        return totalQuantity;
-    }
-
-    public void setTotalQuantity(Integer totalQuantity) {
-        this.totalQuantity = totalQuantity;
-    }
-
-    public Garment getGarment() {
-        return garment;
-    }
-
-    public void setGarment(Garment garment) {
-        this.garment = garment;
-    }
-
-    public Fabric getFabric() {
-        return fabric;
-    }
-
-    public void setFabric(Fabric fabric) {
-        this.fabric = fabric;
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        movementDate = LocalDateTime.now();
     }
 }

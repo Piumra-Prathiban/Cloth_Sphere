@@ -1,81 +1,73 @@
 package com.clothsphere.model.Inventory;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
+import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "Fabric")
+@Table(name = "fabric")
 public class Fabric {
 
     @Id
-    @Pattern(regexp = "^FAB\\d{3}$", message = "Fabric ID must start with FAB followed by 3 digits")
-    @Column(nullable = false, unique = true, length = 6)
+    @Column(name = "fabric_id", length = 6)
     private String fabricId;
 
-    @NotBlank(message = "Fabric type is required")
-    @Column(nullable = false)
+    @Column(name = "fabric_type", nullable = false, length = 100)
     private String fabricType;
 
-    @NotBlank(message = "Color is required")
-    @Column(nullable = false)
+    @Column(name = "color", nullable = false, length = 50)
     private String color;
 
-    @Column(name = "low_stock_threshold")
-    private Double lowStockThreshold = 50.0;
+    @Column(name = "current_stock", nullable = false)
+    private Double currentStock = 0.0;
 
-    @Column(name = "reorder_level")
-    private Double reorderLevel = 100.0;
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 
-    // Constructors
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    // ----------------- Constructors -----------------
     public Fabric() {}
 
-    public Fabric(String fabricId, String fabricType, String color) {
+    public Fabric(String fabricId, String fabricType, String color, Double currentStock) {
         this.fabricId = fabricId;
         this.fabricType = fabricType;
         this.color = color;
-        this.lowStockThreshold = 50.0;
-        this.reorderLevel = 100.0;
+        this.currentStock = currentStock;
     }
 
-    // Getters and Setters
-    public String getFabricId() {
-        return fabricId;
+    // ----------------- Getters & Setters -----------------
+    public String getFabricId() { return fabricId; }
+    public void setFabricId(String fabricId) { this.fabricId = fabricId; }
+
+    public String getFabricType() { return fabricType; }
+    public void setFabricType(String fabricType) { this.fabricType = fabricType; }
+
+    public String getColor() { return color; }
+    public void setColor(String color) { this.color = color; }
+
+    public Double getCurrentStock() { return currentStock; }
+    public void setCurrentStock(Double currentStock) { this.currentStock = currentStock; }
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 
-    public void setFabricId(String fabricId) {
-        this.fabricId = fabricId;
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 
-    public String getFabricType() {
-        return fabricType;
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
     }
 
-    public void setFabricType(String fabricType) {
-        this.fabricType = fabricType;
-    }
-
-    public String getColor() {
-        return color;
-    }
-
-    public void setColor(String color) {
-        this.color = color;
-    }
-
-    public Double getLowStockThreshold() {
-        return lowStockThreshold;
-    }
-
-    public void setLowStockThreshold(Double lowStockThreshold) {
-        this.lowStockThreshold = lowStockThreshold;
-    }
-
-    public Double getReorderLevel() {
-        return reorderLevel;
-    }
-
-    public void setReorderLevel(Double reorderLevel) {
-        this.reorderLevel = reorderLevel;
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 }
