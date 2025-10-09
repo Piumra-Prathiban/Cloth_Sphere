@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public class FabricRepository {
@@ -70,5 +71,26 @@ public class FabricRepository {
     public int deleteFabric(String fabricId) {
         String sql = "DELETE FROM fabric WHERE fabric_id = ?";
         return jdbcTemplate.update(sql, fabricId);
+    }
+
+    // Find fabric by ID (returns Optional)
+    public Optional<Fabric> findById(String fabricId) {
+        try {
+            Fabric fabric = getFabricById(fabricId);
+            return Optional.ofNullable(fabric);
+        } catch (Exception e) {
+            return Optional.empty();
+        }
+    }
+
+    // Find all fabrics (returns List)
+    public List<Fabric> findAll() {
+        return getAllFabrics();
+    }
+
+    // Count total fabrics
+    public long count() {
+        String sql = "SELECT COUNT(*) FROM fabric";
+        return jdbcTemplate.queryForObject(sql, Long.class);
     }
 }

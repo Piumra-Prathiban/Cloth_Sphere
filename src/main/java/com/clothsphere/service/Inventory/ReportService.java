@@ -130,7 +130,7 @@ public class ReportService {
 
         for (GarmentMovement movement : movements) {
             try {
-                Garment garment = garmentRepository.findById(movement.getGarmentId()).orElse(null);
+                Garment garment = garmentRepository.findById(movement.getGarmentId());
                 if (garment == null) continue;
 
                 String key = movement.getGarmentId();
@@ -248,6 +248,26 @@ public class ReportService {
             // Return N/A if error
         }
         return "N/A";
+    }
+
+    // ========== FABRIC USAGE REPORT (with renamed method) ==========
+    public Map<String, Object> generateFabricUsageReport(LocalDate startDate, LocalDate endDate) {
+        return getFabricUsageReport(startDate, endDate);
+    }
+
+    // ========== FABRIC AVAILABILITY REPORT (with renamed method) ==========
+    public Map<String, Object> generateFabricAvailabilityReport(LocalDate startDate, LocalDate endDate) {
+        return getFabricAvailabilityReport();
+    }
+
+    // ========== GARMENT MOVEMENT REPORT (with renamed method) ==========
+    public Map<String, Object> generateGarmentMovementReport(LocalDate startDate, LocalDate endDate) {
+        return getGarmentMovementReport(startDate, endDate);
+    }
+
+    // ========== GARMENT AVAILABILITY REPORT (with renamed method) ==========
+    public Map<String, Object> generateGarmentAvailabilityReport(LocalDate startDate, LocalDate endDate) {
+        return getGarmentAvailabilityReport();
     }
 
     // ========== SUMMARY STATISTICS ==========

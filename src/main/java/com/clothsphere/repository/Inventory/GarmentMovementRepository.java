@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -88,6 +89,23 @@ public class GarmentMovementRepository {
         );
     }
 
+    // Find movements by date range
+    public List<GarmentMovement> findByMovementDateBetween(LocalDate startDate, LocalDate endDate) {
+        String sql = "SELECT * FROM garment_movements WHERE CAST(movement_date AS DATE) BETWEEN ? AND ? ORDER BY movement_date DESC";
+        return jdbcTemplate.query(sql, movementMapper, startDate, endDate);
+    }
+
+    // Find latest movement by garment ID
+    public List<GarmentMovement> findLatestMovementByGarmentId(String garmentId) {
+        String sql = "SELECT TOP 1 * FROM garment_movements WHERE garment_id = ? ORDER BY movement_date DESC";
+        return jdbcTemplate.query(sql, movementMapper, garmentId);
+    }
+
+    // Find movements by date
+    public List<GarmentMovement> findByMovementDate(LocalDate date) {
+        String sql = "SELECT * FROM garment_movements WHERE CAST(movement_date AS DATE) = ? ORDER BY movement_date DESC";
+        return jdbcTemplate.query(sql, movementMapper, date);
+    }
 }
 
 

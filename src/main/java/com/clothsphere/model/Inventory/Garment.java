@@ -29,6 +29,12 @@ public class Garment {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "low_stock_threshold")
+    private Integer lowStockThreshold;
+
+    @Column(name = "reorder_level")
+    private Integer reorderLevel;
+
     // ----------------- Constructors -----------------
     public Garment() {}
 
@@ -41,8 +47,13 @@ public class Garment {
     }
 
     // ----------------- Getters & Setters -----------------
+    public String getGarmentId() { return garmentId; }
+    public void setGarmentId(String garmentId) { this.garmentId = garmentId; }
+
     public String getId() { return garmentId; }
     public void setId(String id) { this.garmentId = garmentId; }
+
+    public String getGarmentType() { return type; }
 
     public String getType() { return type; }
     public void setType(String type) { this.type = type; }
@@ -58,6 +69,12 @@ public class Garment {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
+
+    public Integer getLowStockThreshold() { return lowStockThreshold; }
+    public void setLowStockThreshold(Integer lowStockThreshold) { this.lowStockThreshold = lowStockThreshold; }
+
+    public Integer getReorderLevel() { return reorderLevel; }
+    public void setReorderLevel(Integer reorderLevel) { this.reorderLevel = reorderLevel; }
 
     @PrePersist
     protected void onCreate() {

@@ -172,4 +172,14 @@ public class FabricService {
                 m.getRejectionReason()
         );
     }
+
+    // Get current total quantity for a fabric
+    public double getCurrentTotalQuantity(String fabricId) {
+        try {
+            Fabric fabric = fabricRepository.getFabricById(fabricId);
+            return fabric.getCurrentStock();
+        } catch (Exception e) {
+            return 0.0;
+        }
+    }
 }

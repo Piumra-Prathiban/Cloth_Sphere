@@ -26,6 +26,12 @@ public class Fabric {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "low_stock_threshold")
+    private Double lowStockThreshold;
+
+    @Column(name = "reorder_level")
+    private Double reorderLevel;
+
     // ----------------- Constructors -----------------
     public Fabric() {}
 
@@ -59,6 +65,12 @@ public class Fabric {
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
     }
+
+    public Double getLowStockThreshold() { return lowStockThreshold; }
+    public void setLowStockThreshold(Double lowStockThreshold) { this.lowStockThreshold = lowStockThreshold; }
+
+    public Double getReorderLevel() { return reorderLevel; }
+    public void setReorderLevel(Double reorderLevel) { this.reorderLevel = reorderLevel; }
 
     @PrePersist
     protected void onCreate() {

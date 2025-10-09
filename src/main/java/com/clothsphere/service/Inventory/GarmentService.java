@@ -105,4 +105,14 @@ public class GarmentService implements StockObservable {
             notifyObservers(garment.getId(), garment.getStock());
         }
     }
+
+    // Get current total quantity for a garment
+    public int getCurrentTotalQuantity(String garmentId) {
+        try {
+            Garment garment = garmentRepo.findById(garmentId);
+            return garment != null ? garment.getStock() : 0;
+        } catch (Exception e) {
+            return 0;
+        }
+    }
 }

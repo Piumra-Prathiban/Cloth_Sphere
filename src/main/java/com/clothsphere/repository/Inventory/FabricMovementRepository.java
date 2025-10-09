@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.List;
 
 @Repository
@@ -85,5 +86,23 @@ public class FabricMovementRepository {
     public int deleteMovement(String movementId) {
         String sql = "DELETE FROM fabric_movements WHERE movement_id = ?";
         return jdbcTemplate.update(sql, movementId);
+    }
+
+    // Find movements by date range
+    public List<FabricMovement> findByMovementDateBetween(LocalDate startDate, LocalDate endDate) {
+        String sql = "SELECT * FROM fabric_movements WHERE movement_date BETWEEN ? AND ? ORDER BY movement_date DESC";
+        return jdbcTemplate.query(sql, new Object[]{startDate, endDate}, movementRowMapper);
+    }
+
+    // Find latest movement by fabric ID
+    public List<FabricMovement> findLatestMovementByFabricId(String fabricId) {
+        String sql = "SELECT TOP 1 * FROM fabric_movements WHERE fabric_id = ? ORDER BY movement_date DESC";
+        return jdbcTemplate.query(sql, new Object[]{fabricId}, movementRowMapper);
+    }
+
+    // Find movements by date
+    public List<FabricMovement> findByMovementDate(LocalDate date) {
+        String sql = "SELECT * FROM fabric_movements WHERE movement_date = ? ORDER BY movement_date DESC";
+        return jdbcTemplate.query(sql, new Object[]{date}, movementRowMapper);
     }
 }

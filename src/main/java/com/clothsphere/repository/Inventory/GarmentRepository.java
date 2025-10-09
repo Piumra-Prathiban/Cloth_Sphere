@@ -65,7 +65,11 @@ public class GarmentRepository {
         jdbcTemplate.update("DELETE FROM garments WHERE id=?", id);
     }
 
-
+    // Count total garments
+    public long count() {
+        String sql = "SELECT COUNT(*) FROM garments";
+        return jdbcTemplate.queryForObject(sql, Long.class);
+    }
 }
 
 
