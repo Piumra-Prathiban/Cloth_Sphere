@@ -5,6 +5,7 @@ import com.clothsphere.repository.SOM.OrderRepository;
 import com.clothsphere.service.PM.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -19,9 +20,9 @@ public class OrderService {
     @Autowired
     private ProductService productService;
 
-    // FIXED: Generate next order ID with proper prefix handling
+    // Generate next order ID with proper prefix handling
     public String generateNextOrderId(String orderType) {
-        // Get all orders of this type
+        // Get the maximum ID using manual query
         String maxId = orderRepository.findMaxOrderIdByOrderType(orderType);
 
         // Determine prefix based on order type
@@ -41,7 +42,6 @@ public class OrderService {
 
         try {
             // Extract the numeric part from the order ID
-            // Handles both PHY01, PHY02 and ONL01, ONL02 formats
             String numericPart = maxId.replaceAll("[^0-9]", "");
 
             if (numericPart.isEmpty()) {
@@ -70,7 +70,8 @@ public class OrderService {
         return subtotal;
     }
 
-    // Create order with proper ID generation
+    // Create order using manual insert
+    @Transactional
     public Order createOrder(Order order, String createdBy) {
         try {
             // Extract product ID from order notes
@@ -92,7 +93,7 @@ public class OrderService {
             // Set order type to PHYSICAL for sales manager
             order.setOrderType("PHYSICAL");
 
-            // CRITICAL FIX: Always generate a NEW order ID
+            // Generate a NEW order ID
             String nextOrderId = generateNextOrderId(order.getOrderType());
             order.setOrderId(nextOrderId);
             System.out.println("Generated NEW order ID: " + nextOrderId);
@@ -110,22 +111,44 @@ public class OrderService {
             order.setPlaceDate(LocalDateTime.now());
             order.setCreatedBy(createdBy);
 
-            // Save the order
-            Order savedOrder = orderRepository.save(order);
-            System.out.println("Order saved successfully: " + savedOrder.getOrderId());
+            // Use manual insert query
+            int result = orderRepository.insertOrder(
+                    order.getOrderType(),
+                    order.getOrderId(),
+                    order.getCustomerName(),
+                    order.getCustomerEmail(),
+                    order.getCustomerPhone(),
+                    order.getCustomerAddress(),
+                    order.getProductType(),
+                    order.getQuantity(),
+                    order.getUnitPrice(),
+                    order.getDiscountPercentage(),
+                    order.getTotalAmount(),
+                    order.getOrderNotes(),
+                    order.getStatus(),
+                    order.getPlaceDate(),
+                    order.getCreatedBy()
+            );
 
-            // Update stock after successful order creation
-            if (productId != null && !productId.equals("UNKNOWN")) {
-                System.out.println("Updating stock for product: " + productId + ", quantity: " + order.getQuantity());
-                boolean stockUpdated = productService.updateProductStock(productId, order.getQuantity());
-                if (stockUpdated) {
-                    System.out.println("Stock updated successfully");
-                } else {
-                    System.out.println("Warning: Stock update failed for product: " + productId);
+            if (result > 0) {
+                System.out.println("Order inserted successfully: " + order.getOrderId());
+
+                // Update stock after successful order creation
+                if (productId != null && !productId.equals("UNKNOWN")) {
+                    System.out.println("Updating stock for product: " + productId + ", quantity: " + order.getQuantity());
+                    boolean stockUpdated = productService.updateProductStock(productId, order.getQuantity());
+                    if (stockUpdated) {
+                        System.out.println("Stock updated successfully");
+                    } else {
+                        System.out.println("Warning: Stock update failed for product: " + productId);
+                    }
                 }
-            }
 
-            return savedOrder;
+                // Return the created order
+                return order;
+            } else {
+                throw new RuntimeException("Failed to insert order");
+            }
 
         } catch (Exception e) {
             System.err.println("Error creating order: " + e.getMessage());
@@ -175,7 +198,7 @@ public class OrderService {
         return "UNKNOWN";
     }
 
-    // Get all orders
+    // Get all orders using manual query
     public List<Order> getAllOrders() {
         return orderRepository.findAllOrderByPlaceDateDesc();
     }
@@ -190,16 +213,24 @@ public class OrderService {
         return orderRepository.findByOrderTypeAndOrderId(orderType, orderId);
     }
 
-    // Update order status
+    // Update order status using manual update
+    @Transactional
     public Order updateOrderStatus(String orderType, String orderId, String newStatus, String updatedBy) {
+        // Check if order exists
         Optional<Order> existingOrder = orderRepository.findByOrderTypeAndOrderId(orderType, orderId);
         if (existingOrder.isPresent()) {
             Order order = existingOrder.get();
 
             // Validate status transition
             if (isValidStatusTransition(order.getStatus(), newStatus)) {
-                order.setStatus(newStatus);
-                return orderRepository.save(order);
+                // Use manual update query
+                int result = orderRepository.updateOrderStatus(orderType, orderId, newStatus);
+                if (result > 0) {
+                    order.setStatus(newStatus);
+                    return order;
+                } else {
+                    throw new RuntimeException("Failed to update order status");
+                }
             } else {
                 throw new RuntimeException("Invalid status transition from " + order.getStatus() + " to " + newStatus);
             }
@@ -213,14 +244,12 @@ public class OrderService {
                 (currentStatus.equals("IN_PRODUCTION") && newStatus.equals("READY_TO_SHIP"));
     }
 
-    // Update order discount and recalculate total amount
+    // Update order discount using manual update
+    @Transactional
     public Order updateOrderDiscount(String orderType, String orderId, Double discountPercentage, String updatedBy) {
         Optional<Order> existingOrder = orderRepository.findByOrderTypeAndOrderId(orderType, orderId);
         if (existingOrder.isPresent()) {
             Order order = existingOrder.get();
-
-            // Update discount
-            order.setDiscountPercentage(discountPercentage);
 
             // Recalculate total amount
             Double totalAmount = calculateTotalAmount(
@@ -228,9 +257,28 @@ public class OrderService {
                     order.getUnitPrice(),
                     discountPercentage
             );
-            order.setTotalAmount(totalAmount);
 
-            return orderRepository.save(order);
+            // Use manual update query
+            int result = orderRepository.updateOrderDiscount(orderType, orderId, discountPercentage, totalAmount);
+            if (result > 0) {
+                order.setDiscountPercentage(discountPercentage);
+                order.setTotalAmount(totalAmount);
+                return order;
+            } else {
+                throw new RuntimeException("Failed to update order discount");
+            }
+        }
+        throw new RuntimeException("Order not found with Type: " + orderType + " and ID: " + orderId);
+    }
+
+    // Delete order using manual delete
+    @Transactional
+    public boolean deleteOrder(String orderType, String orderId) {
+        // Check if order exists first
+        int exists = orderRepository.checkOrderExists(orderType, orderId);
+        if (exists > 0) {
+            int result = orderRepository.deleteOrder(orderType, orderId);
+            return result > 0;
         }
         throw new RuntimeException("Order not found with Type: " + orderType + " and ID: " + orderId);
     }
@@ -248,5 +296,10 @@ public class OrderService {
     // Get orders by order type and status
     public List<Order> getOrdersByTypeAndStatus(String orderType, String status) {
         return orderRepository.findByOrderTypeAndStatus(orderType, status);
+    }
+
+    // Get orders within date range
+    public List<Order> getOrdersByDateRange(LocalDateTime startDate, LocalDateTime endDate) {
+        return orderRepository.findOrdersByDateRange(startDate, endDate);
     }
 }

@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -31,23 +32,25 @@ public class SummaryReportService {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    // Generate summary report
+    // Generate summary report using manual insert
+    @Transactional
     public SummaryReport generateSummaryReport(String reportType, LocalDateTime startDate,
                                                LocalDateTime endDate, String generatedBy) {
         try {
-            // Get orders within the date range
-            List<Order> orders = getOrdersByDateRange(startDate, endDate);
+            // Get orders within the date range using manual query
+            List<Order> orders = orderRepository.findOrdersByDateRange(startDate, endDate);
 
             // Calculate summary statistics
             Map<String, Object> summaryData = calculateSummaryStatistics(orders, startDate, endDate);
 
-            // Create report
+            // Create report object
             SummaryReport report = new SummaryReport();
             report.setReportName(generateReportName(reportType, startDate, endDate));
             report.setReportType(reportType);
             report.setPeriodStart(startDate);
             report.setPeriodEnd(endDate);
             report.setGeneratedBy(generatedBy);
+            report.setGeneratedAt(LocalDateTime.now());
 
             // Set calculated values
             report.setTotalOrders((Integer) summaryData.get("totalOrders"));
@@ -57,27 +60,115 @@ public class SummaryReportService {
             report.setSuccessRate((Double) summaryData.get("successRate"));
 
             // Set detailed report data as JSON
-            report.setReportData(objectMapper.writeValueAsString(summaryData.get("detailedData")));
+            String reportDataJson = objectMapper.writeValueAsString(summaryData.get("detailedData"));
+            report.setReportData(reportDataJson);
 
             // Generate CSV file
             String csvFilePath = generateCSVReport(orders, report);
             report.setFilePath(csvFilePath);
 
-            return summaryReportRepository.save(report);
+            // Use manual insert query
+            int result = summaryReportRepository.insertSummaryReport(
+                    report.getReportName(),
+                    report.getReportType(),
+                    report.getPeriodStart(),
+                    report.getPeriodEnd(),
+                    report.getTotalOrders(),
+                    report.getTotalRevenue(),
+                    report.getTotalCustomers(),
+                    report.getAverageOrderValue(),
+                    report.getSuccessRate(),
+                    report.getReportData(),
+                    report.getGeneratedBy(),
+                    report.getGeneratedAt(),
+                    report.getFilePath()
+            );
+
+            if (result > 0) {
+                // Get the generated ID
+                Long generatedId = summaryReportRepository.findMaxReportId();
+                report.setId(generatedId);
+                System.out.println("Summary report created successfully with ID: " + generatedId);
+                return report;
+            } else {
+                throw new RuntimeException("Failed to insert summary report");
+            }
 
         } catch (Exception e) {
             throw new RuntimeException("Failed to generate summary report: " + e.getMessage(), e);
         }
     }
 
-    // Get orders by date range
-    private List<Order> getOrdersByDateRange(LocalDateTime startDate, LocalDateTime endDate) {
-        // This is a simplified implementation - you might need to adjust based on your OrderRepository
-        List<Order> allOrders = orderRepository.findAllOrderByPlaceDateDesc();
-        return allOrders.stream()
-                .filter(order -> !order.getPlaceDate().isBefore(startDate) &&
-                        !order.getPlaceDate().isAfter(endDate))
-                .collect(Collectors.toList());
+    // Update report data using manual update
+    @Transactional
+    public SummaryReport updateReportData(Long reportId, String updatedBy) {
+        // Check if report exists
+        int exists = summaryReportRepository.checkReportExists(reportId);
+        if (exists == 0) {
+            throw new RuntimeException("Report not found with ID: " + reportId);
+        }
+
+        // Get the existing report
+        Optional<SummaryReport> existingReport = summaryReportRepository.findById(reportId);
+        if (existingReport.isPresent()) {
+            SummaryReport report = existingReport.get();
+
+            // Re-calculate statistics for the report period
+            List<Order> orders = orderRepository.findOrdersByDateRange(report.getPeriodStart(), report.getPeriodEnd());
+            Map<String, Object> summaryData = calculateSummaryStatistics(orders, report.getPeriodStart(), report.getPeriodEnd());
+
+            // Update values
+            Integer totalOrders = (Integer) summaryData.get("totalOrders");
+            Double totalRevenue = (Double) summaryData.get("totalRevenue");
+            Integer totalCustomers = (Integer) summaryData.get("totalCustomers");
+            Double averageOrderValue = (Double) summaryData.get("averageOrderValue");
+            Double successRate = (Double) summaryData.get("successRate");
+            String reportDataJson;
+
+            try {
+                reportDataJson = objectMapper.writeValueAsString(summaryData.get("detailedData"));
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to serialize report data: " + e.getMessage());
+            }
+
+            // Use manual update query
+            int result = summaryReportRepository.updateReportData(
+                    reportId,
+                    reportDataJson,
+                    totalOrders,
+                    totalRevenue,
+                    totalCustomers,
+                    averageOrderValue,
+                    successRate
+            );
+
+            if (result > 0) {
+                report.setTotalOrders(totalOrders);
+                report.setTotalRevenue(totalRevenue);
+                report.setTotalCustomers(totalCustomers);
+                report.setAverageOrderValue(averageOrderValue);
+                report.setSuccessRate(successRate);
+                report.setReportData(reportDataJson);
+                return report;
+            } else {
+                throw new RuntimeException("Failed to update report data");
+            }
+        }
+        throw new RuntimeException("Report not found with ID: " + reportId);
+    }
+
+    // Update report file path
+    @Transactional
+    public boolean updateReportFilePath(Long reportId, String newFilePath) {
+        // Check if report exists
+        int exists = summaryReportRepository.checkReportExists(reportId);
+        if (exists == 0) {
+            throw new RuntimeException("Report not found with ID: " + reportId);
+        }
+
+        // Use manual update query
+        int result = summaryReportRepository.updateReportFilePath(reportId, newFilePath);
+        return result > 0;
     }
 
     // Calculate summary statistics
@@ -232,9 +323,9 @@ public class SummaryReportService {
                 endDate.format(formatter));
     }
 
-    // Get all reports
+    // Get all reports using manual query
     public List<SummaryReport> getAllReports() {
-        return summaryReportRepository.findAll();
+        return summaryReportRepository.findAllOrderByGeneratedAtDesc();
     }
 
     // Get report by ID
@@ -247,14 +338,57 @@ public class SummaryReportService {
         return summaryReportRepository.findByReportTypeOrderByGeneratedAtDesc(reportType);
     }
 
-    // Delete report
+    // Delete report using manual delete
+    @Transactional
     public void deleteReport(Long id) {
-        summaryReportRepository.deleteById(id);
+        // Check if report exists
+        int exists = summaryReportRepository.checkReportExists(id);
+        if (exists == 0) {
+            throw new RuntimeException("Report not found with ID: " + id);
+        }
+
+        // Use manual delete query
+        int result = summaryReportRepository.deleteSummaryReport(id);
+        if (result == 0) {
+            throw new RuntimeException("Failed to delete report");
+        }
+        System.out.println("Report deleted successfully: " + id);
+    }
+
+    // Delete old reports
+    @Transactional
+    public int deleteOldReports(LocalDateTime cutoffDate) {
+        return summaryReportRepository.deleteOldReports(cutoffDate);
     }
 
     // Get quick stats for dashboard
     public Map<String, Object> getQuickStats(LocalDateTime startDate, LocalDateTime endDate) {
-        List<Order> orders = getOrdersByDateRange(startDate, endDate);
+        List<Order> orders = orderRepository.findOrdersByDateRange(startDate, endDate);
         return calculateSummaryStatistics(orders, startDate, endDate);
+    }
+
+    // Get report count by type
+    public int getReportCountByType(String reportType) {
+        return summaryReportRepository.countReportsByType(reportType);
+    }
+
+    // Get latest report by type
+    public Optional<SummaryReport> getLatestReportByType(String reportType) {
+        return summaryReportRepository.findTopByReportTypeOrderByGeneratedAtDesc(reportType);
+    }
+
+    // Get reports by date range
+    public List<SummaryReport> getReportsByDateRange(LocalDateTime startDate, LocalDateTime endDate) {
+        return summaryReportRepository.findReportsByDateRange(startDate, endDate);
+    }
+
+    // Get reports by period
+    public List<SummaryReport> getReportsByPeriod(LocalDateTime startDate, LocalDateTime endDate) {
+        return summaryReportRepository.findReportsByPeriod(startDate, endDate);
+    }
+
+    // Get reports by user
+    public List<SummaryReport> getReportsByUser(String generatedBy) {
+        return summaryReportRepository.findByGeneratedByOrderByGeneratedAtDesc(generatedBy);
     }
 }
