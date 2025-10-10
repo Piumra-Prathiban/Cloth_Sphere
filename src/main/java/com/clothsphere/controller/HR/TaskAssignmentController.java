@@ -1,36 +1,35 @@
 package com.clothsphere.controller.HR;
 
 import com.clothsphere.model.HR.TaskAssignment;
+import com.clothsphere.model.HR.ProductionTask;
 import com.clothsphere.model.SystemUser;
 import com.clothsphere.service.HR.TaskAssignmentService;
-import com.clothsphere.service.HR.DepartmentService; // Add this import
+import com.clothsphere.service.HR.productionTaskService;
 import jakarta.servlet.http.HttpSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/assignments")
 public class TaskAssignmentController {
 
+    private static final Logger logger = LoggerFactory.getLogger(TaskAssignmentController.class);
+
     @Autowired
     private TaskAssignmentService taskAssignmentService;
 
     @Autowired
-    private DepartmentService departmentService; // Fixed variable name
+    private productionTaskService productionTaskService;
 
     /**
-     * Get all task assignments - CORRECTED VERSION
-     */
-    /**
-     * Get all task assignments - SIMPLIFIED VERSION
+     * Get all task assignments
      */
     @GetMapping
     public ResponseEntity<List<TaskAssignment>> getAllAssignments(HttpSession session) {
@@ -41,11 +40,10 @@ public class TaskAssignmentController {
 
         try {
             List<TaskAssignment> allAssignments = taskAssignmentService.getAllAssignments();
-            System.out.println("Loaded " + allAssignments.size() + " assignments with department details");
+            logger.info("Loaded {} assignments with department details", allAssignments.size());
             return new ResponseEntity<>(allAssignments, HttpStatus.OK);
         } catch (Exception e) {
-            System.out.println("Error fetching assignments: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("Error fetching assignments: {}", e.getMessage(), e);
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -62,13 +60,10 @@ public class TaskAssignmentController {
 
         try {
             Optional<TaskAssignment> assignment = taskAssignmentService.getAssignmentById(assignmentId);
-            if (assignment.isPresent()) {
-                return new ResponseEntity<>(assignment.get(), HttpStatus.OK);
-            } else {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-            }
+            return assignment.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
+                    .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
         } catch (Exception e) {
-            System.out.println("Error fetching assignment: " + e.getMessage());
+            logger.error("Error fetching assignment: {}", e.getMessage(), e);
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -106,7 +101,7 @@ public class TaskAssignmentController {
             }
 
             // Create assignment using service method for multiple employees
-            List<String> employeeIds = java.util.Arrays.asList(employeeId);
+            List<String> employeeIds = Collections.singletonList(employeeId);
             Integer estimatedHours = assignmentData.get("estimatedHours") != null ?
                     Integer.parseInt(assignmentData.get("estimatedHours").toString()) : null;
             String notes = (String) assignmentData.get("notes");
@@ -229,13 +224,22 @@ public class TaskAssignmentController {
                 updatedData.setNotes((String) assignmentData.get("notes"));
             }
 
-            // Update assignment
-            TaskAssignment updatedAssignment = taskAssignmentService.updateAssignment(assignmentId, updatedData);
+            // Update assignment with automatic task status update
+            TaskAssignment updatedAssignment = taskAssignmentService.updateAssignmentWithTaskStatus(assignmentId, updatedData);
 
             if (updatedAssignment != null) {
                 response.put("success", true);
                 response.put("message", "Assignment updated successfully!");
                 response.put("assignment", updatedAssignment);
+
+                // Get updated task status
+                String taskId = updatedAssignment.getTask().getTaskId();
+                Optional<ProductionTask> taskOpt = productionTaskService.getTaskById(taskId);
+                if (taskOpt.isPresent()) {
+                    response.put("taskStatus", taskOpt.get().getStatus());
+                    response.put("taskProgress", taskAssignmentService.getTaskCompletionProgress(taskId));
+                }
+
                 return new ResponseEntity<>(response, HttpStatus.OK);
             } else {
                 response.put("success", false);
@@ -266,19 +270,29 @@ public class TaskAssignmentController {
         Map<String, Object> response = new HashMap<>();
 
         try {
+            // Check if assignment exists first
+            Optional<TaskAssignment> assignmentOpt = taskAssignmentService.getAssignmentById(assignmentId);
+            if (!assignmentOpt.isPresent()) {
+                response.put("success", false);
+                response.put("message", "Assignment not found");
+                return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+            }
+
             boolean success = taskAssignmentService.deleteAssignment(assignmentId);
 
             if (success) {
                 response.put("success", true);
                 response.put("message", "Assignment deleted successfully!");
+                logger.info("Successfully deleted assignment: {}", assignmentId);
                 return new ResponseEntity<>(response, HttpStatus.OK);
             } else {
                 response.put("success", false);
-                response.put("message", "Assignment not found or failed to delete");
-                return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+                response.put("message", "Failed to delete assignment");
+                return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
             }
 
         } catch (Exception e) {
+            logger.error("Error deleting assignment {}: {}", assignmentId, e.getMessage(), e);
             response.put("success", false);
             response.put("message", "Error deleting assignment: " + e.getMessage());
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -302,7 +316,7 @@ public class TaskAssignmentController {
             List<TaskAssignment> assignments = taskAssignmentService.getAssignmentsByEmployeeId(employeeId);
             return new ResponseEntity<>(assignments, HttpStatus.OK);
         } catch (Exception e) {
-            System.out.println("Error fetching assignments by employee: " + e.getMessage());
+            logger.error("Error fetching assignments by employee: {}", e.getMessage(), e);
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -324,7 +338,7 @@ public class TaskAssignmentController {
             List<TaskAssignment> assignments = taskAssignmentService.getAssignmentsByTaskId(taskId);
             return new ResponseEntity<>(assignments, HttpStatus.OK);
         } catch (Exception e) {
-            System.out.println("Error fetching assignments by task: " + e.getMessage());
+            logger.error("Error fetching assignments by task: {}", e.getMessage(), e);
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -346,7 +360,7 @@ public class TaskAssignmentController {
             List<TaskAssignment> assignments = taskAssignmentService.getAssignmentsByStatus(status);
             return new ResponseEntity<>(assignments, HttpStatus.OK);
         } catch (Exception e) {
-            System.out.println("Error fetching assignments by status: " + e.getMessage());
+            logger.error("Error fetching assignments by status: {}", e.getMessage(), e);
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -365,11 +379,178 @@ public class TaskAssignmentController {
             Map<String, Object> stats = taskAssignmentService.getAssignmentStatistics();
             return new ResponseEntity<>(stats, HttpStatus.OK);
         } catch (Exception e) {
-            System.out.println("Error fetching assignment statistics: " + e.getMessage());
+            logger.error("Error fetching assignment statistics: {}", e.getMessage(), e);
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    /**
+     * Get task completion progress
+     */
+    @GetMapping("/task/{taskId}/progress")
+    public ResponseEntity<Map<String, Object>> getTaskProgress(
+            @PathVariable String taskId,
+            HttpSession session) {
 
+        SystemUser currentUser = (SystemUser) session.getAttribute("currentUser");
+        if (currentUser == null || !"hr-manager".equals(currentUser.getRole())) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
 
+        try {
+            Map<String, Object> progress = taskAssignmentService.getTaskCompletionProgress(taskId);
+            return new ResponseEntity<>(progress, HttpStatus.OK);
+        } catch (Exception e) {
+            logger.error("Error fetching task progress: {}", e.getMessage(), e);
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Employee update assignment status - with actual hours input - FIXED VERSION
+     */
+    @PutMapping("/employee/{assignmentId}/status")
+    public ResponseEntity<Map<String, Object>> updateEmployeeAssignmentStatus(
+            @PathVariable String assignmentId,
+            @RequestBody Map<String, Object> statusData,
+            HttpSession session) {
+
+        SystemUser currentUser = (SystemUser) session.getAttribute("currentUser");
+        if (currentUser == null || !"employee".equals(currentUser.getRole())) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
+
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            String status = (String) statusData.get("status");
+            if (status == null || !taskAssignmentService.isValidStatus(status)) {
+                response.put("success", false);
+                response.put("message", "Valid status is required (ASSIGNED, IN_PROGRESS, COMPLETED, CANCELLED)");
+                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+            }
+
+            // Validate actual hours if provided
+            Integer actualHours = null;
+            if (statusData.get("actualHours") != null) {
+                try {
+                    // Handle both integer and decimal inputs
+                    Object hoursObj = statusData.get("actualHours");
+                    if (hoursObj instanceof Number) {
+                        actualHours = ((Number) hoursObj).intValue();
+                    } else {
+                        actualHours = Integer.parseInt(hoursObj.toString());
+                    }
+
+                    if (actualHours < 0) {
+                        response.put("success", false);
+                        response.put("message", "Actual hours cannot be negative");
+                        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+                    }
+                } catch (NumberFormatException e) {
+                    response.put("success", false);
+                    response.put("message", "Invalid actual hours format");
+                    return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+                }
+            }
+
+            // Verify the assignment belongs to the current employee
+            Optional<TaskAssignment> assignmentOpt = taskAssignmentService.getAssignmentById(assignmentId);
+            if (!assignmentOpt.isPresent()) {
+                response.put("success", false);
+                response.put("message", "Assignment not found");
+                return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+            }
+
+            TaskAssignment assignment = assignmentOpt.get();
+            if (assignment.getEmployee() == null || !assignment.getEmployee().getUsername().equals(currentUser.getUserName())) {
+                response.put("success", false);
+                response.put("message", "You can only update your own assignments");
+                return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
+            }
+
+            // Update assignment status with actual hours - This now properly updates task status
+            TaskAssignment updatedAssignment = taskAssignmentService.updateAssignmentStatus(
+                    assignmentId, status, actualHours);
+
+            if (updatedAssignment != null) {
+                response.put("success", true);
+                response.put("message", "Assignment status updated successfully!");
+                response.put("assignment", updatedAssignment);
+
+                // Get updated task information
+                String taskId = updatedAssignment.getTask().getTaskId();
+                Map<String, Object> taskProgress = taskAssignmentService.getTaskCompletionProgress(taskId);
+                response.put("taskProgress", taskProgress);
+
+                // Get the current task status
+                Optional<ProductionTask> taskOpt = productionTaskService.getTaskById(taskId);
+                if (taskOpt.isPresent()) {
+                    response.put("taskStatus", taskOpt.get().getStatus());
+                }
+
+                // Include completion information if status is COMPLETED
+                if ("COMPLETED".equals(status)) {
+                    response.put("completionDate", updatedAssignment.getCompletionDate());
+                    response.put("actualHours", updatedAssignment.getActualHours());
+                }
+
+                logger.info("Employee {} updated assignment {} to status {}. Task {} status updated.",
+                        currentUser.getUserName(), assignmentId, status, taskId);
+
+                return new ResponseEntity<>(response, HttpStatus.OK);
+            } else {
+                response.put("success", false);
+                response.put("message", "Failed to update assignment status");
+                return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+
+        } catch (Exception e) {
+            logger.error("Error updating assignment status: {}", e.getMessage(), e);
+            response.put("success", false);
+            response.put("message", "Error updating assignment status: " + e.getMessage());
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Get tasks for current employee
+     */
+    @GetMapping("/employee/tasks")
+    public ResponseEntity<List<Map<String, Object>>> getEmployeeTasks(HttpSession session) {
+        SystemUser currentUser = (SystemUser) session.getAttribute("currentUser");
+        if (currentUser == null || !"employee".equals(currentUser.getRole())) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
+
+        try {
+            String username = currentUser.getUserName();
+            List<TaskAssignment> assignments = taskAssignmentService.getAssignmentsByEmployeeUsername(username);
+
+            // Convert to simplified DTO for frontend
+            List<Map<String, Object>> taskList = assignments.stream().map(assignment -> {
+                Map<String, Object> taskMap = new HashMap<>();
+                taskMap.put("assignmentId", assignment.getAssignmentId());
+                taskMap.put("taskName", assignment.getTask().getTaskName());
+                taskMap.put("description", assignment.getTask().getDescription());
+                taskMap.put("departmentName", assignment.getDepartment() != null ?
+                        assignment.getDepartment().getDepartmentName() : "N/A");
+                taskMap.put("assignedDate", assignment.getAssignedDate());
+                taskMap.put("deadline", assignment.getTask().getDeadline());
+                taskMap.put("estimatedHours", assignment.getEstimatedHours());
+                taskMap.put("actualHours", assignment.getActualHours());
+                taskMap.put("completionDate", assignment.getCompletionDate());
+                taskMap.put("status", assignment.getStatus());
+                taskMap.put("notes", assignment.getNotes());
+                return taskMap;
+            }).collect(Collectors.toList());
+
+            logger.info("Loaded {} tasks for employee: {}", taskList.size(), username);
+            return new ResponseEntity<>(taskList, HttpStatus.OK);
+
+        } catch (Exception e) {
+            logger.error("Error fetching employee tasks: {}", e.getMessage(), e);
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 }

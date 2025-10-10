@@ -1,7 +1,10 @@
 package com.clothsphere.controller;
 
+import com.clothsphere.model.HR.Employee;
 import com.clothsphere.model.SystemUser;
+import com.clothsphere.repository.HR.EmployeeRepository;
 import com.clothsphere.service.SystemUserService;
+import com.clothsphere.util.PasswordEncoder;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -14,7 +17,11 @@ public class LoginController {
     @Autowired
     private SystemUserService systemUserService;
 
-    // Landing page
+    @Autowired
+    private EmployeeRepository employeeRepository;
+
+    // ========================= Landing page =========================
+
     @GetMapping("/")
     public String index() {
         return "index";
@@ -25,111 +32,130 @@ public class LoginController {
         return "getstart";
     }
 
-    // ========================= LOGIN =========================
+    @GetMapping("/buyerLogin")
+    public String showBuyerLoginPage() {
+        return "redirect:/buyer/login";
+    }
 
-    // Login page
     @GetMapping("/systemUserLogin")
     public String showSystemUserLoginPage() {
         return "systemUserLogin";
     }
 
-    // Process login
     @PostMapping("/systemUserLogin")
     public String processSystemUserLogin(
             @RequestParam String username,
             @RequestParam String password,
-            @RequestParam String role,
             Model model,
             HttpSession session) {
 
         System.out.println("=== LOGIN ATTEMPT ===");
         System.out.println("Username: " + username);
-        System.out.println("Role: " + role);
-        System.out.println("Password provided: " + (password != null && !password.trim().isEmpty()));
 
-        // Special handling for first-time employee login (no password required)
-        if ("employee".equalsIgnoreCase(role.trim())) {
-            // First check if user exists
-            SystemUser user = systemUserService.findByUserNameAndRole(username, "employee");
+        SystemUser user = systemUserService.findByUserName(username);
 
-            if (user != null) {
-                // Check if this is first-time login (logCount = 0)
-                if (user.getLogCount() == 0) {
-                    System.out.println("First-time employee login detected for: " + username);
+        if (user == null) {
+            System.out.println("User not found: " + username);
+            return "redirect:/systemUserLogin?error=true";
+        }
 
-                    // Allow login without password validation for first-time users
+        String userRole = user.getRole();
+        System.out.println("User role: " + userRole);
+
+        String actualEmployeeId = null;
+        if ("employee".equalsIgnoreCase(userRole.trim())) {
+            Employee employee = employeeRepository.findByUsername(username);
+            if (employee != null) {
+                actualEmployeeId = employee.getId();
+                System.out.println("Found employee ID: " + actualEmployeeId);
+            }
+        }
+
+        // Special handling for first-time employee login
+        if ("employee".equalsIgnoreCase(userRole.trim())) {
+            if (user.getLogCount() == 0) {
+                System.out.println("First-time employee login detected");
+
+                if (password == null || password.trim().isEmpty()) {
+                    // Set ALL session attributes including userEmail
                     session.setAttribute("currentUser", user);
+                    session.setAttribute("employeeId", actualEmployeeId);
+                    session.setAttribute("username", username);
+                    session.setAttribute("userEmail", user.getEmail()); // ADD THIS
                     session.setAttribute("firstLogin", true);
                     session.setAttribute("requirePasswordChange", true);
-
                     return "redirect:/employeeDashboard?firstLogin=true";
                 } else {
-                    // Not first-time login, require password validation
-                    if (password == null || password.trim().isEmpty()) {
-                        System.out.println("Password required for returning employee: " + username);
-                        return "redirect:/systemUserLogin?error=true";
-                    }
-
-                    // Validate password for returning employees
-                    if (user.getPassword().equals(password)) {
-                        System.out.println("Returning employee login successful: " + username);
-
-                        // Update log count
-                        user.setLogCount(user.getLogCount() + 1);
-                        systemUserService.updateLogCount(username, "employee", user.getLogCount());
-
+                    if (PasswordEncoder.matches(password, user.getPassword())) {
+                        // Set ALL session attributes including userEmail
                         session.setAttribute("currentUser", user);
-                        return "redirect:/employeeDashboard";
+                        session.setAttribute("employeeId", actualEmployeeId);
+                        session.setAttribute("username", username);
+                        session.setAttribute("userEmail", user.getEmail()); // ADD THIS
+                        session.setAttribute("firstLogin", true);
+                        session.setAttribute("requirePasswordChange", true);
+                        return "redirect:/employeeDashboard?firstLogin=true";
                     } else {
-                        System.out.println("Invalid passworcd for returning employee: " + username);
                         return "redirect:/systemUserLogin?error=true";
                     }
                 }
             } else {
-                System.out.println("Employee not found: " + username);
-                return "redirect:/systemUserLogin?error=true";
+                // Returning employee
+                if (password == null || password.trim().isEmpty()) {
+                    return "redirect:/systemUserLogin?error=true";
+                }
+
+                if (PasswordEncoder.matches(password, user.getPassword())) {
+                    user.setLogCount(user.getLogCount() + 1);
+                    systemUserService.updateLogCount(username, user.getLogCount());
+
+                    // Set ALL session attributes including userEmail
+                    session.setAttribute("currentUser", user);
+                    session.setAttribute("employeeId", actualEmployeeId);
+                    session.setAttribute("username", username);
+                    session.setAttribute("userEmail", user.getEmail()); // ADD THIS
+                    return "redirect:/employeeDashboard";
+                } else {
+                    return "redirect:/systemUserLogin?error=true";
+                }
             }
         }
 
-        // Normal login validation for all other roles
+        // Normal login for other roles
         if (password == null || password.trim().isEmpty()) {
-            System.out.println("Password required for role: " + role);
             return "redirect:/systemUserLogin?error=true";
         }
 
-        SystemUser user = systemUserService.validateUser(username, password, role);
-
-        if (user != null) {
-            System.out.println("User validation successful for: " + username);
-
-            // Store user in session
+        if (PasswordEncoder.matches(password, user.getPassword())) {
+            // Set ALL session attributes including userEmail
             session.setAttribute("currentUser", user);
+            session.setAttribute("username", username);
+            session.setAttribute("userEmail", user.getEmail()); // ADD THIS
 
-            // Role-based redirection
-            String lowerRole = role.toLowerCase().trim();
-            System.out.println("Redirecting to dashboard for role: '" + lowerRole + "'");
+            String lowerRole = userRole.toLowerCase().trim();
 
             switch (lowerRole) {
                 case "hr-manager":
                     return "redirect:/hrDashboard";
                 case "factory-manager":
-                    return "redirect:/factoryDashboard";
+                    return "redirect:/factory/dashboard";
                 case "inventory-manager":
                     return "redirect:/inventoryDashboard";
                 case "customer-officer":
                     return "redirect:/customerDashboard";
                 case "sales-executive":
                     return "redirect:/salesDashboard";
+                case "employee":
+                    session.setAttribute("employeeId", actualEmployeeId);
+                    return "redirect:/employeeDashboard";
                 default:
                     return "redirect:/dashboard";
             }
         } else {
-            System.out.println("User validation failed for: " + username);
             return "redirect:/systemUserLogin?error=true";
         }
     }
 
-    // Update password (only for logged-in users)
     @PostMapping("/updatePassword")
     public String updatePassword(
             @RequestParam String currentPassword,
@@ -143,28 +169,27 @@ public class LoginController {
             return "redirect:/systemUserLogin";
         }
 
-        // Validate current password
-        if (!currentUser.getPassword().equals(currentPassword)) {
+        // Use BCrypt to validate current password
+        if (!PasswordEncoder.matches(currentPassword, currentUser.getPassword())) {
             session.setAttribute("updateMessage", "error:Current password is incorrect");
             return "redirect:/hrDashboard";
         }
 
-        // Validate new password confirmation
         if (!newPassword.equals(confirmPassword)) {
             session.setAttribute("updateMessage", "error:New passwords do not match");
             return "redirect:/hrDashboard";
         }
 
-        // Update password in database
+        // Update password (will be encrypted in service)
         boolean success = systemUserService.updatePassword(
                 currentUser.getUserName(),
-                currentUser.getRole(),
                 newPassword
         );
 
         if (success) {
-            currentUser.setPassword(newPassword); // update session user
-            session.setAttribute("currentUser", currentUser);
+            // Update session with new encrypted password
+            SystemUser updatedUser = systemUserService.findByUserName(currentUser.getUserName());
+            session.setAttribute("currentUser", updatedUser);
             session.setAttribute("updateMessage", "success:Password updated successfully");
         } else {
             session.setAttribute("updateMessage", "error:Failed to update password");
@@ -183,10 +208,9 @@ public class LoginController {
         return "redirect:/systemUserLogin";
     }
 
-    // Other role-based dashboards
     @GetMapping("/factoryDashboard")
     public String showFactoryDashboard(HttpSession session, Model model) {
-        return loadDashboard("factoryDashboard", session, model);
+        return "redirect:/factory/dashboard";
     }
 
     @GetMapping("/inventoryDashboard")
@@ -198,9 +222,23 @@ public class LoginController {
     public String showCustomerDashboard(HttpSession session, Model model) {
         return loadDashboard("customerDashboard", session, model);
     }
+// ========================= Logout =========================
 
-    @GetMapping("/salesDashboard")
-    public String showSalesDashboard(HttpSession session, Model model) {
-        return loadDashboard("salesDashboard", session, model);
+    @GetMapping("/logout")
+    public String logout(HttpSession session) {
+        System.out.println("=== USER LOGOUT ===");
+
+        // Invalidate the session
+        if (session != null) {
+            session.invalidate();
+        }
+
+        System.out.println("User logged out successfully");
+        return "redirect:/systemUserLogin?logout=true";
+    }
+
+    @PostMapping("/logout")
+    public String logoutPost(HttpSession session) {
+        return logout(session);
     }
 }

@@ -413,7 +413,7 @@ public class ManagerController {
             System.out.println("=== FETCHING SYSTEM USER DETAILS ===");
             System.out.println("Username: " + username + ", Role: " + role);
 
-            SystemUser user = systemUserRepository.findByUserNameAndRole(username, role);
+            SystemUser user = systemUserRepository.findByUserName(username);
 
             if (user != null) {
                 System.out.println("User found: " + user.toString());

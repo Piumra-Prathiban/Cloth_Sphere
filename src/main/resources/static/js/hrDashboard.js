@@ -19,6 +19,12 @@ function showSection(sectionId) {
     } else if (sectionId === 'workload') {
         console.log('Switching to workload section, loading tasks...');
         loadProductionTasks();
+    }else if (sectionId === 'payroll') {
+        console.log('Switching to payroll section, loading payroll data...');
+        setTimeout(initPayroll, 100);
+    }else if (sectionId === 'leaveManagement') {
+        console.log('Switching to leave management section, loading leaves...');
+        loadLeaveRequests();  // ADD THIS
     }
 }
 
@@ -489,18 +495,6 @@ document.getElementById('departmentForm').addEventListener('submit', async funct
     }
 });
 
-// Attendance Chart
-const ctx = document.getElementById('attendanceChart');
-if (ctx) {
-    new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Working Employees', 'On Leave'],
-            datasets: [{ data: [85, 15], backgroundColor: ['#28a745', '#dc3545'] }]
-        },
-        options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
-    });
-}
 
 // Other functions
 function logout() {
@@ -576,4 +570,405 @@ document.addEventListener('DOMContentLoaded', function() {
     }).catch(error => {
         console.error('Error loading initial data:', error);
     });
+// Function to update progress bars with real data from API
+    async function updateWorkloadProgress() {
+        try {
+            console.log('Fetching workload statistics...');
+            const response = await fetchWithAuth('/api/assignments/statistics');
+
+            if (response.ok) {
+                const stats = await response.json();
+                console.log('Workload stats received:', stats);
+
+                // Calculate percentages safely
+                const totalAssignments = stats.totalAssignments || 0;
+
+                if (totalAssignments === 0) {
+                    // Show 0% for all if no assignments exist
+                    updateProgressBar('.progress.finish', 0);
+                    updateProgressBar('.progress.in-progress', 0);
+                    updateProgressBar('.progress.pending', 0);
+                    updateSummaryText(0, 0, 0);
+                    return;
+                }
+
+                const completedPercentage = Math.round((stats.completedTasks / totalAssignments) * 100);
+                const inProgressPercentage = Math.round((stats.inProgressTasks / totalAssignments) * 100);
+                const assignedPercentage = Math.round((stats.assignedTasks / totalAssignments) * 100);
+
+                console.log('Calculated percentages:', {
+                    completed: completedPercentage,
+                    inProgress: inProgressPercentage,
+                    assigned: assignedPercentage
+                });
+
+                // Update progress bars
+                updateProgressBar('.progress.finish', completedPercentage);
+                updateProgressBar('.progress.in-progress', inProgressPercentage);
+                updateProgressBar('.progress.pending', assignedPercentage);
+
+                // Update summary text
+                updateSummaryText(completedPercentage, inProgressPercentage, assignedPercentage);
+
+            } else {
+                console.error('Failed to fetch workload statistics:', response.status);
+            }
+        } catch (error) {
+            console.error('Error updating workload progress:', error);
+        }
+    }
+
+    // Helper function to update a single progress bar
+    function updateProgressBar(selector, percentage) {
+        const progressBar = document.querySelector(selector);
+        if (progressBar) {
+            progressBar.style.width = percentage + '%';
+            progressBar.textContent = percentage + '%';
+        }
+    }
+
+    // Helper function to update summary text
+    function updateSummaryText(completed, inProgress, pending) {
+        const summaryElement = document.querySelector('.card h3 + p + div.progress-bar + p + div.progress-bar + p + div.progress-bar + div small');
+        if (summaryElement) {
+            summaryElement.innerHTML = `<strong>Summary:</strong> ${completed}% Completed • ${inProgress}% In Progress • ${pending}% Pending`;
+        }
+    }
+
+    // Initial call when dashboard loads
+    updateWorkloadProgress();
+
+    // Refresh every 30 seconds
+    setInterval(updateWorkloadProgress, 30000);
+
+// Call this function when the dashboard loads
+    document.addEventListener('DOMContentLoaded', function() {
+        // Your existing initialization code...
+        updateWorkloadProgress();
+
+        // Optionally update progress every 30 seconds
+        setInterval(updateWorkloadProgress, 30000);
+    });
+
+    // ==============================================
+// CALENDAR FUNCTIONALITY - STANDALONE
+// Add this to the END of your hrDashboard.js file
+// ==============================================
+
+// Calendar variables
+    const monthNames = ["January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"];
+    const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+    let currentDate = new Date();
+    let selectedDate = null;
+    let notes = {};
+
+// Load notes for the visible calendar month
+    async function loadNotesForMonth(year, month) {
+        try {
+            const startDate = new Date(year, month, 1);
+            const endDate = new Date(year, month + 1, 0);
+
+            const startDateStr = startDate.toISOString().split('T')[0];
+            const endDateStr = endDate.toISOString().split('T')[0];
+
+            const response = await fetchWithAuth(`/api/calendar-notes/range/${startDateStr}/${endDateStr}`);
+            if (response.ok) {
+                const notesArray = await response.json();
+                notes = {};
+                notesArray.forEach(note => {
+                    const dateStr = note.noteDate;
+                    if (!notes[dateStr]) {
+                        notes[dateStr] = [];
+                    }
+                    notes[dateStr].push(note.noteText);
+                });
+                console.log('Notes loaded for month:', notes);
+            }
+        } catch (error) {
+            console.error('Error loading notes:', error);
+        }
+    }
+
+    function renderCalendar() {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+
+        document.getElementById('currentMonth').textContent = `${monthNames[month]} ${year}`;
+
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+        const calendarGrid = document.getElementById('calendarGrid');
+        calendarGrid.innerHTML = '';
+
+        // Add day headers
+        dayNames.forEach(day => {
+            const dayHeader = document.createElement('div');
+            dayHeader.className = 'calendar-day-header';
+            dayHeader.textContent = day;
+            calendarGrid.appendChild(dayHeader);
+        });
+
+        // Previous month days
+        for (let i = firstDay - 1; i >= 0; i--) {
+            const day = daysInPrevMonth - i;
+            const dayEl = createDayElement(day, true, year, month - 1);
+            calendarGrid.appendChild(dayEl);
+        }
+
+        // Current month days
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dayEl = createDayElement(day, false, year, month);
+            calendarGrid.appendChild(dayEl);
+        }
+
+        // Next month days
+        const remainingDays = 42 - (firstDay + daysInMonth);
+        for (let day = 1; day <= remainingDays; day++) {
+            const dayEl = createDayElement(day, true, year, month + 1);
+            calendarGrid.appendChild(dayEl);
+        }
+    }
+
+    function createDayElement(day, isOtherMonth, year, month) {
+        const dayEl = document.createElement('div');
+        dayEl.className = 'calendar-day';
+        dayEl.textContent = day;
+
+        if (isOtherMonth) {
+            dayEl.classList.add('other-month');
+        }
+
+        const dateStr = getDateString(year, month, day);
+
+        if (!isOtherMonth && isToday(year, month, day)) {
+            dayEl.classList.add('today');
+        }
+
+        if (notes[dateStr] && notes[dateStr].length > 0) {
+            dayEl.classList.add('has-note');
+        }
+
+        dayEl.addEventListener('click', () => selectDate(year, month, day));
+
+        return dayEl;
+    }
+
+    function isToday(year, month, day) {
+        const today = new Date();
+        return today.getFullYear() === year &&
+            today.getMonth() === month &&
+            today.getDate() === day;
+    }
+
+    function getDateString(year, month, day) {
+        const date = new Date(year, month, day);
+        return date.toISOString().split('T')[0];
+    }
+
+    async function selectDate(year, month, day) {
+        selectedDate = new Date(year, month, day);
+        const dateStr = getDateString(year, month, day);
+
+        const dateDisplay = selectedDate.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+        });
+
+        document.getElementById('selectedDate').textContent = dateDisplay;
+        document.getElementById('noteInput').disabled = false;
+        document.getElementById('addNoteBtn').disabled = false;
+
+        await renderNotes(dateStr);
+    }
+
+    async function renderNotes(dateStr) {
+        const notesList = document.getElementById('notesList');
+
+        try {
+            const response = await fetchWithAuth(`/api/calendar-notes/${dateStr}`);
+            if (response.ok) {
+                const notesArray = await response.json();
+                const dateNotes = notesArray.map(note => note.noteText);
+
+                if (dateNotes.length === 0) {
+                    notesList.innerHTML = '<div class="no-notes">No notes for this date</div>';
+                    return;
+                }
+
+                notesList.innerHTML = '';
+                dateNotes.forEach(note => {
+                    const noteItem = document.createElement('div');
+                    noteItem.className = 'note-item';
+
+                    const noteText = document.createElement('div');
+                    noteText.className = 'note-text';
+                    noteText.textContent = note;
+
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'delete-note-btn';
+                    deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+                    deleteBtn.onclick = () => deleteNote(dateStr, note);
+
+                    noteItem.appendChild(noteText);
+                    noteItem.appendChild(deleteBtn);
+                    notesList.appendChild(noteItem);
+                });
+            } else {
+                notesList.innerHTML = '<div class="no-notes">Error loading notes</div>';
+            }
+        } catch (error) {
+            console.error('Error rendering notes:', error);
+            notesList.innerHTML = '<div class="no-notes">Error loading notes</div>';
+        }
+    }
+
+// In hrDashboard.js - Update the addNote function
+    async function addNote() {
+        console.log('=== ADD NOTE FUNCTION CALLED ===');
+
+        if (!selectedDate) {
+            console.log('No date selected');
+            showAlert('Please select a date first', 'error');
+            return;
+        }
+
+        const noteInput = document.getElementById('noteInput');
+        const noteText = noteInput.value.trim();
+
+        console.log('Note text:', noteText);
+
+        if (!noteText) {
+            showAlert('Please enter a note', 'error');
+            return;
+        }
+
+        const dateStr = selectedDate.toISOString().split('T')[0];
+        console.log('Saving note for date:', dateStr);
+
+        try {
+            const response = await fetchWithAuth('/api/calendar-notes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    noteDate: dateStr,
+                    noteText: noteText
+                })
+            });
+
+            console.log('Response status:', response.status);
+            console.log('Response headers:', response.headers);
+
+            const result = await response.json();
+            console.log('Server response:', result);
+
+            if (response.ok && result.success) {
+                console.log('Note added successfully');
+                noteInput.value = '';
+
+                // Refresh the notes list and calendar
+                await renderNotes(dateStr);
+                await loadNotesForMonth(currentDate.getFullYear(), currentDate.getMonth());
+                renderCalendar();
+
+                showAlert('Note added successfully!', 'success');
+            } else {
+                console.error('Failed to add note:', result.message);
+                showAlert(result.message || 'Failed to add note', 'error');
+            }
+        } catch (error) {
+            console.error('Error adding note:', error);
+            showAlert('Error adding note: ' + error.message, 'error');
+        }
+    }
+
+    async function deleteNote(dateStr, noteText) {
+        try {
+            const response = await fetchWithAuth(`/api/calendar-notes?date=${dateStr}&noteText=${encodeURIComponent(noteText)}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success) {
+                    await renderNotes(dateStr);
+                    await loadNotesForMonth(currentDate.getFullYear(), currentDate.getMonth());
+                    renderCalendar();
+                    showAlert('Note deleted successfully!', 'success');
+                } else {
+                    showAlert(result.message || 'Failed to delete note', 'error');
+                }
+            } else {
+                showAlert('Failed to delete note', 'error');
+            }
+        } catch (error) {
+            console.error('Error deleting note:', error);
+            showAlert('Error deleting note: ' + error.message, 'error');
+        }
+    }
+
+// Initialize calendar
+    function initCalendar() {
+        console.log('=== INITIALIZING CALENDAR ===');
+
+        // Load notes and render calendar
+        loadNotesForMonth(currentDate.getFullYear(), currentDate.getMonth()).then(() => {
+            renderCalendar();
+        });
+
+        // Navigation buttons
+        const prevBtn = document.getElementById('prevMonth');
+        const nextBtn = document.getElementById('nextMonth');
+
+        if (prevBtn) {
+            prevBtn.onclick = async () => {
+                currentDate.setMonth(currentDate.getMonth() - 1);
+                await loadNotesForMonth(currentDate.getFullYear(), currentDate.getMonth());
+                renderCalendar();
+            };
+        }
+
+        if (nextBtn) {
+            nextBtn.onclick = async () => {
+                currentDate.setMonth(currentDate.getMonth() + 1);
+                await loadNotesForMonth(currentDate.getFullYear(), currentDate.getMonth());
+                renderCalendar();
+            };
+        }
+
+        // Add note button
+        const addBtn = document.getElementById('addNoteBtn');
+        if (addBtn) {
+            console.log('Attaching click event to add button');
+            addBtn.onclick = function() {
+                console.log('Button clicked via onclick');
+                addNote();
+            };
+        } else {
+            console.error('Add note button not found!');
+        }
+
+        // Enter key support
+        const noteInput = document.getElementById('noteInput');
+        if (noteInput) {
+            noteInput.onkeypress = (e) => {
+                if (e.key === 'Enter') {
+                    addNote();
+                }
+            };
+        }
+
+        console.log('=== CALENDAR INITIALIZATION COMPLETE ===');
+    }
+
+// Call initCalendar after a delay to ensure DOM is ready
+    setTimeout(() => {
+        console.log('Starting calendar initialization...');
+        initCalendar();
+    }, 1000);
+
 });

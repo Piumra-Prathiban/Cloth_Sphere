@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Internal Communication - ClothSphere</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/communication.css">
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+    <h2>Internal Communication</h2>
+    <ul>
+        <li>
+            <a th:href="@{${dashboardUrl}}" class="nav-link">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </li>
+        <li><a href="#" onclick="showSection('compose', event)" class="nav-link active">
+            <i class="fas fa-edit"></i> Compose</a></li>
+        <li><a href="#" onclick="showSection('inbox', event)" class="nav-link">
+            <i class="fas fa-inbox"></i> Inbox
+            <span class="badge" id="unread-badge">0</span></a></li>
+        <li><a href="#" onclick="showSection('sent', event)" class="nav-link">
+            <i class="fas fa-paper-plane"></i> Sent</a></li>
+        <li><a href="#" onclick="showSection('guide', event)" class="nav-link">
+            <i class="fas fa-book"></i> Communication Guide</a></li>
+    </ul>
+</div>
+
+<!-- Main content -->
+<div class="main">
+    <div class="dashboard-header">
+        <h1>Internal Communication System</h1>
+        <div class="user-info">
+            <span id="current-user" th:text="${currentUser != null ? currentUser.userName : 'User'}">User</span>
+            <span class="user-role" id="current-role" th:text="${currentUser != null ? currentUser.role : 'Role'}">Role</span>
+        </div>
+    </div>
+
+    <!-- Hidden field for JavaScript to access current user email -->
+    <input type="hidden" id="current-user-email" th:value="${currentUserEmail}">
+
+    <!-- Compose Section -->
+    <div id="compose" class="content-section active">
+        <div class="card">
+            <h3>Compose New Message</h3>
+            <form id="compose-form">
+                <div class="form-group">
+                    <label for="receiver-select">To: <span style="color: red;">*</span></label>
+                    <select id="receiver-select" class="form-control" required>
+                        <option value="">Select recipient...</option>
+                    </select>
+                    <small class="form-text">Note: Employees cannot message Factory Manager directly</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="message-subject">Subject: <span style="color: red;">*</span></label>
+                    <input type="text" id="message-subject" class="form-control"
+                           placeholder="Enter message subject" required maxlength="500">
+                </div>
+
+                <div class="form-group">
+                    <label for="message-text">Message: <span style="color: red;">*</span></label>
+                    <textarea id="message-text" class="form-control" rows="10"
+                              placeholder="Type your message here..." required maxlength="4000"></textarea>
+                    <div class="char-count">
+                        <span id="char-count">0</span>/4000 characters
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane"></i> Send Message
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="clearComposeForm()">
+                        <i class="fas fa-times"></i> Clear
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Inbox Section -->
+    <div id="inbox" class="content-section">
+        <div class="card">
+            <h3>Inbox <span class="subtitle" id="inbox-subtitle"></span></h3>
+
+            <div class="filter-controls">
+                <div class="filter-group">
+                    <input type="text" id="inbox-search" class="form-control"
+                           placeholder="Search inbox..." onkeyup="filterInbox()">
+                </div>
+                <div class="filter-group">
+                    <button class="btn btn-secondary" onclick="refreshInbox()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table" id="inbox-table">
+                    <thead>
+                    <tr>
+                        <th>From</th>
+                        <th>Role</th>
+                        <th>Subject</th>
+                        <th>Preview</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody id="inbox-body">
+                    <!-- Inbox messages will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="inbox-empty" class="empty-state" style="display: none;">
+                <i class="fas fa-inbox"></i>
+                <h4>No Messages</h4>
+                <p>Your inbox is empty</p>
+            </div>
+
+            <div id="inbox-loading" class="loading-state" style="display: none;">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading inbox...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sent Section -->
+    <div id="sent" class="content-section">
+        <div class="card">
+            <h3>Sent Messages</h3>
+
+            <div class="filter-controls">
+                <div class="filter-group">
+                    <input type="text" id="sent-search" class="form-control"
+                           placeholder="Search sent messages..." onkeyup="filterSent()">
+                </div>
+                <div class="filter-group">
+                    <button class="btn btn-secondary" onclick="refreshSent()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table" id="sent-table">
+                    <thead>
+                    <tr>
+                        <th>To</th>
+                        <th>Role</th>
+                        <th>Subject</th>
+                        <th>Preview</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                    </tr>
+                    </thead>
+                    <tbody id="sent-body">
+                    <!-- Sent messages will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="sent-empty" class="empty-state" style="display: none;">
+                <i class="fas fa-paper-plane"></i>
+                <h4>No Sent Messages</h4>
+                <p>You haven't sent any messages yet</p>
+            </div>
+
+            <div id="sent-loading" class="loading-state" style="display: none;">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading sent messages...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Communication Guide Section -->
+    <div id="guide" class="content-section">
+        <div class="card">
+            <h3>Internal Communication Guide</h3>
+
+            <div class="guide-content">
+                <!-- Communication Rules -->
+                <div class="guide-section">
+                    <h4><i class="fas fa-exclamation-circle text-warning"></i> Communication Rules</h4>
+                    <div class="rules-list">
+                        <div class="rule-item">
+                            <i class="fas fa-ban text-danger"></i>
+                            <div class="rule-content">
+                                <strong>Employees cannot message Factory Manager directly</strong>
+                                <p>For any communication with Factory Manager, please go through your department head.</p>
+                            </div>
+                        </div>
+                        <div class="rule-item">
+                            <i class="fas fa-check-circle text-success"></i>
+                            <div class="rule-content">
+                                <strong>All other communications are allowed</strong>
+                                <p>You can message HR Manager, Inventory Manager, Sales Manager, and other employees freely.</p>
+                            </div>
+                        </div>
+                        <div class="rule-item">
+                            <i class="fas fa-clock text-info"></i>
+                            <div class="rule-content">
+                                <strong>Response Time Expectations</strong>
+                                <p>Please allow 24-48 hours for responses during working days.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Best Practices -->
+                <div class="guide-section">
+                    <h4><i class="fas fa-lightbulb text-primary"></i> Best Practices</h4>
+                    <div class="practices-grid">
+                        <div class="practice-card">
+                            <i class="fas fa-edit"></i>
+                            <h5>Clear Subject Lines</h5>
+                            <p>Use descriptive subject lines that summarize your message content.</p>
+                        </div>
+                        <div class="practice-card">
+                            <i class="fas fa-bullhorn"></i>
+                            <h5>Professional Tone</h5>
+                            <p>Maintain professional and respectful communication at all times.</p>
+                        </div>
+                        <div class="practice-card">
+                            <i class="fas fa-file-alt"></i>
+                            <h5>Concise Messages</h5>
+                            <p>Keep messages clear and to the point for better understanding.</p>
+                        </div>
+                        <div class="practice-card">
+                            <i class="fas fa-reply"></i>
+                            <h5>Use Reply Feature</h5>
+                            <p>Use the reply button to maintain conversation context.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Tips -->
+                <div class="guide-section">
+                    <h4><i class="fas fa-rocket text-success"></i> Quick Tips</h4>
+                    <div class="tips-list">
+                        <div class="tip-item">
+                            <span class="tip-number">1</span>
+                            <div class="tip-content">
+                                <strong>Check your inbox regularly</strong>
+                                <p>Stay updated with important communications from your colleagues.</p>
+                            </div>
+                        </div>
+                        <div class="tip-item">
+                            <span class="tip-number">2</span>
+                            <div class="tip-content">
+                                <strong>Use the search feature</strong>
+                                <p>Quickly find specific messages using the search functionality.</p>
+                            </div>
+                        </div>
+                        <div class="tip-item">
+                            <span class="tip-number">3</span>
+                            <div class="tip-content">
+                                <strong>Organize your sent messages</strong>
+                                <p>Keep track of your communications in the Sent folder.</p>
+                            </div>
+                        </div>
+                        <div class="tip-item">
+                            <span class="tip-number">4</span>
+                            <div class="tip-content">
+                                <strong>Report issues immediately</strong>
+                                <p>Contact IT support if you encounter any technical problems.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contact Information -->
+                <div class="guide-section">
+                    <h4><i class="fas fa-headset text-info"></i> Need Help?</h4>
+                    <div class="help-section">
+                        <div class="help-item">
+                            <i class="fas fa-envelope"></i>
+                            <div class="help-content">
+                                <strong>IT Support</strong>
+                                <p>Email: it-support@clothsphere.com</p>
+                                <p>Phone: Ext. 1234</p>
+                            </div>
+                        </div>
+                        <div class="help-item">
+                            <i class="fas fa-users"></i>
+                            <div class="help-content">
+                                <strong>HR Department</strong>
+                                <p>Email: hr@clothsphere.com</p>
+                                <p>Phone: Ext. 1001</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Message Detail Modal -->
+<div id="message-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h4 id="modal-subject">Message Subject</h4>
+            <button class="btn-close" onclick="closeMessageModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="message-header">
+                <div class="message-info">
+                    <strong>From:</strong> <span id="modal-sender">Sender Name</span>
+                    (<span id="modal-sender-role">Role</span>)
+                </div>
+                <div class="message-info">
+                    <strong>To:</strong> <span id="modal-receiver">Receiver Name</span>
+                    (<span id="modal-receiver-role">Role</span>)
+                </div>
+                <div class="message-info">
+                    <strong>Date:</strong> <span id="modal-date">Date</span>
+                </div>
+            </div>
+            <div class="message-content" id="modal-content">
+                Message content will appear here...
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeMessageModal()">Close</button>
+            <button class="btn btn-danger" id="delete-btn" onclick="deleteCurrentMessage()">
+                <i class="fas fa-trash"></i> Delete
+            </button>
+            <button class="btn btn-primary" id="reply-btn" onclick="replyToMessage()">
+                <i class="fas fa-reply"></i> Reply
+            </button>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/js/communication.js}"></script>
+</body>
+</html>

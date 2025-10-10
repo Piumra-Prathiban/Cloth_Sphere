@@ -25,14 +25,20 @@
       <i class="fas fa-building"></i> Departments</a></li>
     <li><a href="#" onclick="showSection('attendance')" class="nav-link">
       <i class="fas fa-calendar-check"></i> Track Attendance</a></li>
-    <li><a href="#" onclick="showSection('leaves')" class="nav-link">
-      <i class="fas fa-clipboard-check"></i> Leave Approval</a></li>
+    <li><a href="#" onclick="showSection('leaveManagement')" class="nav-link">
+      <i class="fas fa-clipboard-check"></i> Leave Management
+    </a></li>
     <li>
       <a href="/workload" class="nav-link" onclick="navigateToWorkload(event)"> <i class="fas fa-user-tie"></i> Workload Assignment
       </a>
     </li>
     <li><a href="#" onclick="showSection('payroll')" class="nav-link">
       <i class="fas fa-money-check-alt"></i> Payroll</a></li>
+    <li>
+      <a href="/communication/internal">
+        <i class="fas fa-comments"></i> Internal Communication
+      </a>
+    </li>
   </ul>
 </div>
 
@@ -96,25 +102,101 @@
 
     <!-- Dashboard Cards -->
     <div class="cards">
+      <!-- Replace the Employee Attendance card with this -->
       <div class="card">
-        <h3>Employee Attendance</h3>
-        <canvas id="attendanceChart"></canvas>
+        <h3>Garment Manufacturing Process</h3>
+        <div style="position: relative; width: 100%; padding-top: 56.25%; /* 16:9 Aspect Ratio */">
+          <video
+                  id="garmentVideo"
+                  controls
+                  style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;"
+                  poster="/res/images/LoginPage.jpg">
+            <source src="/res/videos/background3.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+        </div>
+
+        <!-- Optional: Video Controls -->
+        <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
+          <button class="btn btn-sm btn-primary" onclick="document.getElementById('garmentVideo').play()">
+            <i class="fas fa-play"></i> Play
+          </button>
+          <button class="btn btn-sm btn-secondary" onclick="document.getElementById('garmentVideo').pause()">
+            <i class="fas fa-pause"></i> Pause
+          </button>
+          <button class="btn btn-sm btn-secondary" onclick="document.getElementById('garmentVideo').currentTime = 0">
+            <i class="fas fa-redo"></i> Restart
+          </button>
+        </div>
+
+        <!-- Video Description -->
+        <div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+          <small><strong>Production Process Overview:</strong> Watch our complete garment manufacturing workflow from design to finished product.</small>
+        </div>
       </div>
+      <!-- Workload Progress Section - UPDATED -->
       <div class="card">
         <h3>Workload Progress</h3>
+
+        <!-- Finished Tasks -->
         <p>Finished Tasks</p>
-        <div class="progress-bar"><div class="progress finish" style="width: 70%;">70%</div></div>
+        <div class="progress-bar">
+          <div class="progress finish" style="width: 50%;">50%</div>
+        </div>
+
+        <!-- In Progress Tasks - NEW SECTION -->
+        <p style="margin-top:15px;">In Progress Tasks</p>
+        <div class="progress-bar">
+          <div class="progress in-progress" style="width: 30%;">30%</div>
+        </div>
+
+        <!-- Pending Tasks -->
         <p style="margin-top:15px;">Pending Tasks</p>
-        <div class="progress-bar"><div class="progress pending" style="width: 30%;">30%</div></div>
+        <div class="progress-bar">
+          <div class="progress pending" style="width: 20%;">20%</div>
+        </div>
+
+        <!-- Progress Summary -->
+        <div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+          <small><strong>Summary:</strong> 50% Completed • 30% In Progress • 20% Pending</small>
+        </div>
       </div>
-      <div class="card notifications">
-        <h3>Notification Center</h3>
-        <ul>
-          <li class="new"><i class="fas fa-envelope text-primary"></i> New leave request from <b>John Smith</b> <small>2 min ago</small></li>
-          <li><i class="fas fa-check-circle text-success"></i> Leave approved for <b>Emily</b> <small>1 hr ago</small></li>
-          <li><i class="fas fa-tasks text-warning"></i> Task pending for <b>David</b> <small>3 hrs ago</small></li>
-          <li><i class="fas fa-user-plus text-info"></i> New employee <b>Sarah</b> added <small>Yesterday</small></li>
-        </ul>
+      <div class="calendar-card">
+        <div class="calendar-header">
+          <h3><i class="fas fa-calendar-alt"></i> Calendar</h3>
+          <div class="calendar-nav">
+            <button class="nav-btn" id="prevMonth"><i class="fas fa-chevron-left"></i></button>
+            <button class="nav-btn" id="nextMonth"><i class="fas fa-chevron-right"></i></button>
+          </div>
+        </div>
+
+        <div class="calendar-month" id="currentMonth"></div>
+
+        <div class="calendar-grid" id="calendarGrid"></div>
+
+        <div class="notes-section">
+          <div class="notes-header">
+            <h4>Notes</h4>
+            <span class="selected-date" id="selectedDate">Select a date</span>
+          </div>
+
+          <div class="note-input-container">
+            <input
+                    type="text"
+                    class="note-input"
+                    id="noteInput"
+                    placeholder="Add a note..."
+                    disabled
+            >
+            <button class="add-note-btn" id="addNoteBtn" disabled>
+              <i class="fas fa-plus"></i>
+            </button>
+          </div>
+
+          <div class="notes-list" id="notesList">
+            <div class="no-notes">Select a date to add notes</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -184,27 +266,537 @@
   </div>
 
 
+  <!-- Attendance Tracking Section -->
   <div id="attendance" class="content-section">
     <div class="card">
       <h3>Track Attendance</h3>
-      <p>Attendance tracking functionality will be implemented here.</p>
+
+      <!-- Search Filters -->
+      <div class="search-filters">
+        <div class="filter-row">
+          <div class="filter-group">
+            <label for="employeeSearch">Employee ID (Optional):</label>
+            <div class="suggestions-container">
+              <input type="text" id="employeeSearch" placeholder="Enter Employee ID (e.g., emp01)">
+            </div>
+          </div>
+          <div class="filter-group">
+            <label for="fromDate">From Date:</label>
+            <input type="date" id="fromDate" required>
+          </div>
+          <div class="filter-group">
+            <label for="toDate">To Date:</label>
+            <input type="date" id="toDate" required>
+          </div>
+          <div class="filter-group">
+            <button class="btn btn-primary" onclick="searchAttendance()">
+              <i class="fas fa-search"></i> Search
+            </button>
+            <button class="btn btn-secondary" onclick="resetAttendanceFilters()">
+              <i class="fas fa-refresh"></i> Reset
+            </button>
+          </div>
+        </div>
+        <div class="search-note">
+          <small><i class="fas fa-info-circle"></i> Leave Employee ID empty to see all employees</small>
+        </div>
+      </div>
+
+        <!-- Attendance Summary -->
+        <div id="attendanceSummary" class="summary-card" style="display: none;">
+          <h4>Attendance Summary</h4>
+          <div class="summary-grid">
+            <div class="summary-item">
+              <span class="summary-label">EMPLOYEE:</span>
+              <span class="summary-value" id="summaryEmpId">-</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">TOTAL EMPLOYEES:</span>
+              <span class="summary-value" id="summaryEmpName">-</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">TOTAL RECORDS:</span>
+              <span class="summary-value" id="summaryTotalDays">0</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">PRESENT DAYS:</span>
+              <span class="summary-value present-days" id="summaryPresentDays">0</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">ABSENT DAYS:</span>
+              <span class="summary-value absent-days" id="summaryAbsentDays">0</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">TOTAL WORK HOURS:</span>
+              <span class="summary-value" id="summaryWorkHours">0</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">ATTENDANCE RATE:</span>
+              <span class="summary-value" id="summaryAttendanceRate">0%</span>
+            </div>
+          </div>
+        </div>
+
+      <!-- No Data Message -->
+      <div id="noAttendanceData" class="no-data-message" style="display: none;">
+        <i class="fas fa-clipboard-list"></i>
+        <p>No attendance records found for the selected criteria</p>
+      </div>
+
+      <!-- Attendance Table -->
+      <div class="table-container">
+        <table id="attendanceTable">
+          <thead>
+          <tr>
+            <th>Employee ID</th>
+            <th>Date</th>
+            <th>Day</th>
+            <th>Check In</th>
+            <th>Check Out</th>
+            <th>Work Hours</th>
+            <th>Status</th>
+            <th>Notes</th>
+          </tr>
+          </thead>
+          <tbody>
+          <!-- Attendance data will be loaded here -->
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
-  <div id="leaves" class="content-section">
+  <!-- Add this content section -->
+  <div id="leaveManagement" class="content-section">
     <div class="card">
-      <h3>Leave Approval</h3>
-      <p>Leave approval functionality will be implemented here.</p>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3>Leave Request Management</h3>
+        <div class="filters">
+          <select id="statusFilter" onchange="filterLeaves()">
+            <option value="ALL">All Status</option>
+            <option value="PENDING">Pending</option>
+            <option value="APPROVED">Approved</option>
+            <option value="REJECTED">Rejected</option>
+          </select>
+          <input type="text" id="employeeFilter" placeholder="Filter by Employee ID" onkeyup="filterLeaves()">
+        </div>
+      </div>
+
+      <!-- Leave Requests Table -->
+      <div class="table-container">
+        <table id="leaveTable">
+          <thead>
+          <tr>
+            <th>Leave ID</th>
+            <th>Employee ID</th>
+            <th>Employee Name</th>
+            <th>Reason</th>
+            <th>Start Date</th>
+            <th>End Date</th>
+            <th>Total Days</th>
+            <th>Status</th>
+            <th>Request Date</th>
+            <th>Actions</th>
+          </tr>
+          </thead>
+          <tbody>
+          <!-- Leave data will be loaded dynamically -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leave Rejection Modal -->
+  <div id="rejectLeaveModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeRejectLeaveModal()">&times;</span>
+      <h3>Reject Leave Request</h3>
+
+      <form id="rejectLeaveForm">
+        <input type="hidden" id="rejectLeaveId" name="leaveId">
+
+        <fieldset>
+          <legend>Rejection Details</legend>
+
+          <div class="leave-details" id="rejectLeaveDetails" style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+            <!-- Leave details will be populated here -->
+          </div>
+
+          <div class="form-group">
+            <label for="rejectComments">Reason for Rejection:</label>
+            <textarea
+                    id="rejectComments"
+                    name="comments"
+                    rows="4"
+                    placeholder="Please provide a reason for rejecting this leave request..."
+                    style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: inherit; resize: vertical;"
+            ></textarea>
+            <small style="color: #666;">This comment will be visible to the employee.</small>
+          </div>
+        </fieldset>
+
+        <div style="text-align: right; margin-top: 20px;">
+          <button type="button" class="btn btn-secondary" onclick="closeRejectLeaveModal()">
+            <i class="fas fa-times"></i> Cancel
+          </button>
+          <button type="submit" class="btn btn-danger">
+            <i class="fas fa-ban"></i> Reject Leave
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Leave Details Modal -->
+  <div id="leaveDetailsModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeLeaveDetailsModal()">&times;</span>
+      <h3>Leave Request Details</h3>
+
+      <div class="leave-details-content" id="leaveDetailsContent" style="padding: 15px 0;">
+        <!-- Leave details will be populated here -->
+      </div>
+
+      <div style="text-align: right; margin-top: 20px;">
+        <button type="button" class="btn btn-secondary" onclick="closeLeaveDetailsModal()">
+          <i class="fas fa-times"></i> Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Approve Leave Modal -->
+  <div id="approveLeaveModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeApproveLeaveModal()">&times;</span>
+      <h3>Approve Leave Request</h3>
+
+      <form id="approveLeaveForm">
+        <input type="hidden" id="approveLeaveId" name="leaveId">
+
+        <fieldset>
+          <legend>Approval Details</legend>
+
+          <div class="leave-details" id="approveLeaveDetails" style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+            <!-- Leave details will be populated here -->
+          </div>
+
+          <div class="form-group">
+            <p style="color: #28a745; font-weight: bold; padding: 10px; background: #d4edda; border-radius: 4px; border-left: 4px solid #28a745;">
+              <i class="fas fa-check-circle"></i> Are you sure you want to approve this leave request?
+            </p>
+            <small style="color: #666;">This action cannot be undone. The employee will be notified of the approval.</small>
+          </div>
+        </fieldset>
+
+        <div style="text-align: right; margin-top: 20px;">
+          <button type="button" class="btn btn-secondary" onclick="closeApproveLeaveModal()">
+            <i class="fas fa-times"></i> Cancel
+          </button>
+          <button type="submit" class="btn btn-success">
+            <i class="fas fa-check"></i> Approve Leave
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 
 
   <div id="payroll" class="content-section">
     <div class="card">
-      <h3>Payroll Management</h3>
-      <p>Payroll management functionality will be implemented here.</p>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3>Payroll Management</h3>
+        <div class="payroll-actions">
+          <button class="btn btn-primary" onclick="showGeneratePayrollModal()">
+            <i class="fas fa-calculator"></i> Generate Payroll
+          </button>
+          <button class="btn btn-success" onclick="exportPayrollReport()">
+            <i class="fas fa-file-export"></i> Export Report
+          </button>
+        </div>
+      </div>
+
+      <!-- Payroll Controls -->
+      <div class="payroll-controls">
+        <div class="filter-row">
+          <div class="filter-group">
+            <label for="payrollMonth">Select Month:</label>
+            <input type="month" id="payrollMonth" onchange="loadPayrollData()">
+          </div>
+          <div class="filter-group">
+            <label for="payrollStatus">Status:</label>
+            <select id="payrollStatus" onchange="loadPayrollData()">
+              <option value="ALL">All Status</option>
+              <option value="PENDING">Pending</option>
+              <option value="CALCULATED">Calculated</option>
+              <option value="PAID">Paid</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label for="payrollEmployee">Employee Search:</label>
+            <input type="text" id="payrollEmployee" placeholder="Filter by ID or name" onkeyup="filterPayrollTable()">
+          </div>
+        </div>
+      </div>
+
+      <!-- Payroll Summary Card -->
+      <div id="payrollSummary" class="summary-card" style="display: none;">
+        <h4>Payroll Summary - <span id="summaryMonth">Month</span></h4>
+        <div class="summary-grid">
+          <div class="summary-item">
+            <span class="summary-label">TOTAL EMPLOYEES:</span>
+            <span class="summary-value" id="summaryEmployeeCount">0</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">TOTAL GROSS SALARY:</span>
+            <span class="summary-value" id="summaryGrossSalary">$0.00</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">TOTAL DEDUCTIONS:</span>
+            <span class="summary-value" id="summaryDeductions">$0.00</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">TOTAL NET SALARY:</span>
+            <span class="summary-value" id="summaryNetSalary">$0.00</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">STATUS:</span>
+            <span class="summary-value" id="summaryStatus">-</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- No Data Message -->
+      <div id="noPayrollData" class="no-data-message" style="display: none;">
+        <i class="fas fa-file-invoice-dollar"></i>
+        <p>No payroll records found for the selected criteria</p>
+        <button class="btn btn-primary" onclick="showGeneratePayrollModal()">
+          <i class="fas fa-plus"></i> Generate Payroll
+        </button>
+      </div>
+
+      <!-- Payroll Table -->
+      <div class="table-container">
+        <table id="payrollTable">
+          <thead>
+          <tr>
+            <th>Employee ID</th>
+            <th>Employee Name</th>
+            <th>Monthly Salary</th>
+            <th>Work Hours</th>
+            <th>OT Hours</th>
+            <th>OT Payment</th>
+            <th>Gross Salary</th>
+            <th>Deductions</th>
+            <th>Net Salary</th>
+            <th>Attendance %</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+          </thead>
+          <tbody>
+          <!-- Payroll data will be loaded here by JavaScript -->
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
+
+  <!-- Generate Payroll Modal -->
+  <div id="generatePayrollModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeGeneratePayrollModal()">&times;</span>
+      <h3>Generate Monthly Payroll</h3>
+
+      <form id="generatePayrollForm">
+        <fieldset>
+          <legend>Payroll Generation Settings</legend>
+
+          <div class="form-group">
+            <label for="generateMonth">Select Month:</label>
+            <input type="month" id="generateMonth" required>
+            <small>Choose the month to generate payroll for</small>
+          </div>
+
+          <div class="form-group">
+            <label for="defaultOtRate">Overtime Multiplier:</label>
+            <input type="number" id="defaultOtRate" step="0.1" min="1.0" max="3.0" value="1.5" required>
+            <small style="display: block; margin-top: 5px; color: #666;">
+              <strong>How it works:</strong><br>
+              • <strong>1.0x</strong> = Regular pay rate (no overtime bonus)<br>
+              • <strong>1.5x</strong> = Time and a half (standard overtime)<br>
+              • <strong>2.0x</strong> = Double time (premium overtime)<br>
+              <em>Example: If hourly rate is $10, with 1.5x multiplier, overtime pays $15/hour</em>
+            </small>
+          </div>
+
+          <div class="form-group">
+            <label for="maxWorkHours">Maximum Regular Hours:</label>
+            <input type="number" id="maxWorkHours" step="1" min="1" max="300" value="180" required>
+            <small>Hours beyond this count as overtime (default: 180 hours/month)</small>
+          </div>
+
+          <div class="form-note" style="background: #e7f3ff; padding: 15px; border-radius: 5px; border-left: 4px solid #2196F3; margin: 15px 0;">
+            <strong>Calculation Method:</strong><br>
+            1. <strong>Hourly Rate</strong> = Monthly Salary ÷ Max Regular Hours<br>
+            2. <strong>Regular Pay</strong> = Hourly Rate × (Actual Hours up to Max)<br>
+            3. <strong>OT Pay</strong> = (Hourly Rate × OT Multiplier) × OT Hours<br>
+            4. <strong>Gross Salary</strong> = Regular Pay + OT Pay<br>
+            5. <strong>Net Salary</strong> = Gross - Deductions (EPF 8% + ETF 4%)
+          </div>
+
+          <div class="form-note" style="background: #fff3cd; padding: 12px; border-radius: 5px; border-left: 4px solid #ffc107;">
+            <strong>Note:</strong> This will generate payroll for ALL employees based on their attendance data for the selected month. Make sure attendance has been recorded before generating payroll.
+          </div>
+        </fieldset>
+
+        <div style="text-align: right; margin-top: 20px;">
+          <button type="button" class="btn btn-secondary" onclick="closeGeneratePayrollModal()">
+            <i class="fas fa-times"></i> Cancel
+          </button>
+          <button type="submit" class="btn btn-success">
+            <i class="fas fa-calculator"></i> Generate Payroll
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Payroll Details Modal -->
+  <div id="payrollDetailsModal" class="modal">
+    <div class="modal-content" style="max-width: 700px;">
+      <span class="close" onclick="closePayrollDetailsModal()">&times;</span>
+      <h3>Payroll Details</h3>
+
+      <div class="payroll-details-content" id="payrollDetailsContent">
+        <!-- Payroll details will be populated here by JavaScript -->
+      </div>
+
+      <div style="text-align: right; margin-top: 20px;">
+        <button type="button" class="btn btn-secondary" onclick="closePayrollDetailsModal()">
+          <i class="fas fa-times"></i> Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit OT Rate Modal -->
+  <div id="editOtRateModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeEditOtRateModal()">&times;</span>
+      <h3>Edit Overtime Multiplier</h3>
+
+      <form id="editOtRateForm">
+        <input type="hidden" id="editOtEmployeeId">
+        <input type="hidden" id="editOtPayrollMonth">
+
+        <fieldset>
+          <legend>Adjust Overtime Rate</legend>
+
+          <div class="employee-details" id="editOtEmployeeDetails" style="margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 5px;">
+            <!-- Employee details will be populated here by JavaScript -->
+          </div>
+
+          <div class="form-group">
+            <label for="editOtRate">Overtime Multiplier:</label>
+            <input type="number" id="editOtRate" step="0.1" min="1.0" max="3.0" required>
+            <small style="display: block; margin-top: 5px; color: #666;">
+              <strong>Common rates:</strong><br>
+              • <strong>1.5x</strong> - Standard overtime (time and a half)<br>
+              • <strong>2.0x</strong> - Premium overtime (double time)<br>
+              • <strong>1.0x</strong> - Regular rate (no overtime bonus)
+            </small>
+          </div>
+
+          <div class="form-note" style="background: #fff3cd; padding: 10px; border-radius: 5px; margin-top: 10px; border-left: 4px solid #ffc107;">
+            <strong>Important:</strong> Changing this will automatically recalculate ALL salary amounts for this employee, including gross salary and net salary.
+          </div>
+
+          <div class="calculation-example" style="background: #e7f3ff; padding: 12px; border-radius: 5px; margin-top: 10px; font-family: 'Courier New', monospace; font-size: 13px; border-left: 4px solid #2196F3;">
+            <strong>Example Calculation:</strong><br>
+            If hourly rate = $10/hour and OT hours = 20:<br>
+            • At <strong>1.5x</strong>: OT Pay = $10 × 1.5 × 20 = <strong>$300</strong><br>
+            • At <strong>2.0x</strong>: OT Pay = $10 × 2.0 × 20 = <strong>$400</strong>
+          </div>
+        </fieldset>
+
+        <div style="text-align: right; margin-top: 20px;">
+          <button type="button" class="btn btn-secondary" onclick="closeEditOtRateModal()">
+            <i class="fas fa-times"></i> Cancel
+          </button>
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i> Update & Recalculate
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Mark as Paid Modal -->
+  <div id="markAsPaidModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeMarkAsPaidModal()">&times;</span>
+      <h3>Mark Payroll as Paid</h3>
+
+      <form id="markAsPaidForm">
+        <input type="hidden" id="markPaidEmployeeId">
+        <input type="hidden" id="markPaidPayrollMonth">
+
+        <fieldset>
+          <legend>Payment Confirmation</legend>
+
+          <div class="employee-details" id="markPaidEmployeeDetails" style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 5px;">
+            <!-- Employee payment details will be populated here by JavaScript -->
+          </div>
+
+          <div class="form-group">
+            <label for="paymentNotes">Payment Notes (Optional):</label>
+            <textarea
+                    id="paymentNotes"
+                    name="paymentNotes"
+                    rows="3"
+                    placeholder="Add any notes about this payment (e.g., payment method, reference number, remarks...)"
+                    style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-family: inherit; resize: vertical;"
+            ></textarea>
+            <small style="color: #666;">These notes are for record keeping purposes only.</small>
+          </div>
+
+          <div class="form-note" style="background: #fff3cd; padding: 12px; border-radius: 5px; border-left: 4px solid #ffc107; margin: 15px 0;">
+            <strong>⚠️ Important:</strong> This action will mark the payroll as PAID and cannot be undone. Make sure the payment has been processed before confirming.
+          </div>
+
+          <div class="form-note" style="background: #d4edda; padding: 12px; border-radius: 5px; border-left: 4px solid #28a745;">
+            <strong>✓ Confirmation:</strong> By clicking "Confirm Payment" below, you confirm that:
+            <ul style="margin: 8px 0 0 20px; padding: 0;">
+              <li>The payment has been successfully processed</li>
+              <li>The employee will receive the net salary amount</li>
+              <li>This record will be marked as PAID in the system</li>
+            </ul>
+          </div>
+        </fieldset>
+
+        <div style="text-align: right; margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
+          <button type="button" class="btn btn-secondary" onclick="closeMarkAsPaidModal()">
+            <i class="fas fa-times"></i> Cancel
+          </button>
+          <button type="submit" class="btn btn-success">
+            <i class="fas fa-check"></i> Confirm Payment
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Payment Processing Overlay -->
+  <div id="processingOverlay" class="processing-overlay" style="display: none;">
+    <div class="processing-content">
+      <div class="spinner"></div>
+      <h3>Processing Payment...</h3>
+      <p id="processingMessage">Please wait while we process the payment</p>
+    </div>
+  </div>
+
 </div>
 
 <!-- Add/Edit Employee Modal -->
@@ -307,6 +899,9 @@
 </div>
 
 <script src="/js/hrDashboard.js"></script>
+<script src="/js/hrDashboard_AT.js"></script>
+<script src="/js/hrDashboard_LR.js"></script>
+<script src="/js/hrDashboard_P.js"></script>
 
 </body>
 </html>

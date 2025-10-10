@@ -193,6 +193,7 @@
  let currentAssignmentId = null;
 
  // Load employee tasks
+ // Load employee tasks with better error handling
  function loadEmployeeTasks() {
      const loadingElement = document.getElementById('tasks-loading');
      const tableBody = document.getElementById('tasks-table-body');
@@ -202,26 +203,41 @@
      if (tableBody) tableBody.innerHTML = '';
      if (noTasksMessage) noTasksMessage.style.display = 'none';
 
-     fetch('/api/employee/tasks', {
+     fetch('/api/assignments/employee/tasks', {  // Fixed endpoint
          method: 'GET',
          headers: {
              'Content-Type': 'application/json',
-         }
+         },
+         credentials: 'include'  // Important for session cookies
      })
          .then(response => {
              if (!response.ok) {
-                 throw new Error('Failed to load tasks');
+                 if (response.status === 401) {
+                     throw new Error('Please login again');
+                 }
+                 throw new Error('Network response was not ok: ' + response.status);
              }
              return response.json();
          })
          .then(tasks => {
+             console.log('Loaded tasks:', tasks);
              currentTasks = tasks;
              displayTasks(tasks);
              updateTaskStatistics(tasks);
+
+             // Show no tasks message if empty
+             if (!tasks || tasks.length === 0) {
+                 const noTasksMessage = document.getElementById('no-tasks-message');
+                 if (noTasksMessage) noTasksMessage.style.display = 'block';
+             }
          })
          .catch(error => {
              console.error('Error loading tasks:', error);
              showMessage('Error loading tasks: ' + error.message, 'error');
+
+             // Show no tasks message on error as fallback
+             const noTasksMessage = document.getElementById('no-tasks-message');
+             if (noTasksMessage) noTasksMessage.style.display = 'block';
          })
          .finally(() => {
              if (loadingElement) loadingElement.style.display = 'none';
@@ -229,6 +245,8 @@
  }
 
  // Display tasks in table
+ // Display tasks in table - Enhanced version
+ // Display tasks in table - Enhanced version with better hours display
  function displayTasks(tasks) {
      const tableBody = document.getElementById('tasks-table-body');
      const noTasksMessage = document.getElementById('no-tasks-message');
@@ -247,6 +265,22 @@
          const isOverdue = new Date(task.deadline) < new Date() && task.status !== 'COMPLETED';
          const rowClass = isOverdue ? 'overdue-task' : '';
 
+         // Format completion date and show actual hours if completed
+         const completionInfo = task.status === 'COMPLETED' && task.completionDate ?
+             `<br><small class="text-success">Completed: ${formatDate(task.completionDate)}${task.actualHours ? ` (${task.actualHours}h)` : ''}</small>` :
+             '';
+
+         // Calculate hours difference
+         let hoursDifference = '';
+         if (task.actualHours && task.estimatedHours) {
+             const diff = task.actualHours - task.estimatedHours;
+             if (diff > 0) {
+                 hoursDifference = `<br><small class="text-warning">+${diff.toFixed(1)}h over estimate</small>`;
+             } else if (diff < 0) {
+                 hoursDifference = `<br><small class="text-success">${Math.abs(diff).toFixed(1)}h under estimate</small>`;
+             }
+         }
+
          return `
             <tr class="${rowClass}">
                 <td>${task.assignmentId || 'N/A'}</td>
@@ -260,11 +294,22 @@
                     ${formatDate(task.deadline)}
                     ${isOverdue ? '<br><small class="overdue-deadline">Overdue</small>' : ''}
                 </td>
-                <td>${task.estimatedHours || 'N/A'} hrs</td>
+                <td>
+                    <div>
+                        <strong>${task.estimatedHours || 'N/A'}h</strong> estimated
+                        ${task.actualHours ? `
+                            <br><small class="text-success">
+                                <i class="fas fa-clock"></i> ${task.actualHours}h actual
+                                ${hoursDifference}
+                            </small>
+                        ` : ''}
+                    </div>
+                </td>
                 <td>
                     <span class="status-badge status-${task.status.toLowerCase().replace('_', '-')}">
                         ${getStatusLabel(task.status)}
                     </span>
+                    ${completionInfo}
                 </td>
                 <td>
                     <div class="task-actions">
@@ -284,7 +329,6 @@
 
      tableBody.innerHTML = tasksHtml;
  }
-
  // Update task statistics
  function updateTaskStatistics(tasks) {
      if (!tasks) return;
@@ -328,21 +372,32 @@
  }
 
  // Open status update modal
+ // Open status update modal - Enhanced version with actual hours input
+ // Open status update modal - Enhanced version with actual hours input
  function openStatusModal(assignmentId) {
      currentAssignmentId = assignmentId;
      const task = currentTasks.find(t => t.assignmentId === assignmentId);
 
-     if (!task) return;
+     if (!task) {
+         showMessage('Task not found', 'error');
+         return;
+     }
+
+     // Prevent body scroll
+     document.body.classList.add('modal-open');
 
      const modalHtml = `
         <div class="status-modal" id="status-modal">
             <div class="status-modal-content">
                 <div class="status-modal-header">
                     <h4>Update Task Status</h4>
-                </div>production_task\
+                    <button type="button" class="btn-close" onclick="closeStatusModal()" 
+                            style="background: none; border: none; font-size: 1.5rem; cursor: pointer; position: absolute; right: 15px; top: 15px;">×</button>
+                </div>
                 <div class="status-modal-body">
-                    <p><strong>Task:</strong> ${task.taskName}</p>
+                    <p><strong>Task:</strong> ${escapeHtml(task.taskName)}</p>
                     <p><strong>Current Status:</strong> ${getStatusLabel(task.status)}</p>
+                    ${task.estimatedHours ? `<p><strong>Estimated Hours:</strong> ${task.estimatedHours} hours</p>` : ''}
                     
                     <h5>Select New Status:</h5>
                     
@@ -355,10 +410,39 @@
                     
                     ${task.status === 'IN_PROGRESS' ? `
                         <div class="status-option" onclick="selectStatus('COMPLETED')">
-                            <h5>Completed</h5>
-                            <p>Mark this task as finished</p>
+                            <h5>Complete Task</h5>
+                            <p>Mark this task as finished and log your hours</p>
                         </div>
                     ` : ''}
+                    
+                    <!-- Enhanced Actual Hours Input Section -->
+                    <div id="actual-hours-section" style="margin-top: 20px; display: none;">
+                        <div class="completion-confirmation">
+                            <h6><i class="fas fa-check-circle text-success"></i> Task Completion</h6>
+                            <p>You're about to mark this task as completed. Please enter the actual hours worked.</p>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="actual-hours-input"><strong>Actual Hours Worked:</strong></label>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <input type="number" id="actual-hours-input" class="form-control" 
+                                       placeholder="Enter hours worked" min="1" max="1000" 
+                                       value="${task.estimatedHours || 8}" step="0.5" style="flex: 1;">
+                                <span style="white-space: nowrap;">hours</span>
+                            </div>
+                            <div class="actual-hours-help">
+                                <i class="fas fa-info-circle"></i>
+                                Please enter the actual time spent on this task. You can use decimals (e.g., 7.5 for 7 hours 30 minutes).
+                            </div>
+                            
+                            ${task.estimatedHours ? `
+                            <div class="actual-hours-help">
+                                <i class="fas fa-clock"></i>
+                                Estimated hours: ${task.estimatedHours} hours
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
                     
                     <div id="selected-status" style="margin-top: 15px; display: none;">
                         <strong>Selected: </strong><span id="selected-status-label"></span>
@@ -367,7 +451,7 @@
                 <div class="status-modal-footer">
                     <button class="btn btn-secondary" onclick="closeStatusModal()">Cancel</button>
                     <button class="btn btn-primary" id="update-status-btn" onclick="updateTaskStatus()" disabled>
-                        Update Status
+                        <i class="fas fa-save"></i> Update Status
                     </button>
                 </div>
             </div>
@@ -381,11 +465,23 @@
      }
 
      document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+     // Add click outside to close
+     const modal = document.getElementById('status-modal');
+     modal.addEventListener('click', function(e) {
+         if (e.target === modal) {
+             closeStatusModal();
+         }
+     });
  }
+
+
 
  // Select status in modal
  let selectedStatus = null;
 
+ // Enhanced status selection with actual hours toggle
+ // Enhanced status selection with actual hours toggle
  function selectStatus(status) {
      selectedStatus = status;
 
@@ -398,22 +494,35 @@
      const selectedStatusDiv = document.getElementById('selected-status');
      const selectedStatusLabel = document.getElementById('selected-status-label');
      const updateBtn = document.getElementById('update-status-btn');
+     const actualHoursSection = document.getElementById('actual-hours-section');
 
      selectedStatusLabel.textContent = getStatusLabel(status);
      selectedStatusDiv.style.display = 'block';
      updateBtn.disabled = false;
+
+     // Show/hide actual hours input
+     if (status === 'COMPLETED') {
+         actualHoursSection.style.display = 'block';
+     } else {
+         actualHoursSection.style.display = 'none';
+     }
  }
 
  // Close status modal
+ // Close status modal - Fixed version
  function closeStatusModal() {
      const modal = document.getElementById('status-modal');
      if (modal) {
          modal.remove();
      }
      selectedStatus = null;
+     document.body.classList.remove('modal-open');
  }
 
- // Update task status
+ // Update task status - Enhanced version
+ // Update task status - Enhanced version with completion date and actual hours
+ // Update task status - Enhanced version with actual hours input
+ // Update task status - Enhanced version with actual hours input
  function updateTaskStatus() {
      if (!currentAssignmentId || !selectedStatus) {
          showMessage('Please select a status', 'error');
@@ -424,14 +533,42 @@
      updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
      updateBtn.disabled = true;
 
-     fetch(`/api/employee/assignments/${currentAssignmentId}/status`, {
+     let actualHours = null;
+     if (selectedStatus === 'COMPLETED') {
+         const actualHoursInput = document.getElementById('actual-hours-input');
+         const hoursValue = parseFloat(actualHoursInput.value);
+
+         if (!hoursValue || hoursValue < 0.1) {
+             showMessage('Please enter valid actual hours (minimum 0.1 hour)', 'error');
+             updateBtn.innerHTML = '<i class="fas fa-save"></i> Update Status';
+             updateBtn.disabled = false;
+             return;
+         }
+
+         if (hoursValue > 1000) {
+             showMessage('Please enter reasonable hours (maximum 1000 hours)', 'error');
+             updateBtn.innerHTML = '<i class="fas fa-save"></i> Update Status';
+             updateBtn.disabled = false;
+             return;
+         }
+
+         actualHours = hoursValue;
+     }
+
+     const requestData = {
+         status: selectedStatus
+     };
+
+     if (selectedStatus === 'COMPLETED' && actualHours) {
+         requestData.actualHours = actualHours;
+     }
+
+     fetch(`/api/assignments/employee/${currentAssignmentId}/status`, {
          method: 'PUT',
          headers: {
              'Content-Type': 'application/json',
          },
-         body: JSON.stringify({
-             status: selectedStatus
-         })
+         body: JSON.stringify(requestData)
      })
          .then(response => {
              if (!response.ok) {
@@ -441,9 +578,30 @@
          })
          .then(data => {
              if (data.success) {
-                 showMessage('Task status updated successfully!', 'success');
+                 let message = 'Task status updated successfully!';
+
+                 if (selectedStatus === 'COMPLETED' && data.completionDate) {
+                     message += ` Completed on ${formatDate(data.completionDate)}`;
+                     if (data.actualHours) {
+                         message += ` with ${data.actualHours} hours worked.`;
+                     }
+                 }
+
+                 // Add task progress information if available
+                 if (data.taskProgress) {
+                     const progress = data.taskProgress;
+                     message += ` Task progress: ${progress.completedAssignments}/${progress.totalAssignments} assignments completed.`;
+
+                     if (data.taskStatus) {
+                         message += ` Overall task status: ${getStatusLabel(data.taskStatus)}.`;
+                     }
+                 }
+
+                 showMessage(message, 'success');
                  closeStatusModal();
-                 loadEmployeeTasks(); // Reload tasks
+
+                 // Reload tasks to show updated information
+                 loadEmployeeTasks();
              } else {
                  throw new Error(data.message || 'Failed to update status');
              }
@@ -451,39 +609,44 @@
          .catch(error => {
              console.error('Error updating status:', error);
              showMessage('Error updating status: ' + error.message, 'error');
-             updateBtn.innerHTML = 'Update Status';
+             updateBtn.innerHTML = '<i class="fas fa-save"></i> Update Status';
              updateBtn.disabled = false;
          });
  }
 
  // View task details
+ // View task details - Enhanced version
  function viewTaskDetails(assignmentId) {
      const task = currentTasks.find(t => t.assignmentId === assignmentId);
      if (!task) return;
+
+     // Prevent body scroll
+     document.body.classList.add('modal-open');
 
      const detailsHtml = `
         <div class="status-modal" id="task-details-modal">
             <div class="status-modal-content" style="max-width: 600px;">
                 <div class="status-modal-header">
                     <h4>Task Details</h4>
+                    <button type="button" class="btn-close" onclick="closeTaskDetails()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; position: absolute; right: 15px; top: 15px;">×</button>
                 </div>
                 <div class="status-modal-body">
                     <div class="profile-info">
                         <div class="info-group">
                             <label>Task Name</label>
-                            <div class="value">${task.taskName}</div>
+                            <div class="value">${escapeHtml(task.taskName)}</div>
                         </div>
                         <div class="info-group">
                             <label>Description</label>
-                            <div class="value">${task.description || 'No description'}</div>
+                            <div class="value">${escapeHtml(task.description || 'No description')}</div>
                         </div>
                         <div class="info-group">
                             <label>Department</label>
-                            <div class="value">${task.departmentName || 'N/A'}</div>
+                            <div class="value">${escapeHtml(task.departmentName || 'N/A')}</div>
                         </div>
                         <div class="info-group">
                             <label>Assignment ID</label>
-                            <div class="value">${task.assignmentId || 'N/A'}</div>
+                            <div class="value">${escapeHtml(task.assignmentId || 'N/A')}</div>
                         </div>
                         <div class="info-group">
                             <label>Assigned Date</label>
@@ -500,6 +663,18 @@
                             <label>Estimated Hours</label>
                             <div class="value">${task.estimatedHours || 'N/A'} hours</div>
                         </div>
+                        ${task.actualHours ? `
+                        <div class="info-group">
+                            <label>Actual Hours</label>
+                            <div class="value text-success">${task.actualHours} hours</div>
+                        </div>
+                        ` : ''}
+                        ${task.completionDate ? `
+                        <div class="info-group">
+                            <label>Completion Date</label>
+                            <div class="value text-success">${formatDate(task.completionDate)}</div>
+                        </div>
+                        ` : ''}
                         <div class="info-group">
                             <label>Current Status</label>
                             <div class="value">
@@ -511,7 +686,7 @@
                         ${task.notes ? `
                         <div class="info-group">
                             <label>Notes</label>
-                            <div class="value">${task.notes}</div>
+                            <div class="value">${escapeHtml(task.notes)}</div>
                         </div>
                         ` : ''}
                     </div>
@@ -519,7 +694,7 @@
                 <div class="status-modal-footer">
                     <button class="btn btn-secondary" onclick="closeTaskDetails()">Close</button>
                     ${task.status !== 'COMPLETED' ? `
-                    <button class="btn btn-primary" onclick="closeTaskDetails(); openStatusModal('${task.assignmentId}')">
+                    <button class="btn btn-primary" onclick="closeTaskDetails(); setTimeout(() => openStatusModal('${task.assignmentId}'), 100);">
                         Update Status
                     </button>
                     ` : ''}
@@ -535,14 +710,36 @@
      }
 
      document.body.insertAdjacentHTML('beforeend', detailsHtml);
+
+     // Add click outside to close
+     const modal = document.getElementById('task-details-modal');
+     modal.addEventListener('click', function(e) {
+         if (e.target === modal) {
+             closeTaskDetails();
+         }
+     });
  }
 
+ // Close task details modal
  // Close task details modal
  function closeTaskDetails() {
      const modal = document.getElementById('task-details-modal');
      if (modal) {
          modal.remove();
      }
+     document.body.classList.remove('modal-open');
+ }
+
+ // Utility function to escape HTML (prevent XSS)
+ function escapeHtml(unsafe) {
+     if (!unsafe) return '';
+     return unsafe
+         .toString()
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
  }
 
  // Utility functions
@@ -594,5 +791,1068 @@
 
      if (sectionId === 'tasks' && !isFirstLogin) {
          loadEmployeeTasks();
+     }
+
+     // Initialize leave section when it's shown
+     if (sectionId === 'leave' && !isFirstLogin) {
+         initializeLeaveSection();
+     }
+ };
+
+ // ========================= LEAVE MANAGEMENT =========================
+ let currentLeaves = [];
+
+ // Load employee leaves
+ function loadEmployeeLeaves() {
+     const loadingElement = document.getElementById('leaves-loading');
+     const tableBody = document.getElementById('leaves-table-body');
+     const noLeavesMessage = document.getElementById('no-leaves-message');
+
+     if (loadingElement) loadingElement.style.display = 'block';
+     if (tableBody) tableBody.innerHTML = '';
+     if (noLeavesMessage) noLeavesMessage.style.display = 'none';
+
+     fetch('/leave/history', {
+         method: 'GET',
+         headers: {
+             'Content-Type': 'application/json',
+         },
+         credentials: 'include'
+     })
+         .then(response => response.json())
+         .then(data => {
+             if (data.success) {
+                 currentLeaves = data.leaves;
+                 displayLeaves(data.leaves);
+                 updateLeaveStatistics(data.statistics);
+
+                 if (!data.leaves || data.leaves.length === 0) {
+                     if (noLeavesMessage) noLeavesMessage.style.display = 'block';
+                 }
+             } else {
+                 throw new Error(data.message);
+             }
+         })
+         .catch(error => {
+             console.error('Error loading leaves:', error);
+             showMessage('Error loading leave requests: ' + error.message, 'error');
+             if (noLeavesMessage) noLeavesMessage.style.display = 'block';
+         })
+         .finally(() => {
+             if (loadingElement) loadingElement.style.display = 'none';
+         });
+ }
+
+ // Display leaves in table
+ function displayLeaves(leaves) {
+     const tableBody = document.getElementById('leaves-table-body');
+     const noLeavesMessage = document.getElementById('no-leaves-message');
+
+     if (!tableBody) return;
+
+     if (!leaves || leaves.length === 0) {
+         tableBody.innerHTML = '';
+         if (noLeavesMessage) noLeavesMessage.style.display = 'block';
+         return;
+     }
+
+     if (noLeavesMessage) noLeavesMessage.style.display = 'none';
+
+     const leavesHtml = leaves.map(leave => {
+         const startDate = new Date(leave.startDate);
+         const endDate = new Date(leave.endDate);
+         const duration = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+
+         const isPending = leave.status === 'PENDING';
+         const isApproved = leave.status === 'APPROVED';
+
+         return `
+            <tr>
+                <td>${leave.leaveId || 'N/A'}</td>
+                <td>${escapeHtml(leave.reason)}</td>
+                <td>${formatDate(leave.startDate)}</td>
+                <td>${formatDate(leave.endDate)}</td>
+                <td>${duration} day(s)</td>
+                <td>${formatDateTime(leave.requestDate)}</td>
+                <td>
+                    <span class="status-badge status-${leave.status.toLowerCase()}">
+                        ${getLeaveStatusLabel(leave.status)}
+                    </span>
+                </td>
+                <td>
+                    <div class="leave-actions">
+                        ${isPending ? `
+                            <button class="btn btn-danger btn-sm" onclick="event.preventDefault(); cancelLeaveRequest('${leave.leaveId}')">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                        ` : ''}
+                        <button class="btn btn-info btn-sm" onclick="event.preventDefault(); viewLeaveDetails('${leave.leaveId}')">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+     }).join('');
+
+     tableBody.innerHTML = leavesHtml;
+ }
+
+ // Update leave statistics
+ function updateLeaveStatistics(stats) {
+     if (!stats) return;
+
+     document.getElementById('total-leaves').textContent = stats.totalRequests;
+     document.getElementById('pending-leaves').textContent = stats.pending;
+     document.getElementById('approved-leaves').textContent = stats.approved;
+     document.getElementById('rejected-leaves').textContent = stats.rejected;
+ }
+
+ // Submit leave request
+ function submitLeaveRequest(event) {
+     event.preventDefault(); // Prevent default form submission
+
+     const reason = document.getElementById('reason').value;
+     const startDate = document.getElementById('start-date').value;
+     const endDate = document.getElementById('end-date').value;
+
+     if (!reason || !startDate || !endDate) {
+         showMessage('Please fill in all required fields', 'error');
+         return;
+     }
+
+     if (new Date(startDate) > new Date(endDate)) {
+         showMessage('End date cannot be before start date', 'error');
+         return;
+     }
+
+     const submitBtn = event.target.querySelector('button[type="submit"]');
+     const originalText = submitBtn.innerHTML;
+     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+     submitBtn.disabled = true;
+
+     const formData = new URLSearchParams();
+     formData.append('reason', reason);
+     formData.append('startDate', startDate);
+     formData.append('endDate', endDate);
+
+     fetch('/leave/request', {
+         method: 'POST',
+         headers: {
+             'Content-Type': 'application/x-www-form-urlencoded',
+         },
+         body: formData
+     })
+         .then(response => response.json())
+         .then(data => {
+             if (data.success) {
+                 showMessage('Leave request submitted successfully!', 'success');
+                 document.getElementById('leave-request-form').reset();
+                 document.getElementById('leave-duration').style.display = 'none';
+
+                 // Reload leaves without changing section
+                 loadEmployeeLeaves();
+             } else {
+                 throw new Error(data.message);
+             }
+         })
+         .catch(error => {
+             console.error('Error submitting leave request:', error);
+             showMessage('Error submitting leave request: ' + error.message, 'error');
+         })
+         .finally(() => {
+             submitBtn.innerHTML = originalText;
+             submitBtn.disabled = false;
+         });
+ }
+
+ // Cancel leave request
+ function cancelLeaveRequest(leaveId) {
+     if (!confirm('Are you sure you want to cancel this leave request?')) {
+         return;
+     }
+
+     fetch(`/leave/cancel/${leaveId}`, {
+         method: 'DELETE',
+         credentials: 'include'
+     })
+         .then(response => response.json())
+         .then(data => {
+             if (data.success) {
+                 showMessage('Leave request cancelled successfully!', 'success');
+                 loadEmployeeLeaves();
+             } else {
+                 throw new Error(data.message);
+             }
+         })
+         .catch(error => {
+             console.error('Error cancelling leave request:', error);
+             showMessage('Error cancelling leave request: ' + error.message, 'error');
+         });
+ }
+
+ // View leave details
+ function viewLeaveDetails(leaveId) {
+     const leave = currentLeaves.find(l => l.leaveId === leaveId);
+     if (!leave) return;
+
+     const startDate = new Date(leave.startDate);
+     const endDate = new Date(leave.endDate);
+     const duration = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+
+     const detailsHtml = `
+        <div class="status-modal" id="leave-details-modal">
+            <div class="status-modal-content" style="max-width: 600px;">
+                <div class="status-modal-header">
+                    <h4>Leave Request Details</h4>
+                    <button type="button" class="btn-close" onclick="closeLeaveDetails()">×</button>
+                </div>
+                <div class="status-modal-body">
+                    <div class="profile-info">
+                        <div class="info-group">
+                            <label>Leave ID</label>
+                            <div class="value">${leave.leaveId}</div>
+                        </div>
+                        <div class="info-group">
+                            <label>Reason</label>
+                            <div class="value">${escapeHtml(leave.reason)}</div>
+                        </div>
+                        <div class="info-group">
+                            <label>Start Date</label>
+                            <div class="value">${formatDate(leave.startDate)}</div>
+                        </div>
+                        <div class="info-group">
+                            <label>End Date</label>
+                            <div class="value">${formatDate(leave.endDate)}</div>
+                        </div>
+                        <div class="info-group">
+                            <label>Duration</label>
+                            <div class="value">${duration} day(s)</div>
+                        </div>
+                        <div class="info-group">
+                            <label>Request Date</label>
+                            <div class="value">${formatDateTime(leave.requestDate)}</div>
+                        </div>
+                        <div class="info-group">
+                            <label>Status</label>
+                            <div class="value">
+                                <span class="status-badge status-${leave.status.toLowerCase()}">
+                                    ${getLeaveStatusLabel(leave.status)}
+                                </span>
+                            </div>
+                        </div>
+                        ${leave.actionDate ? `
+                        <div class="info-group">
+                            <label>Action Date</label>
+                            <div class="value">${formatDateTime(leave.actionDate)}</div>
+                        </div>
+                        ` : ''}
+                        ${leave.comments ? `
+                        <div class="info-group">
+                            <label>Manager Comments</label>
+                            <div class="value">${escapeHtml(leave.comments)}</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+                <div class="status-modal-footer">
+                    <button class="btn btn-secondary" onclick="closeLeaveDetails()">Close</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+     document.body.insertAdjacentHTML('beforeend', detailsHtml);
+     document.body.classList.add('modal-open');
+ }
+
+ // Close leave details modal
+ function closeLeaveDetails() {
+     const modal = document.getElementById('leave-details-modal');
+     if (modal) modal.remove();
+     document.body.classList.remove('modal-open');
+ }
+
+ // Calculate leave duration
+ function calculateLeaveDuration() {
+     const startDate = document.getElementById('start-date').value;
+     const endDate = document.getElementById('end-date').value;
+     const durationElement = document.getElementById('leave-duration');
+
+     if (startDate && endDate) {
+         const start = new Date(startDate);
+         const end = new Date(endDate);
+
+         if (start <= end) {
+             const duration = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+             document.getElementById('duration-days').textContent = duration;
+             durationElement.style.display = 'block';
+         } else {
+             durationElement.style.display = 'none';
+         }
+     } else {
+         durationElement.style.display = 'none';
+     }
+ }
+
+ // Filter leaves
+ function filterLeaves() {
+     const statusFilter = document.getElementById('leave-status-filter').value;
+
+     let filteredLeaves = currentLeaves;
+
+     if (statusFilter !== 'all') {
+         filteredLeaves = filteredLeaves.filter(leave => leave.status === statusFilter);
+     }
+
+     displayLeaves(filteredLeaves);
+ }
+
+ // Initialize leave form
+ function initializeLeaveForm() {
+     const leaveForm = document.getElementById('leave-request-form');
+     if (leaveForm) {
+         leaveForm.addEventListener('submit', submitLeaveRequest);
+     }
+
+     const startDateInput = document.getElementById('start-date');
+     const endDateInput = document.getElementById('end-date');
+     if (startDateInput && endDateInput) {
+         startDateInput.addEventListener('change', calculateLeaveDuration);
+         endDateInput.addEventListener('change', calculateLeaveDuration);
+     }
+ }
+
+ // Leave status label helper
+ function getLeaveStatusLabel(status) {
+     const statusLabels = {
+         'PENDING': 'Pending',
+         'APPROVED': 'Approved',
+         'REJECTED': 'Rejected'
+     };
+     return statusLabels[status] || status;
+ }
+
+ // Initialize leave section when shown
+ function initializeLeaveSection() {
+     if (!isFirstLogin) {
+         loadEmployeeLeaves();
+         initializeLeaveForm();
+     }
+ }
+
+ // Utility function to escape HTML (prevent XSS)
+ function escapeHtml(unsafe) {
+     if (!unsafe) return '';
+     return unsafe
+         .toString()
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
+ }
+
+ // Date formatting utility
+ function formatDate(dateString) {
+     if (!dateString) return 'N/A';
+     const date = new Date(dateString);
+     return date.toLocaleDateString('en-US', {
+         year: 'numeric',
+         month: 'short',
+         day: 'numeric'
+     });
+ }
+
+ // DateTime formatting utility
+ function formatDateTime(dateTimeString) {
+     if (!dateTimeString) return 'N/A';
+     const date = new Date(dateTimeString);
+     return date.toLocaleString('en-US', {
+         year: 'numeric',
+         month: 'short',
+         day: 'numeric',
+         hour: '2-digit',
+         minute: '2-digit'
+     });
+ }
+
+ // Message display utility
+ function showMessage(message, type) {
+     const toast = document.createElement('div');
+     toast.className = `alert alert-${type === 'error' ? 'error' : 'success'}`;
+     toast.style.position = 'fixed';
+     toast.style.top = '20px';
+     toast.style.right = '20px';
+     toast.style.zIndex = '1001';
+     toast.style.minWidth = '300px';
+     toast.innerHTML = `
+        <i class="fas ${type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle'}"></i>
+        ${message}
+    `;
+
+     document.body.appendChild(toast);
+
+     setTimeout(() => {
+         toast.remove();
+     }, 5000);
+ }
+ // ========================= ATTENDANCE MANAGEMENT =========================
+
+ // Initialize attendance section when shown
+ function initializeAttendanceSection() {
+     if (!isFirstLogin) {
+         loadTodayAttendance();
+         loadAttendanceStatistics();
+         loadAttendanceHistory();
+         updateCurrentDate();
+     }
+ }
+
+ // Update current date display
+ function updateCurrentDate() {
+     const dateElement = document.getElementById('current-date');
+     if (dateElement) {
+         const today = new Date();
+         dateElement.textContent = today.toLocaleDateString('en-US', {
+             weekday: 'long',
+             year: 'numeric',
+             month: 'long',
+             day: 'numeric'
+         });
+     }
+ }
+
+ // Load today's attendance status
+ function loadTodayAttendance() {
+     fetch('/attendance/today', {
+         method: 'GET',
+         credentials: 'include'
+     })
+         .then(response => response.json())
+         .then(data => {
+             updateTodayAttendanceUI(data);
+         })
+         .catch(error => {
+             console.error('Error loading today attendance:', error);
+             showMessage('Error loading attendance status', 'error');
+         });
+ }
+
+ // Update today's attendance UI
+ function updateTodayAttendanceUI(data) {
+     const notMarked = document.getElementById('attendance-not-marked');
+     const checkedIn = document.getElementById('attendance-checked-in');
+     const checkedOut = document.getElementById('attendance-checked-out');
+
+     // Hide all sections first
+     if (notMarked) notMarked.style.display = 'none';
+     if (checkedIn) checkedIn.style.display = 'none';
+     if (checkedOut) checkedOut.style.display = 'none';
+
+     if (!data.hasCheckedIn) {
+         // Not checked in yet
+         if (notMarked) notMarked.style.display = 'block';
+     } else if (data.hasCheckedIn && !data.hasCheckedOut) {
+         // Checked in but not checked out
+         if (checkedIn) checkedIn.style.display = 'block';
+         const checkInTimeElement = document.getElementById('check-in-time');
+         if (checkInTimeElement && data.checkInTime) {
+             checkInTimeElement.textContent = formatTime(data.checkInTime);
+         }
+     } else if (data.hasCheckedIn && data.hasCheckedOut) {
+         // Both checked in and checked out
+         if (checkedOut) checkedOut.style.display = 'block';
+         const completedCheckIn = document.getElementById('completed-check-in');
+         const completedCheckOut = document.getElementById('completed-check-out');
+         const workHoursElement = document.getElementById('work-hours');
+
+         if (completedCheckIn && data.checkInTime) {
+             completedCheckIn.textContent = formatTime(data.checkInTime);
+         }
+         if (completedCheckOut && data.checkOutTime) {
+             completedCheckOut.textContent = formatTime(data.checkOutTime);
+         }
+         if (workHoursElement && data.workHours) {
+             workHoursElement.textContent = data.workHours.toFixed(2) + ' hours';
+         }
+     }
+ }
+
+ // Check in function
+ function checkIn() {
+     if (!confirm('Are you sure you want to check in now?')) {
+         return;
+     }
+
+     fetch('/attendance/checkin', {
+         method: 'POST',
+         headers: {
+             'Content-Type': 'application/x-www-form-urlencoded',
+         },
+         credentials: 'include'
+     })
+         .then(response => response.json())
+         .then(data => {
+             if (data.success) {
+                 showMessage('Check-in successful!', 'success');
+                 loadTodayAttendance();
+                 loadAttendanceStatistics();
+             } else {
+                 showMessage(data.message || 'Check-in failed', 'error');
+             }
+         })
+         .catch(error => {
+             console.error('Error checking in:', error);
+             showMessage('Error checking in. Please try again.', 'error');
+         });
+ }
+
+ // Check out function
+ function checkOut() {
+     if (!confirm('Are you sure you want to check out now?')) {
+         return;
+     }
+
+     fetch('/attendance/checkout', {
+         method: 'POST',
+         headers: {
+             'Content-Type': 'application/x-www-form-urlencoded',
+         },
+         credentials: 'include'
+     })
+         .then(response => response.json())
+         .then(data => {
+             if (data.success) {
+                 showMessage('Check-out successful! Work hours: ' + data.workHours.toFixed(2) + ' hours', 'success');
+                 loadTodayAttendance();
+                 loadAttendanceStatistics();
+                 loadAttendanceHistory();
+             } else {
+                 showMessage(data.message || 'Check-out failed', 'error');
+             }
+         })
+         .catch(error => {
+             console.error('Error checking out:', error);
+             showMessage('Error checking out. Please try again.', 'error');
+         });
+ }
+
+ // Show check-in notes modal
+ function showCheckInNotes() {
+     const modal = document.getElementById('notes-modal');
+     if (modal) {
+         modal.style.display = 'flex';
+         document.body.classList.add('modal-open');
+     }
+ }
+
+ // Close notes modal
+ function closeNotesModal() {
+     const modal = document.getElementById('notes-modal');
+     if (modal) {
+         modal.style.display = 'none';
+         document.body.classList.remove('modal-open');
+         document.getElementById('attendance-notes').value = '';
+     }
+ }
+
+ // Submit with notes (for check-in or check-out)
+ function submitWithNotes() {
+     const notes = document.getElementById('attendance-notes').value;
+     // This can be used for either check-in or check-out with notes
+     closeNotesModal();
+ }
+
+ // Show attendance details
+ function showAttendanceDetails() {
+     loadTodayAttendance();
+     showMessage('Attendance details refreshed', 'success');
+ }
+
+ // Load attendance statistics
+ function loadAttendanceStatistics() {
+     fetch('/attendance/statistics', {
+         method: 'GET',
+         credentials: 'include'
+     })
+         .then(response => response.json())
+         .then(data => {
+             updateAttendanceStatistics(data);
+         })
+         .catch(error => {
+             console.error('Error loading attendance statistics:', error);
+         });
+ }
+
+ // Update attendance statistics UI
+ function updateAttendanceStatistics(stats) {
+     const presentDaysElement = document.getElementById('present-days');
+     const workingDaysElement = document.getElementById('working-days');
+     const percentageElement = document.getElementById('attendance-percentage');
+
+     if (presentDaysElement) {
+         presentDaysElement.textContent = stats.presentDays || 0;
+     }
+     if (workingDaysElement) {
+         workingDaysElement.textContent = stats.totalWorkingDays || 0;
+     }
+     if (percentageElement) {
+         const percentage = stats.attendancePercentage || 0;
+         percentageElement.textContent = percentage.toFixed(1) + '%';
+     }
+ }
+
+ // Load attendance history
+ function loadAttendanceHistory() {
+     const loadingElement = document.getElementById('attendance-loading');
+     const tableBody = document.getElementById('attendance-table-body');
+     const noAttendanceMessage = document.getElementById('no-attendance-message');
+
+     if (loadingElement) loadingElement.style.display = 'block';
+     if (tableBody) tableBody.innerHTML = '';
+     if (noAttendanceMessage) noAttendanceMessage.style.display = 'none';
+
+     // Get filter dates if set
+     const startDate = document.getElementById('start-date-filter')?.value;
+     const endDate = document.getElementById('end-date-filter')?.value;
+
+     let url = '/attendance/history';
+     const params = new URLSearchParams();
+     if (startDate) params.append('startDate', startDate);
+     if (endDate) params.append('endDate', endDate);
+     if (params.toString()) url += '?' + params.toString();
+
+     fetch(url, {
+         method: 'GET',
+         credentials: 'include'
+     })
+         .then(response => response.json())
+         .then(data => {
+             displayAttendanceHistory(data);
+         })
+         .catch(error => {
+             console.error('Error loading attendance history:', error);
+             showMessage('Error loading attendance history', 'error');
+             if (noAttendanceMessage) noAttendanceMessage.style.display = 'block';
+         })
+         .finally(() => {
+             if (loadingElement) loadingElement.style.display = 'none';
+         });
+ }
+
+ // Display attendance history in table
+ function displayAttendanceHistory(records) {
+     const tableBody = document.getElementById('attendance-table-body');
+     const noAttendanceMessage = document.getElementById('no-attendance-message');
+
+     if (!tableBody) return;
+
+     if (!records || records.length === 0) {
+         tableBody.innerHTML = '';
+         if (noAttendanceMessage) noAttendanceMessage.style.display = 'block';
+         return;
+     }
+
+     if (noAttendanceMessage) noAttendanceMessage.style.display = 'none';
+
+     const recordsHtml = records.map(record => {
+         const date = new Date(record.attendanceDate);
+         const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+
+         return `
+            <tr>
+                <td>${formatDate(record.attendanceDate)}</td>
+                <td>${dayName}</td>
+                <td>${record.checkInTime ? formatTime(record.checkInTime) : 'N/A'}</td>
+                <td>${record.checkOutTime ? formatTime(record.checkOutTime) : 'N/A'}</td>
+                <td>${record.workHours ? record.workHours.toFixed(2) + ' hours' : 'N/A'}</td>
+                <td>
+                    <span class="status-badge status-${record.status.toLowerCase().replace('_', '-')}">
+                        ${getAttendanceStatusLabel(record.status)}
+                    </span>
+                </td>
+                <td>${escapeHtml(record.notes || '-')}</td>
+            </tr>
+        `;
+     }).join('');
+
+     tableBody.innerHTML = recordsHtml;
+ }
+
+ // Reset attendance filter
+ function resetAttendanceFilter() {
+     document.getElementById('start-date-filter').value = '';
+     document.getElementById('end-date-filter').value = '';
+     loadAttendanceHistory();
+ }
+
+ // Get attendance status label
+ function getAttendanceStatusLabel(status) {
+     const statusLabels = {
+         'PRESENT': 'Present',
+         'ABSENT': 'Absent',
+         'LATE': 'Late',
+         'HALF_DAY': 'Half Day',
+         'NOT_MARKED': 'Not Marked'
+     };
+     return statusLabels[status] || status;
+ }
+
+ // Format time (HH:mm:ss to readable format)
+ function formatTime(timeString) {
+     if (!timeString) return 'N/A';
+
+     // Handle both ISO format and simple time format
+     let time;
+     if (timeString.includes('T')) {
+         time = new Date(timeString);
+     } else {
+         // Handle HH:mm:ss format
+         const [hours, minutes] = timeString.split(':');
+         time = new Date();
+         time.setHours(parseInt(hours), parseInt(minutes), 0);
+     }
+
+     return time.toLocaleTimeString('en-US', {
+         hour: '2-digit',
+         minute: '2-digit',
+         hour12: true
+     });
+ }
+
+ // Add to the existing showSection override
+ const originalShowSectionForAttendance = showSection;
+ showSection = function(sectionId) {
+     originalShowSectionForAttendance(sectionId);
+
+     if (sectionId === 'attendance' && !isFirstLogin) {
+         initializeAttendanceSection();
+     }
+ };
+
+ // ========================= PAYROLL MANAGEMENT =========================
+ let currentPayrollData = null;
+
+ // Initialize payroll section when shown
+ function initializePayrollSection() {
+     if (!isFirstLogin) {
+         loadPayrollStatistics();
+         loadPayrollData();
+         loadPayrollHistory();
+     }
+ }
+
+ // Load payroll statistics
+ function loadPayrollStatistics() {
+     fetch('/employee/payroll/my-statistics', {
+         method: 'GET',
+         credentials: 'include'
+     })
+         .then(response => response.json())
+         .then(data => {
+             if (data.success) {
+                 updatePayrollStatistics(data.statistics);
+             } else {
+                 console.error('Error loading payroll statistics:', data.message);
+             }
+         })
+         .catch(error => {
+             console.error('Error loading payroll statistics:', error);
+             showMessage('Error loading payroll statistics', 'error');
+         });
+ }
+
+ // Update payroll statistics UI
+ function updatePayrollStatistics(stats) {
+     if (!stats) return;
+
+     document.getElementById('total-payrolls').textContent = stats.totalPayrolls || 0;
+     document.getElementById('paid-payrolls').textContent = stats.paidCount || 0;
+     document.getElementById('pending-payrolls').textContent = stats.pendingCount || 0;
+
+     const totalNetSalary = stats.totalNetSalary || 0;
+     document.getElementById('total-net-salary').textContent = '$ ' + totalNetSalary.toLocaleString('en-US', {
+         minimumFractionDigits: 2,
+         maximumFractionDigits: 2
+     });
+ }
+
+ // Load payroll data for selected month
+ function loadPayrollData() {
+     const year = document.getElementById('payroll-year').value;
+     const month = document.getElementById('payroll-month').value;
+
+     const loadingElement = document.getElementById('payroll-loading');
+     const detailsElement = document.getElementById('payroll-details');
+     const noDataElement = document.getElementById('no-payroll-data');
+     const exportBtn = document.getElementById('export-btn');
+
+     if (loadingElement) loadingElement.style.display = 'block';
+     if (detailsElement) detailsElement.style.display = 'none';
+     if (noDataElement) noDataElement.style.display = 'none';
+     if (exportBtn) exportBtn.disabled = true;
+
+     // Update current month display
+     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+         'July', 'August', 'September', 'October', 'November', 'December'];
+     document.getElementById('current-payroll-month').textContent =
+         `${monthNames[parseInt(month) - 1]} ${year}`;
+
+     // Use employee-specific endpoint
+     fetch(`/employee/payroll/my-paysheet?year=${year}&month=${month}`, {
+         method: 'GET',
+         credentials: 'include'
+     })
+         .then(response => response.json())
+         .then(data => {
+             if (data.success && data.payroll) {
+                 currentPayrollData = data;
+                 displayPayrollDetails(data);
+                 if (detailsElement) detailsElement.style.display = 'block';
+                 if (exportBtn) exportBtn.disabled = false;
+             } else {
+                 if (noDataElement) noDataElement.style.display = 'block';
+                 currentPayrollData = null;
+             }
+         })
+         .catch(error => {
+             console.error('Error loading payroll data:', error);
+             showMessage('Error loading payroll data', 'error');
+             if (noDataElement) noDataElement.style.display = 'block';
+             currentPayrollData = null;
+         })
+         .finally(() => {
+             if (loadingElement) loadingElement.style.display = 'none';
+         });
+ }
+
+ // Display payroll details
+ function displayPayrollDetails(data) {
+     const payroll = data.payroll;
+
+     // Employee Information
+     document.getElementById('payroll-employee-id').textContent = payroll.employeeId;
+     document.getElementById('payroll-employee-name').textContent = data.employeeName || 'N/A';
+     document.getElementById('payroll-month-display').textContent = formatPayrollMonth(payroll.payrollMonth);
+
+     // Status
+     const statusElement = document.getElementById('payroll-status');
+     statusElement.textContent = payroll.status || 'PENDING';
+     statusElement.className = 'status-badge status-' + (payroll.status ? payroll.status.toLowerCase() : 'pending');
+
+     // Salary Breakdown
+     document.getElementById('basic-salary').textContent = formatCurrency(payroll.basicSalary);
+     document.getElementById('actual-work-hours').textContent = (payroll.actualWorkHours || 0).toFixed(1) + ' hrs';
+     document.getElementById('ot-hours').textContent = (payroll.otHours || 0).toFixed(1) + ' hrs';
+     document.getElementById('ot-amount').textContent = formatCurrency(payroll.otAmount);
+     document.getElementById('gross-salary').textContent = formatCurrency(payroll.grossSalary);
+
+     // Deductions
+     document.getElementById('epf-rate').textContent = (payroll.epfRate || 8).toString();
+     document.getElementById('etf-rate').textContent = (payroll.etfRate || 3).toString();
+     document.getElementById('epf-amount').textContent = formatCurrency(payroll.epfAmount);
+     document.getElementById('etf-amount').textContent = formatCurrency(payroll.etfAmount);
+     document.getElementById('total-deductions').textContent = formatCurrency(payroll.deductions);
+
+     // Net Salary
+     document.getElementById('net-salary').textContent = formatCurrency(payroll.netSalary);
+
+     // Attendance Information
+     document.getElementById('attendance-rate').textContent = (payroll.attendanceRate || 0).toFixed(1) + '%';
+     document.getElementById('max-work-hours').textContent = (payroll.maxWorkHours || 180).toFixed(1) + ' hrs';
+ }
+
+ // Load payroll history
+ function loadPayrollHistory() {
+     const loadingElement = document.getElementById('payroll-history-loading');
+     const tableBody = document.getElementById('payroll-history-body');
+     const noHistoryElement = document.getElementById('no-payroll-history');
+
+     if (loadingElement) loadingElement.style.display = 'block';
+     if (tableBody) tableBody.innerHTML = '';
+     if (noHistoryElement) noHistoryElement.style.display = 'none';
+
+     // Use employee-specific endpoint
+     fetch('/employee/payroll/my-paysheets', {
+         method: 'GET',
+         credentials: 'include'
+     })
+         .then(response => response.json())
+         .then(data => {
+             if (data.success && data.payrolls && data.payrolls.length > 0) {
+                 displayPayrollHistory(data.payrolls);
+             } else {
+                 if (noHistoryElement) noHistoryElement.style.display = 'block';
+             }
+         })
+         .catch(error => {
+             console.error('Error loading payroll history:', error);
+             showMessage('Error loading payroll history', 'error');
+             if (noHistoryElement) noHistoryElement.style.display = 'block';
+         })
+         .finally(() => {
+             if (loadingElement) loadingElement.style.display = 'none';
+         });
+ }
+
+ // Display payroll history
+ function displayPayrollHistory(payrolls) {
+     const tableBody = document.getElementById('payroll-history-body');
+
+     const historyHtml = payrolls.map(item => {
+         const payroll = item.payroll;
+
+         return `
+            <tr>
+                <td>${formatPayrollMonth(payroll.payrollMonth)}</td>
+                <td>${formatCurrency(payroll.basicSalary)}</td>
+                <td>${formatCurrency(payroll.grossSalary)}</td>
+                <td>${formatCurrency(payroll.deductions)}</td>
+                <td>${formatCurrency(payroll.netSalary)}</td>
+                <td>
+                    <span class="status-badge status-${payroll.status ? payroll.status.toLowerCase() : 'pending'}">
+                        ${payroll.status || 'PENDING'}
+                    </span>
+                </td>
+                <td>
+                    <button class="btn btn-info btn-sm" onclick="viewPayrollDetails('${payroll.payrollMonth}')">
+                        <i class="fas fa-eye"></i> View
+                    </button>
+                </td>
+            </tr>
+        `;
+     }).join('');
+
+     tableBody.innerHTML = historyHtml;
+ }
+
+ // View payroll details from history
+ function viewPayrollDetails(payrollMonth) {
+     // Extract year and month from payrollMonth (format: "2024-10")
+     const [year, month] = payrollMonth.split('-');
+
+     document.getElementById('payroll-year').value = year;
+     document.getElementById('payroll-month').value = parseInt(month);
+
+     loadPayrollData();
+     showSection('paysheet');
+ }
+
+ // Export payroll report
+ function exportPayrollReport() {
+     if (!currentPayrollData) {
+         showMessage('No payroll data available to export', 'error');
+         return;
+     }
+
+     const year = document.getElementById('payroll-year').value;
+     const month = document.getElementById('payroll-month').value;
+
+     // Show loading state
+     const exportBtn = document.getElementById('export-btn');
+     const originalText = exportBtn.innerHTML;
+     exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
+     exportBtn.disabled = true;
+
+     fetch(`/employee/payroll/export?year=${year}&month=${month}`, {
+         method: 'GET',
+         credentials: 'include'
+     })
+         .then(response => response.json())
+         .then(data => {
+             if (data.success) {
+                 showMessage('Payroll report exported successfully!', 'success');
+
+                 // In a real application, you would download the file
+                 // For now, we'll simulate download
+                 simulatePDFDownload(currentPayrollData);
+             } else {
+                 showMessage('Error exporting report: ' + data.message, 'error');
+             }
+         })
+         .catch(error => {
+             console.error('Error exporting payroll:', error);
+             showMessage('Error exporting payroll report', 'error');
+         })
+         .finally(() => {
+             exportBtn.innerHTML = originalText;
+             exportBtn.disabled = false;
+         });
+ }
+
+ // Simulate PDF download (replace with actual implementation)
+ function simulatePDFDownload(payrollData) {
+     const payroll = payrollData.payroll;
+
+     // Create a simple text representation (replace with actual PDF generation)
+     const content = `
+        CLOTHSPHERE - PAYSLIP
+        =====================
+        
+        Employee: ${payrollData.employeeName || 'N/A'}
+        Employee ID: ${payroll.employeeId}
+        Payroll Month: ${formatPayrollMonth(payroll.payrollMonth)}
+        Status: ${payroll.status}
+        
+        SALARY BREAKDOWN:
+        ----------------
+        Basic Salary: ${formatCurrency(payroll.basicSalary)}
+        Actual Work Hours: ${payroll.actualWorkHours} hrs
+        Overtime Hours: ${payroll.otHours} hrs
+        Overtime Amount: ${formatCurrency(payroll.otAmount)}
+        Gross Salary: ${formatCurrency(payroll.grossSalary)}
+        
+        DEDUCTIONS:
+        ----------
+        EPF (${payroll.epfRate}%): ${formatCurrency(payroll.epfAmount)}
+        ETF (${payroll.etfRate}%): ${formatCurrency(payroll.etfAmount)}
+        Total Deductions: ${formatCurrency(payroll.deductions)}
+        
+        NET SALARY: ${formatCurrency(payroll.netSalary)}
+        
+        Generated on: ${new Date().toLocaleString()}
+    `;
+
+     // Create and download text file (replace with PDF in production)
+     const blob = new Blob([content], { type: 'text/plain' });
+     const url = window.URL.createObjectURL(blob);
+     const a = document.createElement('a');
+     a.href = url;
+     a.download = `payslip-${payroll.employeeId}-${payroll.payrollMonth}.txt`;
+     document.body.appendChild(a);
+     a.click();
+     document.body.removeChild(a);
+     window.URL.revokeObjectURL(url);
+ }
+
+ // Utility functions
+ function formatPayrollMonth(payrollMonth) {
+     if (!payrollMonth) return 'N/A';
+
+     const [year, month] = payrollMonth.split('-');
+     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+         'July', 'August', 'September', 'October', 'November', 'December'];
+
+     return `${monthNames[parseInt(month) - 1]} ${year}`;
+ }
+
+ function formatCurrency(amount) {
+     if (!amount) return '$ 0.00';
+
+     const value = typeof amount === 'object' ? amount.toString() : amount;
+     return '$ ' + parseFloat(value).toLocaleString('en-US', {
+         minimumFractionDigits: 2,
+         maximumFractionDigits: 2
+     });
+ }
+
+ // Add to the existing showSection override
+ const originalShowSectionForPayroll = showSection;
+ showSection = function(sectionId) {
+     originalShowSectionForPayroll(sectionId);
+
+     if (sectionId === 'paysheet') {
+         initializePayrollSection();
      }
  };

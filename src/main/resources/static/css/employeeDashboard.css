@@ -3,7 +3,7 @@ body {background:#f4f6f9; min-height:100vh; display:flex;}
 
 /* Sidebar */
 .sidebar {
-    width:250px; background: linear-gradient(to bottom, #000000, #ff0000); color: white; min-height:100vh; padding:20px;
+    width:250px; background: linear-gradient(to bottom, #000000, #008000); color: white; min-height:100vh; padding:20px;
     position: fixed; left: 0; top: 0; height: 100%;box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
 }
 .sidebar h2 {text-align:center; margin-bottom:30px;}
@@ -719,4 +719,1152 @@ body.zoomed-out td {
 
 #tasks-loading .fa-spinner {
     margin-right: 8px;
+}
+/* Form controls in modal */
+.status-modal-body .form-group {
+    margin-bottom: 15px;
+}
+
+.status-modal-body .form-control {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.status-modal-body .form-control:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.status-modal-body .form-text {
+    font-size: 12px;
+    color: #6c757d;
+    margin-top: 5px;
+}
+/* Fix for Status Modal - Prevent Full Screen */
+.status-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.status-modal-content {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+/* Ensure modal doesn't exceed viewport */
+@media (max-width: 600px) {
+    .status-modal-content {
+        width: 95%;
+        padding: 20px;
+        margin: 10px;
+    }
+}
+
+/* Fix for modal backdrop */
+.status-modal::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: -1;
+}
+
+/* Prevent body scroll when modal is open */
+body.modal-open {
+    overflow: hidden;
+}
+/* Modal close button */
+.btn-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    position: absolute;
+    right: 15px;
+    top: 15px;
+    color: #6c757d;
+    transition: color 0.3s;
+}
+
+.btn-close:hover {
+    color: #dc3545;
+}
+
+/* Modal header positioning */
+.status-modal-header {
+    position: relative;
+    border-bottom: 1px solid #e9ecef;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+    padding-right: 40px; /* Space for close button */
+}
+
+/* Ensure modal content is properly centered */
+.status-modal {
+    backdrop-filter: blur(2px);
+}
+
+/* Smooth animations for modal */
+.status-modal-content {
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-50px) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+/* Enhanced Actual Hours Input */
+#actual-hours-input {
+    border: 2px solid #007bff;
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 5px;
+    width: 100%;
+}
+
+#actual-hours-input:focus {
+    border-color: #0056b3;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+}
+
+.actual-hours-help {
+    font-size: 12px;
+    color: #6c757d;
+    margin-top: 5px;
+}
+
+/* Completion confirmation */
+.completion-confirmation {
+    background: #e8f5e8;
+    border: 1px solid #28a745;
+    border-radius: 5px;
+    padding: 10px;
+    margin: 10px 0;
+}
+
+.completion-confirmation h6 {
+    color: #155724;
+    margin: 0 0 5px 0;
+}
+
+/* Status option styling */
+.status-option {
+    padding: 10px;
+    border: 2px solid #e9ecef;
+    border-radius: 5px;
+    margin: 5px 0;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.status-option:hover {
+    border-color: #007bff;
+    background-color: #f8f9fa;
+}
+
+.status-option.selected {
+    border-color: #007bff;
+    background-color: #e3f2fd;
+}
+
+.status-option h5 {
+    margin: 0 0 5px 0;
+    color: #495057;
+}
+
+.status-option p {
+    margin: 0;
+    font-size: 12px;
+    color: #6c757d;
+}
+
+/* Leave Management Styles */
+.leave-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.leave-stat-card {
+    text-align: center;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.leave-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.leave-stat-number {
+    font-size: 32px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.leave-stat-label {
+    color: #6c757d;
+    font-size: 12px;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+/* Leave Form Section */
+.leave-form-section {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin: 20px 0;
+    border: 1px solid #e9ecef;
+}
+
+.leave-form-section h4 {
+    margin-bottom: 20px;
+    color: #495057;
+    border-bottom: 2px solid #007bff;
+    padding-bottom: 10px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.form-control {
+    padding: 10px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 14px;
+    width: 100%;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+textarea.form-control {
+    resize: vertical;
+    min-height: 80px;
+}
+
+/* Leave History Section */
+.leave-history-section {
+    margin-top: 30px;
+}
+
+.leave-history-section h4 {
+    margin-bottom: 20px;
+    color: #495057;
+    border-bottom: 2px solid #007bff;
+    padding-bottom: 10px;
+}
+
+/* Filter Controls for Leave */
+.filter-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 20px 0;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.filter-group {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.filter-group label {
+    margin-bottom: 0;
+    font-weight: 600;
+    color: #495057;
+}
+
+/* Leave Table Styles */
+.table {
+    border: 1px solid #dee2e6;
+    border-collapse: collapse;
+    width: 100%;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.table th {
+    font-weight: 600;
+    color: #495057;
+    font-size: 13px;
+    background: #f8f9fa;
+    padding: 12px;
+    border-bottom: 2px solid #dee2e6;
+    text-align: left;
+}
+
+.table td {
+    font-size: 13px;
+    color: #495057;
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
+}
+
+.table tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* Leave Status Badges */
+.status-badge {
+    padding: 6px 12px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    display: inline-block;
+    text-align: center;
+    min-width: 80px;
+}
+
+.status-pending {
+    background: linear-gradient(135deg, #ffd54f, #fbc02d);
+    color: #333;
+    box-shadow: 0 2px 4px rgba(255, 213, 79, 0.3);
+}
+
+.status-approved {
+    background: linear-gradient(135deg, #81c784, #388e3c);
+    color: white;
+    box-shadow: 0 2px 4px rgba(129, 199, 132, 0.3);
+}
+
+.status-rejected {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+    color: white;
+    box-shadow: 0 2px 4px rgba(255, 107, 107, 0.3);
+}
+
+/* Leave Actions */
+.leave-actions {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.btn-sm {
+    padding: 6px 10px;
+    font-size: 12px;
+    min-width: auto;
+    border-radius: 4px;
+}
+
+/* Duration Display */
+#leave-duration {
+    background: #e8f5e8;
+    border: 1px solid #28a745;
+    border-radius: 4px;
+    margin: 10px 0;
+}
+
+/* No Leaves Message */
+#no-leaves-message {
+    text-align: center;
+    padding: 40px;
+    color: #6c757d;
+}
+
+#no-leaves-message i {
+    font-size: 48px;
+    margin-bottom: 20px;
+    color: #6c757d;
+}
+
+/* Loading Spinner */
+#leaves-loading {
+    color: #6c757d;
+    font-size: 14px;
+    text-align: center;
+    padding: 20px;
+}
+
+#leaves-loading .fa-spinner {
+    margin-right: 8px;
+}
+
+/* Form Group Styling */
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+    color: #495057;
+}
+
+/* Button Group */
+.button-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .leave-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .filter-controls {
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+    }
+
+    .filter-group {
+        justify-content: space-between;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .button-group {
+        flex-direction: column;
+    }
+
+    .button-group .btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 576px) {
+    .leave-stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .leave-stat-card {
+        padding: 15px;
+    }
+
+    .leave-stat-number {
+        font-size: 24px;
+    }
+
+    .table-responsive {
+        font-size: 12px;
+    }
+
+    .table th,
+    .table td {
+        padding: 8px;
+    }
+
+    .leave-actions {
+        flex-direction: column;
+    }
+
+    .leave-actions .btn-sm {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Modal Styles for Leave Details */
+.status-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.status-modal-content {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    max-width: 600px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+.status-modal-header {
+    position: relative;
+    border-bottom: 1px solid #e9ecef;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+    padding-right: 40px;
+}
+
+.status-modal-header h4 {
+    margin: 0;
+    color: #333;
+    font-weight: 600;
+}
+
+.btn-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    position: absolute;
+    right: 15px;
+    top: 15px;
+    color: #6c757d;
+    transition: color 0.3s;
+}
+
+.btn-close:hover {
+    color: #dc3545;
+}
+
+.status-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+    border-top: 1px solid #e9ecef;
+    padding-top: 20px;
+}
+
+/* Animation for modal */
+.status-modal-content {
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-50px) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Prevent body scroll when modal is open */
+body.modal-open {
+    overflow: hidden;
+}
+
+/* Profile info grid for modal content */
+.profile-info {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 15px;
+}
+
+.info-group {
+    margin-bottom: 15px;
+}
+
+.info-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+    color: #6c757d;
+}
+
+.info-group .value {
+    padding: 8px 12px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+    word-break: break-word;
+}
+/* Compact Profile Info Styles */
+.profile-info-compact {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.info-group-compact {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.info-group-compact:hover {
+    background: #e9ecef;
+    border-color: #007bff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.info-group-compact label {
+    font-weight: 600;
+    color: #495057;
+    min-width: 160px;
+    margin: 0;
+    font-size: 14px;
+}
+
+.info-group-compact .value {
+    flex: 1;
+    padding: 8px 12px;
+    background: white;
+    border-radius: 4px;
+    border: 1px solid #dee2e6;
+    font-size: 14px;
+    color: #333;
+    margin-left: 15px;
+}
+
+/* Two-column layout for better space usage */
+.profile-info-two-column {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+}
+
+/* Single column for smaller screens */
+@media (max-width: 768px) {
+    .profile-info-compact {
+        grid-template-columns: 1fr;
+    }
+
+    .profile-info-two-column {
+        grid-template-columns: 1fr;
+    }
+
+    .info-group-compact {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .info-group-compact label {
+        min-width: auto;
+        margin-bottom: 8px;
+    }
+
+    .info-group-compact .value {
+        margin-left: 0;
+        width: 100%;
+    }
+}
+
+/* Even more compact version */
+.profile-info-ultra-compact {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 12px;
+}
+
+.info-group-ultra-compact {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+}
+
+.info-group-ultra-compact label {
+    font-weight: 600;
+    color: #495057;
+    min-width: 140px;
+    margin: 0;
+    font-size: 13px;
+}
+
+.info-group-ultra-compact .value {
+    flex: 1;
+    padding: 6px 10px;
+    background: white;
+    border-radius: 4px;
+    border: 1px solid #dee2e6;
+    font-size: 13px;
+    color: #333;
+    margin-left: 12px;
+}
+/* Attendance Styles */
+.attendance-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.attendance-stat-card {
+    text-align: center;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.attendance-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.attendance-stat-number {
+    font-size: 32px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.attendance-stat-label {
+    color: #6c757d;
+    font-size: 12px;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.attendance-status {
+    text-align: center;
+    padding: 30px;
+    border: 2px dashed #e9ecef;
+    border-radius: 10px;
+    margin: 20px 0;
+}
+
+.attendance-status h5 {
+    margin-bottom: 10px;
+    color: #495057;
+}
+
+.attendance-status p {
+    margin-bottom: 20px;
+    color: #6c757d;
+}
+
+/* Status badges for attendance */
+.status-present { background: linear-gradient(135deg, #81c784, #388e3c); color: white; }
+.status-absent { background: linear-gradient(135deg, #ff6b6b, #ee5a52); color: white; }
+.status-late { background: linear-gradient(135deg, #ffd54f, #fbc02d); color: #333; }
+.status-half-day { background: linear-gradient(135deg, #4fc3f7, #0288d1); color: white; }
+
+/* Responsive design for attendance */
+@media (max-width: 768px) {
+    .attendance-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .attendance-status {
+        padding: 20px;
+    }
+}
+
+@media (max-width: 576px) {
+    .attendance-stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .filter-controls {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .filter-group {
+        justify-content: space-between;
+    }
+}
+/* Attendance Styles */
+.attendance-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.attendance-stat-card {
+    text-align: center;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.attendance-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.attendance-stat-number {
+    font-size: 32px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.attendance-stat-label {
+    color: #6c757d;
+    font-size: 12px;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.attendance-status {
+    text-align: center;
+    padding: 30px;
+    border: 2px dashed #e9ecef;
+    border-radius: 10px;
+    margin: 20px 0;
+}
+
+.attendance-status h5 {
+    margin-bottom: 10px;
+    color: #495057;
+}
+
+.attendance-status p {
+    margin-bottom: 20px;
+    color: #6c757d;
+}
+
+/* Status badges for attendance */
+.status-present {
+    background: linear-gradient(135deg, #81c784, #388e3c);
+    color: white;
+}
+.status-absent {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+    color: white;
+}
+.status-late {
+    background: linear-gradient(135deg, #ffd54f, #fbc02d);
+    color: #333;
+}
+.status-half-day {
+    background: linear-gradient(135deg, #4fc3f7, #0288d1);
+    color: white;
+}
+
+.table-secondary {
+    background-color: #f8f9fa !important;
+}
+/* Enhanced mobile responsiveness */
+@media (max-width: 768px) {
+    .attendance-stats-grid,
+    .leave-stats-grid,
+    .task-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    .filter-controls {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .filter-group {
+        justify-content: space-between;
+        width: 100%;
+    }
+
+    .table-responsive {
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .attendance-stats-grid,
+    .leave-stats-grid,
+    .task-stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .status-modal-content {
+        margin: 10px;
+        padding: 20px;
+        width: calc(100% - 20px);
+    }
+}
+/* Attendance Status Badges */
+.status-present {
+    background: linear-gradient(135deg, #81c784, #388e3c);
+    color: white;
+    box-shadow: 0 2px 4px rgba(129, 199, 132, 0.3);
+}
+
+.status-absent {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+    color: white;
+    box-shadow: 0 2px 4px rgba(255, 107, 107, 0.3);
+}
+
+.status-late {
+    background: linear-gradient(135deg, #ffd54f, #fbc02d);
+    color: #333;
+    box-shadow: 0 2px 4px rgba(255, 213, 79, 0.3);
+}
+
+.status-half-day {
+    background: linear-gradient(135deg, #4fc3f7, #0288d1);
+    color: white;
+    box-shadow: 0 2px 4px rgba(79, 195, 247, 0.3);
+}
+
+.status-not-marked {
+    background: linear-gradient(135deg, #bdbdbd, #757575);
+    color: white;
+    box-shadow: 0 2px 4px rgba(189, 189, 189, 0.3);
+}
+
+/* Paysheet Styles */
+.payroll-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.payroll-stat-card {
+    text-align: center;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.payroll-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.payroll-stat-number {
+    font-size: 28px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.payroll-stat-label {
+    color: #6c757d;
+    font-size: 12px;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+/* Salary Breakdown */
+.salary-breakdown {
+    margin: 20px 0;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.breakdown-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.breakdown-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
+}
+
+.breakdown-item.total {
+    background: #e8f5e8;
+    border-color: #28a745;
+    font-weight: bold;
+}
+
+.breakdown-item label {
+    font-weight: 500;
+    color: #495057;
+}
+
+.breakdown-item .amount {
+    font-weight: 600;
+    color: #333;
+}
+
+/* Deductions */
+.deductions-section {
+    margin: 20px 0;
+    padding: 20px;
+    background: #fff5f5;
+    border-radius: 8px;
+    border: 1px solid #f8d7da;
+}
+
+.deductions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.deduction-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #f8d7da;
+}
+
+.deduction-item.total {
+    background: #f8d7da;
+    border-color: #dc3545;
+    font-weight: bold;
+}
+
+/* Net Salary */
+.net-salary-section {
+    margin: 20px 0;
+    text-align: center;
+}
+
+.net-salary-card {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+}
+
+.net-salary-amount {
+    font-size: 36px;
+    font-weight: bold;
+    margin: 10px 0;
+}
+
+.net-salary-label {
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+/* Attendance Info */
+.attendance-info {
+    margin: 20px 0;
+    padding: 15px;
+    background: #e3f2fd;
+    border-radius: 8px;
+    border: 1px solid #bbdefb;
+}
+
+.attendance-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.attendance-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background: white;
+    border-radius: 6px;
+}
+
+/* Status badges for payroll */
+.status-pending {
+    background: linear-gradient(135deg, #ffd54f, #fbc02d);
+    color: #333;
+}
+
+.status-calculated {
+    background: linear-gradient(135deg, #4fc3f7, #0288d1);
+    color: white;
+}
+
+.status-paid {
+    background: linear-gradient(135deg, #81c784, #388e3c);
+    color: white;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .payroll-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .breakdown-grid,
+    .deductions-grid,
+    .attendance-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .net-salary-amount {
+        font-size: 28px;
+    }
+}
+
+@media (max-width: 576px) {
+    .payroll-stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .breakdown-item,
+    .deduction-item,
+    .attendance-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
 }

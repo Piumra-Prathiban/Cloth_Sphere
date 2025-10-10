@@ -83,8 +83,7 @@
             font-weight: 500;
         }
 
-        .input-group input,
-        .input-group select {
+        .input-group input {
             width: 100%;
             padding: 15px;
             border: 2px solid #ddd;
@@ -93,8 +92,7 @@
             transition: border-color 0.3s;
         }
 
-        .input-group input:focus,
-        .input-group select:focus {
+        .input-group input:focus {
             border-color: #999;
             outline: none;
         }
@@ -198,7 +196,7 @@
         <div class="welcome-text">
             <h2>System Login</h2>
             <p>Access the administrative dashboard to manage ClothSphere operations with your authorized credentials.</p>
-            <p>Select your role from the dropdown menu to access the appropriate system functions.</p>
+            <p>Enter your username to access the appropriate system functions based on your role.</p>
         </div>
 
         <!-- Just a plain decorative image -->
@@ -210,24 +208,11 @@
             <h2 class="form-title">Log In</h2>
 
             <div class="input-group">
-                <label for="username">Your Name</label>
+                <label for="username">Username</label>
                 <div class="input-with-icon">
                     <input type="text" id="username" name="username" placeholder="Enter your username" required>
                     <i class="fas fa-user"></i>
                 </div>
-            </div>
-
-            <div class="input-group">
-                <label for="role">Your Role</label>
-                <select id="role" name="role" required onchange="handleRoleChange()">
-                    <option value="" disabled selected>Select your role</option>
-                    <option value="factory-manager">Factory Manager</option>
-                    <option value="hr-manager">HR Manager</option>
-                    <option value="inventory-manager">Inventory Manager</option>
-                    <option value="customer-officer">Product and Customer Officer</option>
-                    <option value="sales-executive">Sales Executive</option>
-                    <option value="employee">Employee</option>
-                </select>
             </div>
 
             <div class="input-group">
@@ -258,23 +243,6 @@
 </div>
 
 <script>
-    // Handle role change to show/hide employee info
-    function handleRoleChange() {
-        const role = document.getElementById('role').value;
-        const employeeInfo = document.getElementById('employee-info');
-        const passwordField = document.getElementById('password');
-
-        if (role === 'employee') {
-            employeeInfo.style.display = 'block';
-            passwordField.required = false;
-            passwordField.placeholder = 'Enter password (leave empty for first login)';
-        } else {
-            employeeInfo.style.display = 'none';
-            passwordField.required = true;
-            passwordField.placeholder = 'Enter your password';
-        }
-    }
-
     // Show error message when there's an error parameter
     document.addEventListener('DOMContentLoaded', function() {
         const urlParams = new URLSearchParams(window.location.search);
@@ -283,7 +251,7 @@
         if (error && error === 'true') {
             const errorMessage = document.getElementById('error-message');
             if (errorMessage) {
-                errorMessage.textContent = 'Invalid username, password, or role. Please try again.';
+                errorMessage.textContent = 'Invalid username or password. Please try again.';
                 errorMessage.style.display = 'block';
             }
         }
@@ -293,7 +261,6 @@
     document.querySelector('.login-form').addEventListener('submit', function(e) {
         const username = document.getElementById('username').value;
         const password = document.getElementById('password').value;
-        const role = document.getElementById('role').value;
         const errorMessage = document.getElementById('error-message');
 
         // Clear any existing error messages
@@ -301,24 +268,11 @@
         errorMessage.textContent = '';
 
         // Basic validation
-        if (!username.trim() || !role) {
+        if (!username.trim()) {
             e.preventDefault();
-            errorMessage.textContent = 'Please enter username and select a role';
+            errorMessage.textContent = 'Please enter username';
             errorMessage.style.display = 'block';
             return false;
-        }
-
-        // For non-employee roles, password is required
-        if (role !== 'employee' && (!password || password.trim() === '')) {
-            e.preventDefault();
-            errorMessage.textContent = 'Password is required for this role';
-            errorMessage.style.display = 'block';
-            return false;
-        }
-
-        // For employee role, allow empty password (first-time login)
-        if (role === 'employee' && (!password || password.trim() === '')) {
-            console.log('First-time employee login attempt');
         }
 
         return true;

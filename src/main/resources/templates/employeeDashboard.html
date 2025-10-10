@@ -13,16 +13,21 @@
 <div class="sidebar">
   <h2>Employee Dashboard</h2>
   <ul>
-    <li><a href="#" onclick="showSection('profile')" class="nav-link active">
+    <li><a href="#" onclick="showSection('profile', event)" class="nav-link active">
       <i class="fas fa-user"></i> Profile Info</a></li>
-    <li><a href="#" onclick="showSection('attendance')" class="nav-link">
+    <li><a href="#" onclick="showSection('attendance', event)" class="nav-link">
       <i class="fas fa-calendar-check"></i> Mark Attendance</a></li>
-    <li><a href="#" onclick="showSection('leave')" class="nav-link">
+    <li><a href="#" onclick="showSection('leave', event)" class="nav-link">
       <i class="fas fa-file-alt"></i> Request Leave</a></li>
-    <li><a href="#" onclick="showSection('tasks')" class="nav-link">
+    <li><a href="#" onclick="showSection('tasks', event)" class="nav-link">
       <i class="fas fa-tasks"></i> View Tasks</a></li>
-    <li><a href="#" onclick="showSection('paysheet')" class="nav-link">
+    <li><a href="#" onclick="showSection('paysheet', event)" class="nav-link">
       <i class="fas fa-file-invoice-dollar"></i> View Paysheet</a></li>
+    <li>
+      <a href="/communication/internal">
+        <i class="fas fa-comments"></i> Internal Communication
+      </a>
+    </li>
   </ul>
 </div>
 
@@ -46,7 +51,7 @@
           <i class="fas fa-exclamation-triangle"></i>
           <strong>First Time Login Detected</strong>
         </div>
-        <p>This is your first time logging into the system. For security reasons, you must change your default password before you can access all features.</p>
+        <p>This is your first time logging into the system. Update 2 times For security reasons, you must change your default password before you can access all features.</p>
         <p>Please go to the <strong>Profile Info</strong> section and update your password immediately.</p>
         <p><strong>Default Password:</strong> <code>changeme123</code></p>
       </div>
@@ -69,33 +74,43 @@
     <div class="card">
       <h3>Employee Profile</h3>
       <div class="profile-info">
-        <div class="info-group">
-          <label>Username</label>
-          <div class="value" id="username-value" th:text="${employeeData != null ? employeeData.username : 'N/A'}">N/A</div>
+        <!-- Compact Profile Info -->
+        <div class="profile-info-compact">
+          <div class="info-group-compact">
+            <label>Username</label>
+            <div class="value" id="username-value" th:text="${employeeData != null ? employeeData.username : 'N/A'}">chanul</div>
+          </div>
+
+          <div class="info-group-compact">
+            <label>Role</label>
+            <div class="value" id="role-value">Employee</div>
+          </div>
+
+          <div class="info-group-compact">
+            <label>Email</label>
+            <div class="value" id="email-value" th:text="${employeeData != null ? employeeData.email : 'N/A'}">jeewaka@gmail.com</div>
+          </div>
+
+          <div class="info-group-compact">
+            <label>Phone Number</label>
+            <div class="value" id="phone-value" th:text="${employeeData != null ? employeeData.phoneNumber : 'N/A'}">0710683123</div>
+          </div>
+
+          <div class="info-group-compact">
+            <label>Employee ID</label>
+            <div class="value" id="employee-id" th:text="${employeeData != null ? employeeData.employeeId : 'N/A'}">emp01</div>
+          </div>
+
+          <div class="info-group-compact">
+            <label>Department Name</label>
+            <div class="value" id="department-name" th:text="${employeeData != null ? employeeData.departmentName : 'Not Assigned'}">Design and Sample Department</div>
+          </div>
         </div>
-        <div class="info-group">
-          <label>Role</label>
-          <div class="value" id="role-value">Employee</div>
-        </div>
-        <div class="info-group">
-          <label>Email</label>
-          <div class="value" id="email-value" th:text="${employeeData != null ? employeeData.email : 'N/A'}">N/A</div>
-        </div>
-        <div class="info-group">
-          <label>Phone Number</label>
-          <div class="value" id="phone-value" th:text="${employeeData != null ? employeeData.phoneNumber : 'N/A'}">N/A</div>
-        </div>
-        <div class="info-group">
-          <label>Employee ID</label>
-          <div class="value" id="employee-id" th:text="${employeeData != null ? employeeData.employeeId : 'N/A'}">N/A</div>
-        </div>
-        <div class="info-group">
-          <label>Department Name</label>
-          <div class="value" id="department-name" th:text="${employeeData != null ? employeeData.departmentName : 'Not Assigned'}">Not Assigned</div>
-        </div>
-        <div class="info-group">
+
+        <!-- Department Description in a separate row if it's long -->
+        <div class="info-group-compact" style="grid-column: 1 / -1;">
           <label>Department Description</label>
-          <div class="value" id="department-description" th:text="${employeeData != null ? employeeData.departmentDescription : 'No description available'}">No description available</div>
+          <div class="value" id="department-description" th:text="${employeeData != null ? employeeData.departmentDescription : 'No description available'}">Handles design creation and sample development for new collections</div>
         </div>
 
         <!-- Password Section -->
@@ -105,7 +120,7 @@
           <!-- First-time login message -->
           <div id="first-login-alert" class="alert alert-warning" th:style="${firstLogin ? 'display: block;' : 'display: none;'}">
             <i class="fas fa-exclamation-triangle"></i>
-            <strong>First Time Login:</strong> You must change your default password to continue using the system.
+            <strong>First Time Login:</strong> You must change your default password to continue using the system update 2 times For security reasons.
           </div>
 
           <!-- Normal password change message -->
@@ -149,33 +164,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Dashboard Cards -->
-    <div class="cards">
-      <div class="card">
-        <h3>Task Progress</h3>
-        <p>Completed Tasks</p>
-        <div class="progress-bar"><div class="progress finish" style="width: 65%;">65%</div></div>
-        <p style="margin-top:15px;">Pending Tasks</p>
-        <div class="progress-bar"><div class="progress pending" style="width: 35%;">35%</div></div>
-      </div>
-      <div class="card">
-        <h3>Attendance</h3>
-        <p>Present Days</p>
-        <div class="progress-bar"><div class="progress finish" style="width: 90%;">90%</div></div>
-        <p style="margin-top:15px;">Absent Days</p>
-        <div class="progress-bar"><div class="progress pending" style="width: 10%;">10%</div></div>
-      </div>
-      <div class="card notifications">
-        <h3>Notification Center</h3>
-        <ul>
-          <li class="new"><i class="fas fa-tasks text-primary"></i> New task assigned: <b>Update Documentation</b> <small>1 hr ago</small></li>
-          <li><i class="fas fa-check-circle text-success"></i> Task completed: <b>Bug Fix</b> <small>3 hrs ago</small></li>
-          <li><i class="fas fa-calendar-alt text-warning"></i> Upcoming deadline: <b>Project Review</b> <small>Tomorrow</small></li>
-          <li><i class="fas fa-users text-info"></i> Team meeting scheduled <small>2 days ago</small></li>
-        </ul>
-      </div>
-    </div>
   </div>
 
   <!-- Attendance Section -->
@@ -190,8 +178,138 @@
           <i class="fas fa-user-cog"></i> Go to Profile
         </button>
       </div>
+
       <div id="attendance-content" th:style="${!firstLogin ? 'display: block;' : 'display: none;'}">
-        <p>Attendance marking functionality would go here.</p>
+        <!-- Attendance Statistics -->
+        <div class="attendance-stats-grid">
+          <div class="attendance-stat-card" style="background: #e8f5e8;">
+            <div class="attendance-stat-number" id="present-days">0</div>
+            <div class="attendance-stat-label">Present Days</div>
+          </div>
+          <div class="attendance-stat-card" style="background: #fff3e0;">
+            <div class="attendance-stat-number" id="working-days">0</div>
+            <div class="attendance-stat-label">Working Days</div>
+          </div>
+          <div class="attendance-stat-card" style="background: #e3f2fd;">
+            <div class="attendance-stat-number" id="attendance-percentage">0%</div>
+            <div class="attendance-stat-label">Attendance %</div>
+          </div>
+        </div>
+
+        <!-- Today's Attendance Card -->
+        <div class="card" style="margin-top: 20px;">
+          <h4>Today's Attendance - <span id="current-date"></span></h4>
+
+          <div id="today-attendance-status">
+            <div class="attendance-status" id="attendance-not-marked">
+              <i class="fas fa-clock text-warning" style="font-size: 48px; margin-bottom: 15px;"></i>
+              <h5>Attendance Not Marked</h5>
+              <p>You haven't marked your attendance for today.</p>
+              <button class="btn btn-success" onclick="checkIn()">
+                <i class="fas fa-sign-in-alt"></i> Check In
+              </button>
+            </div>
+
+            <div class="attendance-status" id="attendance-checked-in" style="display: none;">
+              <i class="fas fa-user-check text-primary" style="font-size: 48px; margin-bottom: 15px;"></i>
+              <h5>Checked In</h5>
+              <p>You checked in at: <strong id="check-in-time"></strong></p>
+              <div class="button-group">
+                <button class="btn btn-warning" onclick="checkOut()">
+                  <i class="fas fa-sign-out-alt"></i> Check Out
+                </button>
+                <button class="btn btn-info" onclick="showCheckInNotes()">
+                  <i class="fas fa-edit"></i> Add Notes
+                </button>
+              </div>
+            </div>
+
+            <div class="attendance-status" id="attendance-checked-out" style="display: none;">
+              <i class="fas fa-check-circle text-success" style="font-size: 48px; margin-bottom: 15px;"></i>
+              <h5>Attendance Complete</h5>
+              <p>Check In: <strong id="completed-check-in"></strong></p>
+              <p>Check Out: <strong id="completed-check-out"></strong></p>
+              <p>Work Hours: <strong id="work-hours"></strong></p>
+            </div>
+          </div>
+
+          <!-- Notes Modal -->
+          <div id="notes-modal" class="status-modal" style="display: none;">
+            <div class="status-modal-content">
+              <div class="status-modal-header">
+                <h4>Add Notes</h4>
+                <button type="button" class="btn-close" onclick="closeNotesModal()">×</button>
+              </div>
+              <div class="status-modal-body">
+                <div class="form-group">
+                  <label for="attendance-notes">Notes (Optional)</label>
+                  <textarea id="attendance-notes" class="form-control" placeholder="Add any notes about your attendance..." rows="4"></textarea>
+                </div>
+              </div>
+              <div class="status-modal-footer">
+                <button class="btn btn-secondary" onclick="closeNotesModal()">Cancel</button>
+                <button class="btn btn-primary" id="notes-submit-btn" onclick="submitWithNotes()">Submit</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Attendance History -->
+        <div class="card" style="margin-top: 20px;">
+          <h4>Attendance History</h4>
+
+          <!-- Date Filter -->
+          <div class="filter-controls">
+            <div class="filter-group">
+              <label for="start-date-filter">From:</label>
+              <input type="date" id="start-date-filter" class="form-control">
+            </div>
+            <div class="filter-group">
+              <label for="end-date-filter">To:</label>
+              <input type="date" id="end-date-filter" class="form-control">
+            </div>
+            <div class="filter-group">
+              <button class="btn btn-primary" onclick="loadAttendanceHistory()">
+                <i class="fas fa-filter"></i> Filter
+              </button>
+              <button class="btn btn-secondary" onclick="resetAttendanceFilter()">
+                <i class="fas fa-redo"></i> Reset
+              </button>
+            </div>
+          </div>
+
+          <!-- Attendance History Table -->
+          <div class="table-responsive">
+            <table class="table" id="attendance-table">
+              <thead>
+              <tr>
+                <th>Date</th>
+                <th>Day</th>
+                <th>Check In</th>
+                <th>Check Out</th>
+                <th>Work Hours</th>
+                <th>Status</th>
+                <th>Notes</th>
+              </tr>
+              </thead>
+              <tbody id="attendance-table-body">
+              <!-- Attendance history will be loaded here -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- No Attendance Records Message -->
+          <div id="no-attendance-message" style="display: none; text-align: center; padding: 40px;">
+            <i class="fas fa-calendar-times" style="font-size: 48px; color: #6c757d; margin-bottom: 20px;"></i>
+            <h4>No Attendance Records</h4>
+            <p>No attendance records found for the selected period.</p>
+          </div>
+
+          <!-- Loading Spinner -->
+          <div id="attendance-loading" style="text-align: center; padding: 20px;">
+            <i class="fas fa-spinner fa-spin"></i> Loading attendance records...
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -208,12 +326,118 @@
           <i class="fas fa-user-cog"></i> Go to Profile
         </button>
       </div>
+
       <div id="leave-content" th:style="${!firstLogin ? 'display: block;' : 'display: none;'}">
-        <p>Leave request functionality would go here.</p>
+        <!-- Leave Statistics -->
+        <div class="leave-stats-grid">
+          <div class="leave-stat-card" style="background: #e3f2fd;">
+            <div class="leave-stat-number" id="total-leaves">0</div>
+            <div class="leave-stat-label">Total Requests</div>
+          </div>
+          <div class="leave-stat-card" style="background: #fff3e0;">
+            <div class="leave-stat-number" id="pending-leaves">0</div>
+            <div class="leave-stat-label">Pending</div>
+          </div>
+          <div class="leave-stat-card" style="background: #e8f5e8;">
+            <div class="leave-stat-number" id="approved-leaves">0</div>
+            <div class="leave-stat-label">Approved</div>
+          </div>
+          <div class="leave-stat-card" style="background: #ffebee;">
+            <div class="leave-stat-number" id="rejected-leaves">0</div>
+            <div class="leave-stat-label">Rejected</div>
+          </div>
+        </div>
+
+        <!-- Leave Request Form -->
+        <div class="leave-form-section">
+          <h4>New Leave Request</h4>
+          <form id="leave-request-form">
+            <div class="form-group">
+              <label for="reason">Reason for Leave *</label>
+              <textarea id="reason" class="form-control" placeholder="Enter reason for leave" required rows="3"></textarea>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="start-date">Start Date *</label>
+                <input type="date" id="start-date" class="form-control" required onchange="calculateLeaveDuration()">
+              </div>
+
+              <div class="form-group">
+                <label for="end-date">End Date *</label>
+                <input type="date" id="end-date" class="form-control" required onchange="calculateLeaveDuration()">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <div id="leave-duration" style="padding: 10px; background: #e8f5e8; border: 1px solid #28a745; border-radius: 4px; display: none;">
+                <strong>Duration:</strong> <span id="duration-days">0</span> day(s)
+              </div>
+            </div>
+
+            <div class="button-group">
+              <button type="submit" class="btn btn-success">
+                <i class="fas fa-paper-plane"></i> Submit Request
+              </button>
+              <button type="reset" class="btn btn-secondary" onclick="document.getElementById('leave-duration').style.display = 'none'">
+                <i class="fas fa-times"></i> Clear
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Leave History -->
+        <div class="leave-history-section">
+          <h4>Leave History</h4>
+
+          <!-- Filter Controls -->
+          <div class="filter-controls">
+            <div class="filter-group">
+              <select id="leave-status-filter" class="form-control" onchange="filterLeaves()">
+                <option value="all">All Status</option>
+                <option value="PENDING">Pending</option>
+                <option value="APPROVED">Approved</option>
+                <option value="REJECTED">Rejected</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Leave Table -->
+          <div class="table-responsive">
+            <table class="table" id="leaves-table">
+              <thead>
+              <tr>
+                <th>Leave ID</th>
+                <th>Reason</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+                <th>Duration</th>
+                <th>Request Date</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+              </thead>
+              <tbody id="leaves-table-body">
+              <!-- Leaves will be loaded here dynamically -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- No Leaves Message -->
+          <div id="no-leaves-message" style="display: none; text-align: center; padding: 40px;">
+            <i class="fas fa-calendar-times" style="font-size: 48px; color: #6c757d; margin-bottom: 20px;"></i>
+            <h4>No Leave Requests</h4>
+            <p>You haven't submitted any leave requests yet.</p>
+          </div>
+
+          <!-- Loading Spinner -->
+          <div id="leaves-loading" style="text-align: center; padding: 20px;">
+            <i class="fas fa-spinner fa-spin"></i> Loading leave requests...
+          </div>
+        </div>
       </div>
     </div>
   </div>
-
   <!-- Tasks Section -->
   <div id="tasks" class="content-section">
     <div class="card">
@@ -310,11 +534,215 @@
           <i class="fas fa-user-cog"></i> Go to Profile
         </button>
       </div>
+
       <div id="paysheet-content" th:style="${!firstLogin ? 'display: block;' : 'display: none;'}">
-        <p>Paysheet viewing functionality would go here.</p>
+        <!-- Payroll Statistics -->
+        <div class="payroll-stats-grid">
+          <div class="payroll-stat-card" style="background: #e3f2fd;">
+            <div class="payroll-stat-number" id="total-payrolls">0</div>
+            <div class="payroll-stat-label">Total Payslips</div>
+          </div>
+          <div class="payroll-stat-card" style="background: #e8f5e8;">
+            <div class="payroll-stat-number" id="paid-payrolls">0</div>
+            <div class="payroll-stat-label">Paid</div>
+          </div>
+          <div class="payroll-stat-card" style="background: #fff3e0;">
+            <div class="payroll-stat-number" id="pending-payrolls">0</div>
+            <div class="payroll-stat-label">Pending</div>
+          </div>
+          <div class="payroll-stat-card" style="background: #fce4ec;">
+            <div class="payroll-stat-number" id="total-net-salary">0</div>
+            <div class="payroll-stat-label">Total Net Salary</div>
+          </div>
+        </div>
+
+        <!-- Month Selection -->
+        <div class="card" style="margin-top: 20px;">
+          <h4>Select Payroll Month</h4>
+          <div class="filter-controls">
+            <div class="filter-group">
+              <label for="payroll-year">Year:</label>
+              <select id="payroll-year" class="form-control" onchange="loadPayrollData()">
+                <option value="2024">2024</option>
+                <option value="2025" selected>2025</option>
+                <option value="2026">2026</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label for="payroll-month">Month:</label>
+              <select id="payroll-month" class="form-control" onchange="loadPayrollData()">
+                <option value="1">January</option>
+                <option value="2">February</option>
+                <option value="3">March</option>
+                <option value="4">April</option>
+                <option value="5">May</option>
+                <option value="6">June</option>
+                <option value="7">July</option>
+                <option value="8">August</option>
+                <option value="9">September</option>
+                <option value="10" selected>October</option>
+                <option value="11">November</option>
+                <option value="12">December</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <button class="btn btn-primary" onclick="loadPayrollData()">
+                <i class="fas fa-sync-alt"></i> Refresh
+              </button>
+              <button class="btn btn-success" onclick="exportPayrollReport()" id="export-btn" disabled>
+                <i class="fas fa-download"></i> Export Report
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Current Month Paysheet Details -->
+        <div class="card" style="margin-top: 20px;">
+          <h4>Paysheet Details - <span id="current-payroll-month"></span></h4>
+
+          <div id="no-payroll-data" style="text-align: center; padding: 40px; display: none;">
+            <i class="fas fa-file-invoice-dollar" style="font-size: 48px; color: #6c757d; margin-bottom: 20px;"></i>
+            <h4>No Payroll Data</h4>
+            <p>No payroll data found for the selected month.</p>
+          </div>
+
+          <div id="payroll-details" style="display: none;">
+            <!-- Employee Information -->
+            <div class="profile-info-compact">
+              <div class="info-group-compact">
+                <label>Employee ID</label>
+                <div class="value" id="payroll-employee-id">-</div>
+              </div>
+              <div class="info-group-compact">
+                <label>Employee Name</label>
+                <div class="value" id="payroll-employee-name">-</div>
+              </div>
+              <div class="info-group-compact">
+                <label>Payroll Month</label>
+                <div class="value" id="payroll-month-display">-</div>
+              </div>
+              <div class="info-group-compact">
+                <label>Status</label>
+                <div class="value">
+                  <span class="status-badge" id="payroll-status">-</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Salary Breakdown -->
+            <div class="salary-breakdown">
+              <h5>Salary Breakdown</h5>
+              <div class="breakdown-grid">
+                <div class="breakdown-item">
+                  <label>Basic Salary</label>
+                  <div class="amount" id="basic-salary">USD 0.00</div>
+                </div>
+                <div class="breakdown-item">
+                  <label>Actual Work Hours</label>
+                  <div class="amount" id="actual-work-hours">0.0 hrs</div>
+                </div>
+                <div class="breakdown-item">
+                  <label>Overtime Hours</label>
+                  <div class="amount" id="ot-hours">0.0 hrs</div>
+                </div>
+                <div class="breakdown-item">
+                  <label>Overtime Amount</label>
+                  <div class="amount" id="ot-amount">USD 0.00</div>
+                </div>
+                <div class="breakdown-item total">
+                  <label>Gross Salary</label>
+                  <div class="amount" id="gross-salary">USD 0.00</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Deductions -->
+            <div class="deductions-section">
+              <h5>Deductions</h5>
+              <div class="deductions-grid">
+                <div class="deduction-item">
+                  <label>EPF (<span id="epf-rate">8.0</span>%)</label>
+                  <div class="amount" id="epf-amount">USD 0.00</div>
+                </div>
+                <div class="deduction-item">
+                  <label>ETF (<span id="etf-rate">3.0</span>%)</label>
+                  <div class="amount" id="etf-amount">USD 0.00</div>
+                </div>
+                <div class="deduction-item total">
+                  <label>Total Deductions</label>
+                  <div class="amount" id="total-deductions">USD 0.00</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Net Salary -->
+            <div class="net-salary-section">
+              <div class="net-salary-card">
+                <label>Net Salary</label>
+                <div class="net-salary-amount" id="net-salary">USD 0.00</div>
+                <div class="net-salary-label">Amount Payable</div>
+              </div>
+            </div>
+
+            <!-- Attendance Information -->
+            <div class="attendance-info">
+              <h5>Attendance Summary</h5>
+              <div class="attendance-grid">
+                <div class="attendance-item">
+                  <label>Attendance Rate</label>
+                  <div class="value" id="attendance-rate">0.0%</div>
+                </div>
+                <div class="attendance-item">
+                  <label>Max Work Hours</label>
+                  <div class="value" id="max-work-hours">180.0 hrs</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Loading Spinner -->
+          <div id="payroll-loading" style="text-align: center; padding: 20px;">
+            <i class="fas fa-spinner fa-spin"></i> Loading payroll data...
+          </div>
+        </div>
+
+        <!-- Payroll History -->
+        <div class="card" style="margin-top: 20px;">
+          <h4>Payroll History</h4>
+
+          <div class="table-responsive">
+            <table class="table" id="payroll-history-table">
+              <thead>
+              <tr>
+                <th>Payroll Month</th>
+                <th>Basic Salary</th>
+                <th>Gross Salary</th>
+                <th>Deductions</th>
+                <th>Net Salary</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+              </thead>
+              <tbody id="payroll-history-body">
+              <!-- Payroll history will be loaded here -->
+              </tbody>
+            </table>
+          </div>
+
+          <div id="no-payroll-history" style="text-align: center; padding: 40px; display: none;">
+            <i class="fas fa-history" style="font-size: 48px; color: #6c757d; margin-bottom: 20px;"></i>
+            <h4>No Payroll History</h4>
+            <p>No previous payroll records found.</p>
+          </div>
+
+          <div id="payroll-history-loading" style="text-align: center; padding: 20px;">
+            <i class="fas fa-spinner fa-spin"></i> Loading payroll history...
+          </div>
+        </div>
       </div>
     </div>
   </div>
+
 </div>
 
 <script src="/js/employeeDashboard.js"></script>

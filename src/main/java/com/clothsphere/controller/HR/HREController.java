@@ -7,6 +7,7 @@ import com.clothsphere.repository.HR.EmployeeRepository;
 import com.clothsphere.service.HR.DepartmentService;
 import com.clothsphere.service.HR.EmployeeService;
 import com.clothsphere.service.SystemUserService;
+import com.clothsphere.util.PasswordEncoder;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -40,7 +41,7 @@ public class HREController {
 
     // ========================= EMPLOYEE MANAGEMENT API =========================
 
-    // Get all employees (REST API)
+    // Get all employees
     @GetMapping("/api/employees")
     @ResponseBody
     public ResponseEntity<List<Employee>> getAllEmployees(HttpSession session) {
@@ -58,7 +59,7 @@ public class HREController {
         }
     }
 
-    // Get single employee (REST API)
+    // Get single employee
     @GetMapping("/api/employees/{id}")
     @ResponseBody
     public ResponseEntity<Employee> getEmployee(@PathVariable String id, HttpSession session) {
@@ -68,7 +69,7 @@ public class HREController {
         }
 
         try {
-            Employee employee = employeeRepository.findById(id).orElse(null);
+            Employee employee = employeeRepository.findEmployeeById(id).orElse(null);
             if (employee != null) {
                 return new ResponseEntity<>(employee, HttpStatus.OK);
             } else {
@@ -80,8 +81,7 @@ public class HREController {
         }
     }
 
-    // Add new employee (REST API)
-    // Add new employee (REST API) - FIXED VERSION
+    // Add new employee
     @PostMapping("/api/employees")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> addEmployeeAPI(
@@ -100,7 +100,7 @@ public class HREController {
             String email = employeeData.get("email");
             String username = email.split("@")[0];
 
-            // Use default password for first-time login (not random password)
+            // Use default password for first-time login
             String defaultPassword = "changeme123";
 
             // Parse date of birth
@@ -133,6 +133,7 @@ public class HREController {
             // Save employee
             boolean success = systemUserService.createEmployee(employee);
 
+
             if (success) {
                 response.put("success", true);
                 response.put("message", "Employee added successfully!");
@@ -155,7 +156,7 @@ public class HREController {
         }
     }
 
-    // Update employee (REST API)
+    // Update employee
     @PutMapping("/api/employees/{id}")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> updateEmployeeAPI(
@@ -171,7 +172,7 @@ public class HREController {
         Map<String, Object> response = new HashMap<>();
 
         try {
-            Employee existingEmployee = employeeRepository.findById(id).orElse(null);
+            Employee existingEmployee = employeeRepository.findEmployeeById(id).orElse(null);
             if (existingEmployee == null) {
                 response.put("success", false);
                 response.put("message", "Employee not found");
@@ -197,7 +198,7 @@ public class HREController {
             existingEmployee.setQualification3(employeeData.get("qualification3"));
 
             // Save updated employee
-            employeeRepository.save(existingEmployee);
+            boolean success = employeeService.updateEmployee(existingEmployee);
 
             response.put("success", true);
             response.put("message", "Employee updated successfully!");
@@ -211,7 +212,7 @@ public class HREController {
         }
     }
 
-    // Delete employee (REST API)
+    // Delete employee
     @DeleteMapping("/api/employees/{id}")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> deleteEmployeeAPI(
@@ -226,7 +227,7 @@ public class HREController {
         Map<String, Object> response = new HashMap<>();
 
         try {
-            Employee employee = employeeRepository.findById(id).orElse(null);
+            Employee employee = employeeRepository.findEmployeeById(id).orElse(null);
             if (employee == null) {
                 response.put("success", false);
                 response.put("message", "Employee not found");
@@ -256,7 +257,7 @@ public class HREController {
 
     // ========================= LEGACY EMPLOYEE CREATION =========================
 
-    // Legacy employee creation - FIXED VERSION
+    // Legacy employee creation
     @PostMapping("/addEmployee")
     public String addEmployee(
             @RequestParam String fullName,
@@ -326,6 +327,7 @@ public class HREController {
         return "redirect:/hrDashboard";
     }
 
+    //Random password Genarator
     private String generateRandomPassword() {
         // Generate an 8-character random password
         String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -390,10 +392,9 @@ public class HREController {
         }
     }
 
-// Add this updated method to your HREController.java
-// Add these debug lines to your showEmployeeDashboard method in HREController
-@GetMapping("/employeeDashboard")
-public String showEmployeeDashboard(HttpSession session, Model model,
+
+    @GetMapping("/employeeDashboard")
+    public String showEmployeeDashboard(HttpSession session, Model model,
                                     @RequestParam(value = "firstLogin", required = false) String firstLogin,
                                     @RequestParam(value = "passwordChanged", required = false) String passwordChanged) {
     System.out.println("=== EMPLOYEE DASHBOARD DEBUG ===");
@@ -455,8 +456,6 @@ public String showEmployeeDashboard(HttpSession session, Model model,
     return "redirect:/systemUserLogin";
 }
 
-    // Helper method for session check
-
     // Manager management page
     @GetMapping("/manageManagers")
     public String showManageManagersPage(HttpSession session, Model model) {
@@ -478,7 +477,6 @@ public String showEmployeeDashboard(HttpSession session, Model model,
         }
         return "redirect:/systemUserLogin";
     }
-    // Add this method to your existing HREController.java class
 
     /**
      * Load workload assignment data when switching to workload section
@@ -497,7 +495,6 @@ public String showEmployeeDashboard(HttpSession session, Model model,
             e.printStackTrace();
         }
     }
-// Update/Replace this method in your HREController.java
 
     @PostMapping("/updateEmployeePassword")
     @ResponseBody
@@ -519,17 +516,25 @@ public String showEmployeeDashboard(HttpSession session, Model model,
         try {
             // For first-time login (logCount = 0), use default password validation
             boolean isFirstLogin = currentUser.getLogCount() == 0;
-            String expectedCurrentPassword = isFirstLogin ? "changeme123" : currentUser.getPassword();
 
             System.out.println("Password update attempt - First login: " + isFirstLogin);
-            System.out.println("Expected current password: " + expectedCurrentPassword);
             System.out.println("Provided current password: " + currentPassword);
 
             // Validate current password
-            if (!expectedCurrentPassword.equals(currentPassword)) {
-                response.put("success", false);
-                response.put("message", "Current password is incorrect");
-                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+            if (isFirstLogin) {
+                // For first-time login, check against default password
+                if (!"changeme123".equals(currentPassword)) {
+                    response.put("success", false);
+                    response.put("message", "Current password is incorrect");
+                    return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+                }
+            } else {
+                // For returning employees, use BCrypt to validate current password
+                if (!PasswordEncoder.matches(currentPassword, currentUser.getPassword())) {
+                    response.put("success", false);
+                    response.put("message", "Current password is incorrect");
+                    return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+                }
             }
 
             // Validate new password confirmation
@@ -546,20 +551,16 @@ public String showEmployeeDashboard(HttpSession session, Model model,
                 return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
             }
 
-            // Update password and log count in database using the new method
+            // Update password and log count in database using the CORRECT method signature
             boolean success = systemUserService.updatePasswordAndLogCount(
                     currentUser.getUserName(),
-                    currentUser.getRole(),
                     newPassword
             );
 
             if (success) {
-                // Update session user object
-                currentUser.setPassword(newPassword);
-                if (isFirstLogin) {
-                    currentUser.setLogCount(1);
-                }
-                session.setAttribute("currentUser", currentUser);
+                // Update session with the latest user data
+                SystemUser updatedUser = systemUserService.findByUserName(currentUser.getUserName());
+                session.setAttribute("currentUser", updatedUser);
 
                 response.put("success", true);
                 response.put("message", "Password updated successfully");
@@ -581,4 +582,5 @@ public String showEmployeeDashboard(HttpSession session, Model model,
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
 }

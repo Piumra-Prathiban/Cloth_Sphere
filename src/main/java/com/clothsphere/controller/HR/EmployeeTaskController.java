@@ -40,7 +40,7 @@ public class EmployeeTaskController {
                     .filter(assignment ->
                             assignment.getEmployee() != null &&
                                     assignment.getEmployee().getUsername().equals(username))
-                    .collect(Collectors.toList());
+                    .toList();
 
             // Convert to simplified format for frontend
             List<Map<String, Object>> taskList = assignments.stream().map(assignment -> {
@@ -56,7 +56,7 @@ public class EmployeeTaskController {
                 taskMap.put("status", assignment.getStatus());
                 taskMap.put("notes", assignment.getNotes());
                 return taskMap;
-            }).collect(Collectors.toList());
+            }).toList();
 
             return new ResponseEntity<>(taskList, HttpStatus.OK);
 
@@ -68,7 +68,7 @@ public class EmployeeTaskController {
     }
 
     /**
-     * Update assignment status
+     * Update assignment status - UPDATED VERSION with automatic task status update
      */
     @PutMapping("/assignments/{assignmentId}/status")
     public ResponseEntity<Map<String, Object>> updateAssignmentStatus(
@@ -98,7 +98,7 @@ public class EmployeeTaskController {
                             assignment.getEmployee() != null &&
                                     assignment.getEmployee().getUsername().equals(username) &&
                                     assignment.getAssignmentId().equals(assignmentId))
-                    .collect(Collectors.toList());
+                    .toList();
 
             if (employeeAssignments.isEmpty()) {
                 response.put("success", false);
@@ -106,15 +106,20 @@ public class EmployeeTaskController {
                 return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
             }
 
-            // Update assignment status
+            // Update assignment status with automatic task status update
             TaskAssignment assignmentData = new TaskAssignment();
             assignmentData.setStatus(newStatus);
 
-            TaskAssignment updatedAssignment = taskAssignmentService.updateAssignment(assignmentId, assignmentData);
+            TaskAssignment updatedAssignment = taskAssignmentService.updateAssignmentWithTaskStatus(assignmentId, assignmentData);
 
             if (updatedAssignment != null) {
                 response.put("success", true);
                 response.put("message", "Status updated successfully");
+
+                // Get task status from the updated assignment
+                String taskStatus = updatedAssignment.getTask().getStatus();
+                response.put("taskStatus", taskStatus);
+
                 return new ResponseEntity<>(response, HttpStatus.OK);
             } else {
                 response.put("success", false);
