@@ -1,7 +1,7 @@
-package com.clothsphere.controller.PM;
+package com.clothsphere.controller.CPM;
 
-import com.clothsphere.model.PM.Product;
-import com.clothsphere.service.PM.ProductService;
+import com.clothsphere.model.CPM.Product;
+import com.clothsphere.service.CPM.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

@@ -1,4 +1,4 @@
-package com.clothsphere.model.PM;
+package com.clothsphere.model.CPM;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;

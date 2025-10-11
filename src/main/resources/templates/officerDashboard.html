@@ -561,19 +561,27 @@
 
 <script>
     function showSection(sectionId) {
-        // Hide all sections
-        document.querySelectorAll('.content-section').forEach(section => {
-            section.classList.remove('active');
-        });
-
-        // Show selected section
-        document.getElementById(sectionId).classList.add('active');
-
-        // Update nav links
-        document.querySelectorAll('.nav-link').forEach(link => {
-            link.classList.remove('active');
-        });
-        event.target.closest('.nav-link').classList.add('active');
+        // Instead of showing/hiding sections, redirect to proper pages
+        switch(sectionId) {
+            case 'profile':
+                // Already on dashboard, do nothing or refresh
+                window.location.href = '/officer/dashboard';
+                break;
+            case 'products':
+                window.location.href = '/officer/products';
+                break;
+            case 'messages':
+                window.location.href = '/officer/messages';
+                break;
+            case 'inventory':
+                // Redirect to inventory page or show coming soon
+                window.location.href = '/officer/inventory';
+                break;
+            case 'reports':
+                // Redirect to reports page or show coming soon
+                window.location.href = '/officer/reports';
+                break;
+        }
     }
 
     function logout() {

@@ -1,9 +1,9 @@
 package com.clothsphere.service.SOM;
 
 import com.clothsphere.model.SOM.Wishlist;
-import com.clothsphere.model.PM.Product;
+import com.clothsphere.model.CPM.Product;
 import com.clothsphere.repository.SOM.WishlistRepository;
-import com.clothsphere.repository.PM.ProductRepository;
+import com.clothsphere.repository.CPM.ProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

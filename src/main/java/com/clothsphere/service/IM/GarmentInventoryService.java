@@ -2,9 +2,9 @@ package com.clothsphere.service.IM;
 
 import com.clothsphere.dto.IM.GarmentCreationRequest;
 import com.clothsphere.model.IM.Garment;
-import com.clothsphere.model.PM.Product;
+import com.clothsphere.model.CPM.Product;
 import com.clothsphere.repository.IM.GarmentRepository;
-import com.clothsphere.service.PM.ProductService;
+import com.clothsphere.service.CPM.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

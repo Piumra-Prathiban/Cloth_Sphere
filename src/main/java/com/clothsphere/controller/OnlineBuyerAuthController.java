@@ -1,8 +1,8 @@
 package com.clothsphere.controller;
 
-import com.clothsphere.model.PM.Product;
+import com.clothsphere.model.CPM.Product;
 import com.clothsphere.model.SOM.OnlineBuyerLogin;
-import com.clothsphere.service.PM.ProductService;
+import com.clothsphere.service.CPM.ProductService;
 import com.clothsphere.service.SOM.OnlineBuyerLoginService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;

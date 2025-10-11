@@ -1,10 +1,10 @@
 package com.clothsphere.service.SOM;
 
-import com.clothsphere.model.PM.Product;
+import com.clothsphere.model.CPM.Product;
 import com.clothsphere.model.SOM.Cart;
 import com.clothsphere.model.SOM.OnlineOrder;
 import com.clothsphere.model.SOM.OnlineOrderItem;
-import com.clothsphere.repository.PM.ProductRepository;
+import com.clothsphere.repository.CPM.ProductRepository;
 import com.clothsphere.repository.SOM.OnlineOrderRepository;
 import com.clothsphere.repository.SOM.OnlineOrderItemRepository;
 import jakarta.transaction.Transactional;
