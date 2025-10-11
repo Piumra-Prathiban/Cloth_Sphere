@@ -1,5 +1,6 @@
 package com.clothsphere.model;
 
+import com.clothsphere.model.HR.AttendanceId;
 import com.clothsphere.model.HR.Communication;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -7,6 +8,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "system_user_login_details")
+@IdClass(SystemUserId.class)
 public class SystemUser {
 
     @Id
@@ -22,6 +24,7 @@ public class SystemUser {
     @Column(name = "phone_number", length = 20)
     private String phoneNumber;
 
+    @Id
     @Column(name = "role", length = 40, nullable = false)
     private String role;
 
