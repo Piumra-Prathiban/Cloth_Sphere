@@ -93,20 +93,64 @@ public class ReportController {
             Model model) {
 
         try {
-            // TODO: Implement garment availability service method
-            // For now, return empty data
+            List<Map<String, Object>> data = reportService.getGarmentAvailabilityData(startDate, endDate);
+
+            model.addAttribute("data", data);
             model.addAttribute("startDate", startDate);
             model.addAttribute("endDate", endDate);
+            model.addAttribute("totalGarments", data.size());
             model.addAttribute("generatedDate", LocalDateTime.now().format(DATETIME_FORMATTER));
 
-            // Add dummy data structure to match your HTML template
-            model.addAttribute("report", Map.of(
-                    "generatedDate", LocalDateTime.now().format(DATETIME_FORMATTER),
-                    "totalGarments", 0,
-                    "data", List.of()
-            ));
-
             return "garment-availability-report";
+
+        } catch (Exception e) {
+            model.addAttribute("error", "An error occurred while generating the report: " + e.getMessage());
+            return "error";
+        }
+    }
+
+    @GetMapping("/garment-reject")
+    public String getGarmentRejectReport(
+            @RequestParam("startDate") String startDate,
+            @RequestParam("endDate") String endDate,
+            Model model) {
+
+        try {
+            List<Map<String, Object>> data = reportService.getGarmentRejectData(startDate, endDate);
+
+            model.addAttribute("data", data);
+            model.addAttribute("startDate", startDate);
+            model.addAttribute("endDate", endDate);
+            model.addAttribute("totalRecords", data.size());
+            model.addAttribute("generatedDate", LocalDateTime.now().format(DATETIME_FORMATTER));
+
+            return "garment-reject-report";
+
+        } catch (Exception e) {
+            model.addAttribute("error", "An error occurred while generating the report: " + e.getMessage());
+            return "error";
+        }
+    }
+
+    /**
+     * Generate and display Garment Movement Report
+     */
+    @GetMapping("/garment-movement")
+    public String getGarmentMovementReport(
+            @RequestParam("startDate") String startDate,
+            @RequestParam("endDate") String endDate,
+            Model model) {
+
+        try {
+            List<Map<String, Object>> data = reportService.getGarmentMovementData(startDate, endDate);
+
+            model.addAttribute("data", data);
+            model.addAttribute("startDate", startDate);
+            model.addAttribute("endDate", endDate);
+            model.addAttribute("totalRecords", data.size());
+            model.addAttribute("generatedDate", LocalDateTime.now().format(DATETIME_FORMATTER));
+
+            return "garment-movement-report";
 
         } catch (Exception e) {
             model.addAttribute("error", "An error occurred while generating the report: " + e.getMessage());
@@ -139,7 +183,7 @@ public class ReportController {
                     "data", List.of()
             ));
 
-            return "garment-shipped-report";
+            return "garment-movement-report";
 
         } catch (Exception e) {
             model.addAttribute("error", "An error occurred while generating the report: " + e.getMessage());

@@ -309,31 +309,32 @@
                         </div>
                     </div>
 
-                    <!-- Garment Shipped Report -->
+                    <!-- Garment Reject Report -->
                     <div class="report-card">
                         <div class="report-header">
                             <div class="report-icon movement">
-                                <i class="fas fa-shipping-fast"></i>
+                                <i class="fas fa-times-circle"></i>
                             </div>
                             <div class="report-title">
-                                <h4>Garment Shipped Report</h4>
-                                <p>Track garment shipments and deliveries within a date range</p>
+                                <h4>Garment Reject Report</h4>
+                                <p>Track rejected garment movements and quality issues within a date range</p>
                             </div>
                         </div>
                         <div class="date-selector">
                             <h4><i class="fas fa-calendar"></i> Select Date Range</h4>
+                            <!-- In the Garment Reject Report card, update the date input IDs -->
                             <div class="date-inputs">
                                 <div class="date-input-group">
                                     <label>Start Date</label>
-                                    <input type="date" id="garmentShippedStart">
+                                    <input type="date" id="garmentRejectStart"> <!-- Fixed ID -->
                                 </div>
                                 <div class="date-input-group">
                                     <label>End Date</label>
-                                    <input type="date" id="garmentShippedEnd">
+                                    <input type="date" id="garmentRejectEnd"> <!-- Fixed ID -->
                                 </div>
                             </div>
                             <div class="report-actions">
-                                <button class="view-report-btn" onclick="openGarmentShippedReport()">
+                                <button class="view-report-btn" onclick="openGarmentRejectReport()">
                                     <i class="fas fa-external-link-alt"></i> View Report
                                 </button>
                             </div>
@@ -382,8 +383,8 @@
         document.getElementById('garmentAvailEnd').value = today;
         document.getElementById('fabricUsageStart').value = lastWeek;
         document.getElementById('fabricUsageEnd').value = today;
-        document.getElementById('garmentShippedStart').value = lastWeek;
-        document.getElementById('garmentShippedEnd').value = today;
+        document.getElementById('garmentRejectStart').value = lastWeek; // Fixed ID
+        document.getElementById('garmentRejectEnd').value = today; // Fixed ID
     }
 
     function validateDates(startDateId, endDateId) {
@@ -429,11 +430,12 @@
         window.open(url, '_blank');
     }
 
-    function openGarmentShippedReport() {
-        const dates = validateDates('garmentShippedStart', 'garmentShippedEnd');
+    // Garment Reject Report
+    function openGarmentRejectReport() {
+        const dates = validateDates('garmentRejectStart', 'garmentRejectEnd'); // Fixed IDs
         if (!dates) return;
 
-        const url = `/reports/garment-shipped?startDate=${dates.startDate}&endDate=${dates.endDate}`;
+        const url = `/reports/garment-reject?startDate=${dates.startDate}&endDate=${dates.endDate}`;
         window.open(url, '_blank');
     }
 
@@ -493,6 +495,7 @@
             }, 300);
         }, 4000);
     }
+
 </script>
 
 </body>

@@ -80,8 +80,7 @@ public class ReportService {
             LocalDate endDate = LocalDate.parse(endDateStr, DATE_FORMATTER);
             validateDates(startDate, endDate);
 
-            // TODO: Implement repository method for garment availability
-            return List.of(); // Return empty list for now
+            return reportRepository.getGarmentAvailabilityData(startDate, endDate);
         } catch (Exception e) {
             throw new RuntimeException("Error getting garment availability data: " + e.getMessage(), e);
         }
@@ -100,6 +99,36 @@ public class ReportService {
             return List.of(); // Return empty list for now
         } catch (Exception e) {
             throw new RuntimeException("Error getting garment shipped data: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Get Garment Reject Report Data
+     */
+    public List<Map<String, Object>> getGarmentRejectData(String startDateStr, String endDateStr) {
+        try {
+            LocalDate startDate = LocalDate.parse(startDateStr, DATE_FORMATTER);
+            LocalDate endDate = LocalDate.parse(endDateStr, DATE_FORMATTER);
+            validateDates(startDate, endDate);
+
+            return reportRepository.getGarmentRejectData(startDate, endDate);
+        } catch (Exception e) {
+            throw new RuntimeException("Error getting garment reject data: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Get Garment Movement/Shipped Report Data
+     */
+    public List<Map<String, Object>> getGarmentMovementData(String startDateStr, String endDateStr) {
+        try {
+            LocalDate startDate = LocalDate.parse(startDateStr, DATE_FORMATTER);
+            LocalDate endDate = LocalDate.parse(endDateStr, DATE_FORMATTER);
+            validateDates(startDate, endDate);
+
+            return reportRepository.getGarmentMovementData(startDate, endDate);
+        } catch (Exception e) {
+            throw new RuntimeException("Error getting garment movement data: " + e.getMessage(), e);
         }
     }
 
