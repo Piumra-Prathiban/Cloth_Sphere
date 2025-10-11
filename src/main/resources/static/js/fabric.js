@@ -484,8 +484,10 @@ function displayMovementsFiltered(movements) {
 
     if (movements.length > 0) {
         movements.forEach(m => {
-            const statusClass = m.status === 'In' ? 'status-in' : 'status-out';
-            const statusText = m.status === 'In' ? 'Stock In' : 'Stock Out';
+            // Normalize status for display
+            const status = m.status.toUpperCase();
+            const statusClass = status === 'IN' ? 'status-in' : 'status-out';
+            const statusText = status === 'IN' ? 'Stock In' : 'Stock Out';
 
             // Approval status display
             let approvalInfo = '<span style="color:#f39c12;">Pending</span>';
@@ -496,8 +498,8 @@ function displayMovementsFiltered(movements) {
             // Check if movement is approved
             if (m.approvalStatus === 'APPROVED') {
                 approvalInfo = `<span style="color:#27ae60;">Approved</span>`;
-                approvedQty = m.approvedQuantity ? m.approvedQuantity.toFixed(2) : '0.00';
-                rejectedQty = m.rejectedQuantity ? m.rejectedQuantity.toFixed(2) : '0.00';
+                approvedQty = m.approvedQuantity ? parseFloat(m.approvedQuantity).toFixed(2) : '0.00';
+                rejectedQty = m.rejectedQuantity ? parseFloat(m.rejectedQuantity).toFixed(2) : '0.00';
                 rejectReason = m.rejectionReason || 'N/A';
             }
 
@@ -507,11 +509,11 @@ function displayMovementsFiltered(movements) {
                 <td>${m.fabricId}</td>
                 <td><span class="status-badge ${statusClass}">${statusText}</span></td>
                 <td>${m.movementDate}</td>
-                <td>${(m.quantity || 0).toFixed(2)}</td>
+                <td>${(parseFloat(m.quantity) || 0).toFixed(2)}</td>
                 <td class="approval-details">${approvalInfo}</td>
                 <td>${approvedQty}</td>
                 <td>${rejectedQty}</td>
-                <td>${rejectReason}</td> <!-- Reject reason in its own column -->
+                <td>${rejectReason}</td>
                 <td class="action-buttons-table">
                     ${m.approvalStatus !== 'APPROVED' ?
                 `<button class="btn add approve-btn" data-movement-id="${m.movementId}" data-fabric-id="${m.fabricId}" data-quantity="${m.quantity}" data-status="${m.status}">
@@ -891,6 +893,20 @@ function validateFabricForm() {
     const typeSelect = document.getElementById('newFabricType');
     const colorSelect = document.getElementById('newFabricColor');
     const initialStock = document.getElementById('initialStock');
+    const fabricId = document.getElementById('newFabricId');
+
+    // Validate Fabric ID
+    if (!fabricId.value || !fabricId.value.trim()) {
+        showNotification('Please enter a Fabric ID', 'error');
+        fabricId.focus();
+        return false;
+    }
+
+    if (!fabricId.value.match(/^FAB\d{3}$/i)) {
+        showNotification('Fabric ID must be in format FAB001 (FAB followed by 3 digits)', 'error');
+        fabricId.focus();
+        return false;
+    }
 
     if (!typeSelect.value || typeSelect.value === '_new_') {
         showNotification('Please select a valid fabric type', 'error');
@@ -904,11 +920,11 @@ function validateFabricForm() {
         return false;
     }
 
-    // FIXED: Better stock validation
+    // Fix stock validation
     const stockValue = initialStock.value.trim();
-    const stock = Number(stockValue);
+    const stock = parseFloat(stockValue);
 
-    if (isNaN(stock)) {
+    if (isNaN(stock) || stockValue === '') {
         showNotification('Please enter a valid number for initial stock', 'error');
         initialStock.focus();
         return false;
@@ -920,7 +936,6 @@ function validateFabricForm() {
         return false;
     }
 
-
     if (checkDuplicateTypeColor()) {
         showNotification('This type/color combination already exists', 'error');
         return false;
@@ -928,6 +943,7 @@ function validateFabricForm() {
 
     return true;
 }
+
 // ============================================
 // FORM SUBMISSION HANDLERS
 // ============================================
@@ -947,11 +963,12 @@ function handleFabricSubmit(e) {
     const color = form.color.value.trim();
     const initialStock = parseFloat(form.initialStock.value);
 
+    // Use the exact field names that match the Fabric model
     const data = {
         fabricId: fabricId,
         fabricType: fabricType,
         color: color,
-        initialStock: initialStock
+        currentStock: initialStock  // Change from initialStock to currentStock
     };
 
     console.log('Submitting fabric data:', data);
@@ -1069,8 +1086,14 @@ function calculateAndDisplayStats() {
         movementsCount: movementsList.length
     });
 
+    // Calculate total fabric types
     const totalTypes = fabricsList.length;
-    const totalMeters = fabricsList.reduce((sum, f) => sum + (f.currentStock || 0), 0);
+
+    // Calculate total meters - sum of ALL fabric stocks
+    const totalMeters = fabricsList.reduce((sum, f) => {
+        const stock = parseFloat(f.currentStock) || 0;
+        return sum + stock;
+    }, 0);
 
     const today = new Date().toISOString().split('T')[0];
 
@@ -1078,40 +1101,54 @@ function calculateAndDisplayStats() {
     const todayIn = movementsList
         .filter(m => {
             const matchesDate = m.movementDate === today;
-            const isStockIn = m.status === 'In';
-            const isApproved = m.approvalStatus === 'APPROVED'; // FIX: Check approvalStatus
+            const isStockIn = m.status === 'In' || m.status === 'IN';
+            const isApproved = m.approvalStatus === 'APPROVED';
             return matchesDate && isStockIn && isApproved;
         })
-        .reduce((sum, m) => sum + parseFloat(m.approvedQuantity || 0), 0);
+        .reduce((sum, m) => {
+            const approvedQty = parseFloat(m.approvedQuantity) || 0;
+            return sum + approvedQty;
+        }, 0);
 
     // Calculate stock out today from APPROVED movements only
     const todayOut = movementsList
         .filter(m => {
             const matchesDate = m.movementDate === today;
-            const isStockOut = m.status === 'Out';
-            const isApproved = m.approvalStatus === 'APPROVED'; // FIX: Check approvalStatus
+            const isStockOut = m.status === 'Out' || m.status === 'OUT';
+            const isApproved = m.approvalStatus === 'APPROVED';
             return matchesDate && isStockOut && isApproved;
         })
-        .reduce((sum, m) => sum + parseFloat(m.approvedQuantity || 0), 0);
+        .reduce((sum, m) => {
+            const approvedQty = parseFloat(m.approvedQuantity) || 0;
+            return sum + approvedQty;
+        }, 0);
 
     console.log('Final Stats:', {
         totalTypes,
         totalMeters,
         todayIn,
-        todayOut
+        todayOut,
+        fabrics: fabricsList.map(f => ({ id: f.fabricId, stock: f.currentStock }))
     });
 
-    // Always update the DOM, even if values are 0
-    document.getElementById('totalFabricTypes').textContent = totalTypes;
-    document.getElementById('totalMeters').textContent = totalMeters.toFixed(2);
-    document.getElementById('stockInToday').textContent = todayIn.toFixed(2);
-    document.getElementById('stockOutToday').textContent = todayOut.toFixed(2);
+    // Update the DOM with calculated stats
+    const totalFabricTypesElement = document.getElementById('totalFabricTypes');
+    const totalMetersElement = document.getElementById('totalMeters');
+    const stockInTodayElement = document.getElementById('stockInToday');
+    const stockOutTodayElement = document.getElementById('stockOutToday');
+
+    if (totalFabricTypesElement) totalFabricTypesElement.textContent = totalTypes;
+    if (totalMetersElement) totalMetersElement.textContent = totalMeters.toFixed(2);
+    if (stockInTodayElement) stockInTodayElement.textContent = todayIn.toFixed(2);
+    if (stockOutTodayElement) stockOutTodayElement.textContent = todayOut.toFixed(2);
 }
 
 function handleApprovalSubmit(e) {
     e.preventDefault();
+    console.log('Approval form submitted');
 
     if (!validateApprovalForm()) {
+        console.log('Approval form validation failed');
         return;
     }
 
@@ -1122,53 +1159,112 @@ function handleApprovalSubmit(e) {
     const rejectedQuantity = parseFloat(form.rejectedQuantity.value) || 0;
     const rejectReason = form.rejectReason.value.trim();
 
-    // Fix: Send the exact data structure the backend expects
+    // Create the data object with exact field names expected by backend
     const data = {
         movementId: movementId,
         fabricId: fabricId,
         approvedQuantity: approvedQuantity,
         rejectedQuantity: rejectedQuantity,
         rejectionReason: rejectReason || null
-        // Remove approvalStatus as it's not in the backend method
     };
 
+    console.log('Submitting approval data:', data);
+
     const submitBtn = document.getElementById('submitApprovalBtn');
-    if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Submitting...';
-    }
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
 
     fetch('/api/fabrics/movements/approve', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
         body: JSON.stringify(data)
     })
-        .then(res => {
+        .then(async res => {
+            console.log('Approval response status:', res.status);
+            const responseText = await res.text();
+
             if (!res.ok) {
-                // Get more detailed error information
-                return res.text().then(text => {
-                    throw new Error(`HTTP ${res.status}: ${text}`);
-                });
+                // Try to parse error message from response
+                let errorMessage = `HTTP ${res.status}`;
+                try {
+                    const errorJson = JSON.parse(responseText);
+                    errorMessage = errorJson.message || errorJson.error || responseText;
+                } catch {
+                    errorMessage = responseText || `HTTP ${res.status}`;
+                }
+                throw new Error(errorMessage);
             }
-            return res.json();
+
+            try {
+                return JSON.parse(responseText);
+            } catch (parseError) {
+                console.log('Response is not JSON, treating as success');
+                return { success: true, message: responseText };
+            }
         })
         .then(resp => {
-            if (resp) {
-                showNotification('Movement approval recorded successfully!', 'success');
-                closeApprovalModalFn();
-                refreshAllData();
-            } else {
-                throw new Error('Invalid response from server');
-            }
+            console.log('Approval response:', resp);
+            showNotification('Movement approved successfully! Stock updated.', 'success');
+            closeApprovalModalFn();
+            refreshAllData();
         })
         .catch(err => {
             console.error('Approval error:', err);
             showNotification('Error: ' + err.message, 'error');
-            if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Submit Decision';
-            }
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Submit Decision';
         });
+}
+
+
+function validateApprovalForm() {
+    const approvedQtyInput = document.getElementById('approvedQuantity');
+    const rejectedQtyInput = document.getElementById('rejectedQuantity');
+    const totalQtyInput = document.getElementById('approvalTotalQuantity');
+
+    const approvedQty = parseFloat(approvedQtyInput.value) || 0;
+    const rejectedQty = parseFloat(rejectedQtyInput.value) || 0;
+    const totalQty = parseFloat(totalQtyInput.value) || 0;
+
+    // Reset styles
+    approvedQtyInput.classList.remove('input-error');
+    rejectedQtyInput.classList.remove('input-error');
+
+    // Validate approved quantity
+    if (isNaN(approvedQty) || approvedQty < 0) {
+        showNotification('Please enter a valid approved quantity', 'error');
+        approvedQtyInput.focus();
+        approvedQtyInput.classList.add('input-error');
+        return false;
+    }
+
+    // Validate rejected quantity
+    if (isNaN(rejectedQty) || rejectedQty < 0) {
+        showNotification('Please enter a valid rejected quantity', 'error');
+        rejectedQtyInput.focus();
+        rejectedQtyInput.classList.add('input-error');
+        return false;
+    }
+
+    // Validate total matches
+    const calculatedTotal = approvedQty + rejectedQty;
+    if (Math.abs(calculatedTotal - totalQty) > 0.01) { // Allow small floating point differences
+        showNotification(`Approved (${approvedQty.toFixed(2)}) + Rejected (${rejectedQty.toFixed(2)}) = ${calculatedTotal.toFixed(2)}m, but must equal Total Quantity (${totalQty.toFixed(2)}m)`, 'error');
+        approvedQtyInput.classList.add('input-error');
+        rejectedQtyInput.classList.add('input-error');
+        return false;
+    }
+
+    // Validate at least some quantity is approved or rejected
+    if (approvedQty === 0 && rejectedQty === 0) {
+        showNotification('Either approved or rejected quantity must be greater than 0', 'error');
+        return false;
+    }
+
+    return true;
 }
 
 // ============================================
