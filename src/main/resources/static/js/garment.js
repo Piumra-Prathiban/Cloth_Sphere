@@ -332,28 +332,27 @@ function calculateAndDisplayStats() {
         })
         .reduce((sum, m) => sum + parseFloat(m.approvedQuantity || 0), 0);
 
-    // Calculate shipped today from APPROVED movements only
-    const shippedToday = movementsList
+    // CHANGED: Calculate rejected items count for today (from all movement types)
+    const rejectedToday = movementsList
         .filter(m => {
             const matchesDate = m.movementDate === today;
-            const isShipped = m.status === 'Shipped';
-            const isApproved = m.approvalStatus === 'APPROVED';
-            return matchesDate && isShipped && isApproved;
+            const hasRejection = m.rejectedQuantity > 0;
+            return matchesDate && hasRejection;
         })
-        .reduce((sum, m) => sum + parseFloat(m.approvedQuantity || 0), 0);
+        .reduce((sum, m) => sum + parseFloat(m.rejectedQuantity || 0), 0);
 
     console.log('Final Stats:', {
         totalTypes,
         totalPieces,
         producedToday,
-        shippedToday
+        rejectedToday // Changed from shippedToday
     });
 
     // Always update the DOM, even if values are 0
     document.getElementById('totalGarmentTypes').textContent = totalTypes;
     document.getElementById('totalPieces').textContent = totalPieces;
     document.getElementById('producedToday').textContent = producedToday;
-    document.getElementById('shippedToday').textContent = shippedToday;
+    document.getElementById('shippedToday').textContent = rejectedToday; // Updated to show rejected count
 }
 
 // ============================================
