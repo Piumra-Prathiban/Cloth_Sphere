@@ -3,6 +3,7 @@ package com.clothsphere.service.HR;
 import com.clothsphere.model.HR.Leave;
 import com.clothsphere.model.HR.Employee;
 import com.clothsphere.repository.HR.LeaveRepository;
+import com.clothsphere.strategy.HR.LeaveApprovalContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,13 +21,20 @@ public class LeaveService {
     @Autowired
     private EmployeeService employeeService;
 
-    // Request new leave using manual INSERT query
+    // ========================================
+    // NEW METHOD WITH STRATEGY PATTERN
+    // ========================================
     @Transactional
     public Leave requestLeave(Leave leave, String employeeId) {
         Employee employee = employeeService.getEmployeeById(employeeId);
         if (employee == null) {
             throw new RuntimeException("Employee not found");
         }
+
+        System.out.println("=== APPLYING STRATEGY PATTERN ===");
+        System.out.println("Employee: " + employee.getFullName() + " (" + employeeId + ")");
+        System.out.println("Leave Duration: " + leave.getTotalDays() + " days");
+        System.out.println("Leave Reason: " + leave.getReason());
 
         // Validate dates
         if (leave.getStartDate().isAfter(leave.getEndDate())) {
@@ -45,46 +53,78 @@ public class LeaveService {
             throw new RuntimeException("You already have a leave request for the selected dates");
         }
 
-        // Generate leave ID manually
+        // ========================================
+        // APPLY STRATEGY PATTERN
+        // ========================================
+        LeaveApprovalContext approvalContext = new LeaveApprovalContext();
+        approvalContext.setStrategy(leave);
+
+        boolean canAutoApprove = approvalContext.evaluateLeaveRequest(leave, employee);
+        String approvalMessage = approvalContext.getApprovalMessage(leave);
+
+        System.out.println("Strategy Used: " + approvalContext.getStrategyName());
+        System.out.println("Can Auto-Approve: " + canAutoApprove);
+        System.out.println("Message: " + approvalMessage);
+
+        String status;
+        String comments;
+
+        if (canAutoApprove) {
+            status = "APPROVED";
+            comments = "Auto-approved by system. " + approvalMessage;
+            leave.setActionDate(LocalDateTime.now());
+            System.out.println("✓ Leave AUTO-APPROVED");
+        } else {
+            status = "PENDING";
+            comments = "Pending HR approval. " + approvalMessage;
+            System.out.println("⏳ Leave set to PENDING");
+        }
+
+        // Generate leave ID
         Long nextIdNumber = leaveRepository.getNextLeaveIdNumber();
         String leaveId = "lev" + nextIdNumber;
 
-        // Using updated manual INSERT query with leave_id
+        // Save leave request
         int result = leaveRepository.insertLeave(
                 leaveId,
                 leave.getReason(),
                 leave.getStartDate(),
                 leave.getEndDate(),
-                "PENDING",
+                status,
                 LocalDateTime.now(),
                 employeeId,
-                leave.getComments()
+                comments
         );
 
         if (result > 0) {
-            // Set the generated ID and return the leave object
             leave.setLeaveId(leaveId);
             leave.setEmployee(employee);
-            leave.setStatus("PENDING");
+            leave.setStatus(status);
+            leave.setComments(comments);
             leave.setRequestDate(LocalDateTime.now());
+
+            System.out.println("✓ Leave saved - ID: " + leaveId + ", Status: " + status);
+            System.out.println("=================================");
+
             return leave;
         } else {
             throw new RuntimeException("Failed to save leave request");
         }
     }
 
-    // Get all leaves for an employee
+    // ========================================
+    // OTHER METHODS
+    // ========================================
+
     public List<Leave> getLeavesByEmployee(String employeeId) {
         Employee employee = employeeService.getEmployeeById(employeeId);
         return leaveRepository.findByEmployeeOrderByRequestDateDesc(employee);
     }
 
-    // Get leave by ID
     public Optional<Leave> getLeaveById(String leaveId) {
         return leaveRepository.findById(leaveId);
     }
 
-    // Cancel leave request using manual DELETE query
     @Transactional
     public boolean cancelLeaveRequest(String leaveId, String employeeId) {
         Optional<Leave> leaveOpt = leaveRepository.findById(leaveId);
@@ -92,8 +132,6 @@ public class LeaveService {
             Leave leave = leaveOpt.get();
             if (leave.getEmployee().getId().equals(employeeId) &&
                     "PENDING".equals(leave.getStatus())) {
-
-                // Using manual DELETE query
                 int result = leaveRepository.deleteLeaveById(leaveId);
                 return result > 0;
             }
@@ -101,7 +139,6 @@ public class LeaveService {
         return false;
     }
 
-    // Get leave statistics for employee using manual count query
     public LeaveStatistics getLeaveStatistics(String employeeId) {
         long totalRequests = leaveRepository.findByEmployeeId(employeeId).size();
         long pending = leaveRepository.countByEmployeeIdAndStatus(employeeId, "PENDING");
@@ -111,7 +148,6 @@ public class LeaveService {
         return new LeaveStatistics(totalRequests, pending, approved, rejected);
     }
 
-    // DTO for leave statistics
     public static class LeaveStatistics {
         private long totalRequests;
         private long pending;
@@ -125,23 +161,19 @@ public class LeaveService {
             this.rejected = rejected;
         }
 
-        // Getters
         public long getTotalRequests() { return totalRequests; }
         public long getPending() { return pending; }
         public long getApproved() { return approved; }
         public long getRejected() { return rejected; }
     }
 
-    // Get all leave requests for HR
     public List<Leave> getAllLeaveRequests() {
         try {
             List<Leave> leaves = leaveRepository.findAllByOrderByRequestDateDesc();
             System.out.println("Repository returned " + leaves.size() + " leaves");
 
-            // Ensure employee data is loaded
             for (Leave leave : leaves) {
                 if (leave.getEmployee() != null) {
-                    // This will force Hibernate to load the employee data
                     leave.getEmployee().getId();
                     leave.getEmployee().getFullName();
                 }
@@ -155,19 +187,14 @@ public class LeaveService {
         }
     }
 
-    // Update leave status using manual UPDATE query
     @Transactional
     public boolean updateLeaveStatus(String leaveId, String status, String comments) {
         Optional<Leave> leaveOpt = leaveRepository.findById(leaveId);
         if (leaveOpt.isPresent()) {
-            Leave leave = leaveOpt.get();
-
-            // Validate status
             if (!List.of("APPROVED", "REJECTED", "PENDING").contains(status)) {
                 throw new RuntimeException("Invalid status: " + status);
             }
 
-            // Using manual UPDATE query
             int result = leaveRepository.updateLeaveStatus(
                     leaveId,
                     status,
@@ -180,8 +207,6 @@ public class LeaveService {
         return false;
     }
 
-
-    // Get HR dashboard statistics
     public Map<String, Long> getHRLeaveStatistics() {
         Map<String, Long> stats = new HashMap<>();
 
@@ -198,9 +223,7 @@ public class LeaveService {
         return stats;
     }
 
-    // Get leaves by status
     public List<Leave> getLeavesByStatus(String status) {
         return leaveRepository.findByStatusOrderByRequestDateDesc(status);
     }
-
 }
