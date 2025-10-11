@@ -277,4 +277,33 @@ public class GarmentService {
     public Optional<Map<String, Object>> getGarmentWithCurrentStock(String garmentId) {
         return garmentRepository.findByIdWithCurrentStock(garmentId);
     }
+
+
+    // Add this method to your existing GarmentService class
+    @Transactional
+    public GarmentMovement createInitialStockMovement(String garmentId, Integer initialStock) {
+        Garment garment = getGarmentById(garmentId);
+        if (garment == null) {
+            throw new IllegalArgumentException("Garment not found");
+        }
+
+        String lastMovementId = garmentMovementRepository.findLastMovementId();
+        String newMovementId = generateId("GMI", lastMovementId);
+
+        GarmentMovement movement = new GarmentMovement();
+        movement.setMovementId(newMovementId);
+        movement.setGarmentId(garmentId);
+        movement.setFabricId(garment.getFabricId());
+        movement.setStatus("In");
+        movement.setQuantity(initialStock);
+        movement.setApprovedQuantity(initialStock); // Auto-approve initial stock
+        movement.setRejectedQuantity(0);
+        movement.setMovementDate(LocalDate.now());
+        movement.setTotalStock(initialStock);
+        movement.setApprovalStatus("APPROVED");
+
+        garmentMovementRepository.addMovement(movement);
+        return movement;
+    }
+
 }

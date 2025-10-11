@@ -22,8 +22,8 @@ function initializeGarmentManagement() {
 
     // Load initial data and ensure stats are calculated
     Promise.all([
-        loadGarmentsAsync(),
-        loadMovementsAsync()
+        loadGarments(),
+        loadMovements()
     ]).then(() => {
         console.log('Both garments and movements loaded, calculating stats...');
         calculateAndDisplayStats();
@@ -37,50 +37,7 @@ function initializeGarmentManagement() {
     }, 100);
 }
 
-// Helper functions for Promise-based loading
-function loadGarmentsAsync() {
-    return new Promise((resolve, reject) => {
-        fetch('/api/garments')
-            .then(res => {
-                if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
-                return res.json();
-            })
-            .then(data => {
-                // FIX: Map backend properties to frontend expected properties
-                garmentsList = Array.isArray(data) ? data.map(g => {
-                    // Create a new object with both original and mapped properties
-                    return {
-                        // Original properties from backend
-                        ...g,
-                        // Mapped properties for frontend
-                        garmentType: g.type || g.garmentType,
-                        currentStock: g.stock || g.currentStock || 0
-                    };
-                }) : [];
 
-                existingGarmentIds = garmentsList.map(g => g.garmentId);
-                existingTypes = [...new Set(garmentsList.map(g => g.garmentType))].sort();
-                existingSizes = [...new Set(garmentsList.map(g => g.size))].sort();
-
-                console.log('Processed garments data:', garmentsList);
-                console.log('First garment object:', garmentsList[0]);
-                console.log('Available properties:', garmentsList[0] ? Object.keys(garmentsList[0]) : 'No data');
-
-                displayGarments();
-                updateGarmentDropdown();
-                populateDynamicDropdowns();
-                populateGarmentFilters();
-                resolve();
-            })
-            .catch(err => {
-                console.error('Error loading garments:', err);
-                garmentsList = [];
-                existingTypes = [];
-                existingSizes = [];
-                reject(err);
-            });
-    });
-}
 
 function loadMovementsAsync() {
     return new Promise((resolve, reject) => {
@@ -264,8 +221,8 @@ function loadGarments() {
             garmentsList = Array.isArray(data) ? data.map(g => {
                 return {
                     ...g,
-                    garmentType: g.type || g.garmentType,
-                    currentStock: g.stock || g.currentStock || 0
+                    garmentType: g.type, // Map 'type' to 'garmentType' for frontend
+                    currentStock: g.currentStock || 0
                 };
             }) : [];
 
@@ -499,7 +456,7 @@ function displayGarmentsFiltered(garments) {
 
     if (garments.length > 0) {
         garments.forEach(g => {
-            const stock = g.currentStock || g.stock || 0;
+            const stock = g.currentStock || 0;
             const garmentType = g.garmentType || g.type || 'N/A';
 
             const stockClass = stock <= 10 ? 'style="color: #e74c3c; font-weight: bold;"' : '';
@@ -1112,7 +1069,7 @@ function handleGarmentSubmit(e) {
         fabricId: fabricId,
         type: garmentType, // Backend expects 'type' not 'garmentType'
         size: size,
-        stock: initialStock // Backend expects 'stock' not 'initialStock'
+        currentStock: initialStock // Backend expects 'currentStock' not 'stock'
     };
 
     console.log('Submitting garment data:', data);
@@ -1391,8 +1348,8 @@ function refreshAllData() {
     console.log('Refreshing all data...');
 
     Promise.all([
-        loadGarmentsAsync(),
-        loadMovementsAsync()
+        loadGarmentsAsync ? loadGarmentsAsync() : loadGarments(),
+        loadMovementsAsync ? loadMovementsAsync() : loadMovements()
     ]).then(() => {
         console.log('Both datasets refreshed, updating stats...');
         calculateAndDisplayStats();
@@ -1484,4 +1441,85 @@ document.addEventListener('keydown', (e) => {
         e.preventDefault();
         document.getElementById('addMovementBtn')?.click();
     }
-});
+
+// ============================================
+// ASYNC DATA LOADING FUNCTIONS
+// ============================================
+
+    function loadGarmentsAsync() {
+        return new Promise((resolve, reject) => {
+            showLoadingState('garmentTableBody', 'Loading garments...');
+            console.log('Loading garments from API...');
+
+            fetch('/api/garments')
+                .then(res => {
+                    console.log('Garments API response status:', res.status);
+                    if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+                    return res.json();
+                })
+                .then(data => {
+                    console.log('Loaded garments:', data);
+                    // Map backend properties to frontend expected properties
+                    garmentsList = Array.isArray(data) ? data.map(g => {
+                        return {
+                            ...g,
+                            garmentType: g.type, // Map 'type' to 'garmentType' for frontend
+                            currentStock: g.currentStock || 0
+                        };
+                    }) : [];
+
+                    existingGarmentIds = garmentsList.map(g => g.garmentId);
+                    existingTypes = [...new Set(garmentsList.map(g => g.garmentType))].sort();
+                    existingSizes = [...new Set(garmentsList.map(g => g.size))].sort();
+
+                    console.log('Processed data:', {
+                        garmentsCount: garmentsList.length,
+                        existingTypes: existingTypes,
+                        existingSizes: existingSizes
+                    });
+
+                    displayGarments();
+                    updateGarmentDropdown();
+                    populateDynamicDropdowns();
+                    populateGarmentFilters();
+                    resolve();
+                })
+                .catch(err => {
+                    console.error('Error loading garments:', err);
+                    document.getElementById('garmentTableBody').innerHTML =
+                        '<tr><td colspan="6" style="text-align:center;color:#e74c3c;padding:30px;">Failed to load garments</td></tr>';
+                    garmentsList = [];
+                    existingTypes = [];
+                    existingSizes = [];
+                    reject(err);
+                });
+        });
+    }
+
+    function loadMovementsAsync() {
+        return new Promise((resolve, reject) => {
+            showLoadingState('movementTableBody', 'Loading movements...');
+            console.log('Loading movements from API...');
+
+            fetch('/api/garments/movements')
+                .then(res => {
+                    console.log('Movements API response status:', res.status);
+                    if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+                    return res.json();
+                })
+                .then(data => {
+                    console.log('Loaded movements:', data);
+                    movementsList = Array.isArray(data) ? data : [];
+                    displayMovements();
+                    populateMovementFilters();
+                    resolve();
+                })
+                .catch(err => {
+                    console.error('Error loading movements:', err);
+                    document.getElementById('movementTableBody').innerHTML =
+                        '<tr><td colspan="11" style="text-align:center;color:#e74c3c;padding:30px;">Failed to load movements</td></tr>';
+                    movementsList = [];
+                    reject(err);
+                });
+        });
+    }});

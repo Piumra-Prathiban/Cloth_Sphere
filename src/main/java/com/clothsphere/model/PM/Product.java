@@ -34,12 +34,22 @@ public class Product {
     @Column(name = "image_path")
     private String imagePath;
 
+    @Column(name = "fabric_id", length = 6)
+    private String fabricId;
+
+    @Column(name = "size", length = 10)
+    private String size;
+
+    @Column(name = "garment_type", length = 50)
+    private String garmentType;
+
     // Constructors
     public Product() {
     }
 
     public Product(String productId, String name, String code, Double price, Integer stock,
-                   String description, String category, String imagePath) {
+                   String description, String category, String imagePath, String fabricId,
+                   String size, String garmentType) {
         this.productId = productId;
         this.name = name;
         this.code = code;
@@ -48,7 +58,11 @@ public class Product {
         this.description = description;
         this.category = category;
         this.imagePath = imagePath;
+        this.fabricId = fabricId;
+        this.size = size;
+        this.garmentType = garmentType;
     }
+
 
     // Getters and Setters
     public Long getId() {
@@ -121,6 +135,30 @@ public class Product {
 
     public void setImagePath(String imagePath) {
         this.imagePath = imagePath;
+    }
+
+    public String getFabricId() {
+        return fabricId;
+    }
+
+    public void setFabricId(String fabricId) {
+        this.fabricId = fabricId;
+    }
+
+    public String getSize() {
+        return size;
+    }
+
+    public void setSize(String size) {
+        this.size = size;
+    }
+
+    public String getGarmentType() {
+        return garmentType;
+    }
+
+    public void setGarmentType(String garmentType) {
+        this.garmentType = garmentType;
     }
 
     @Override

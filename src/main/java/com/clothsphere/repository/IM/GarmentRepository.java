@@ -58,17 +58,19 @@ public class GarmentRepository {
         }
     }
 
+    // In GarmentRepository.java - update the insertGarment method
     public int insertGarment(Garment garment) {
-        String sql = "INSERT INTO garments (garment_id, type, size, fabric_id, created_at, updated_at) " +
-                "VALUES (:garmentId, :type, :size, :fabricId, :createdAt, :updatedAt)";
+        String sql = "INSERT INTO garments (garment_id, type, size, fabric_id, current_stock, created_at, updated_at) " +
+                "VALUES (:garmentId, :type, :size, :fabricId, :currentStock, :createdAt, :updatedAt)";
 
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue("garmentId", garment.getGarmentId())
                 .addValue("type", garment.getType())
                 .addValue("size", garment.getSize())
                 .addValue("fabricId", garment.getFabricId())
-                .addValue("createdAt", LocalDateTime.now())
-                .addValue("updatedAt", LocalDateTime.now());
+                .addValue("currentStock", garment.getCurrentStock())
+                .addValue("createdAt", garment.getCreatedAt())
+                .addValue("updatedAt", garment.getUpdatedAt());
 
         return namedJdbcTemplate.update(sql, params);
     }
@@ -208,7 +210,7 @@ public class GarmentRepository {
                 "COALESCE(SUM(CASE WHEN gm.status = 'Shipped' THEN gm.approved_quantity ELSE 0 END), 0)) as current_stock " +
                 "FROM garments g " +
                 "LEFT JOIN garment_movements gm ON g.garment_id = gm.garment_id AND gm.approval_status IN ('APPROVED', 'PARTIALLY_APPROVED') " +
-                "GROUP BY g.garment_id, g.type, g.size, g.fabric_id, g.created_at, g.updated_at " +
+                "GROUP BY g.garment_id, g.type, g.size, g.fabric_id, g.created_at, g.updated_at, stock, current_stock " +
                 "ORDER BY g.created_at DESC";
 
         return namedJdbcTemplate.queryForList(sql, new MapSqlParameterSource());
@@ -221,10 +223,13 @@ public class GarmentRepository {
                 "FROM garments g " +
                 "LEFT JOIN garment_movements gm ON g.garment_id = gm.garment_id AND gm.approval_status IN ('APPROVED', 'PARTIALLY_APPROVED') " +
                 "WHERE g.garment_id = :garmentId " +
-                "GROUP BY g.garment_id, g.type, g.size, g.fabric_id, g.created_at, g.updated_at";
+                "GROUP BY g.garment_id, g.type, g.size, g.fabric_id, g.created_at, g.updated_at, stock, current_stock";
 
         MapSqlParameterSource params = new MapSqlParameterSource("garmentId", garmentId);
         List<Map<String, Object>> results = namedJdbcTemplate.queryForList(sql, params);
         return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
     }
+
+
+
 }
