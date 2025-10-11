@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Service
 @Transactional
@@ -108,7 +109,7 @@ public class GarmentInventoryService {
     }
 
     private String generateProductCode(String garmentId) {
-        return "PROD_" + garmentId;
+        return "PROD_" + garmentId + "_" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     }
 
     // ADD THIS METHOD TO GET NEXT GARMENT ID FOR THE CONTROLLER

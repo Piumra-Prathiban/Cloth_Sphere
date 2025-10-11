@@ -52,6 +52,12 @@ public class GarmentMovement {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+
+
     // ----------------- Constructors -----------------
     public GarmentMovement() {}
 
@@ -110,20 +116,23 @@ public class GarmentMovement {
     public void setRejectionReason(String rejectionReason) { this.rejectionReason = rejectionReason; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
 
     // ----------------- Lifecycle Hooks -----------------
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now(); // Set updated_at on creation
         if (movementDate == null) movementDate = LocalDate.now();
         updateTotalStock();
     }
 
     @PreUpdate
     protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now(); // Update timestamp on update
         updateTotalStock();
     }
 

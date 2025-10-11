@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import java.sql.ResultSet;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -61,9 +62,9 @@ public class GarmentMovementRepository {
 
     public int addMovement(GarmentMovement movement) {
         String sql = "INSERT INTO garment_movements (movement_id, garment_id, fabric_id, status, movement_date, quantity, " +
-                "approved_quantity, rejected_quantity, total_stock, approval_status, rejection_reason) " +
+                "approved_quantity, rejected_quantity, total_stock, approval_status, rejection_reason, created_at, updated_at) " +
                 "VALUES (:movementId, :garmentId, :fabricId, :status, :movementDate, :quantity, " +
-                ":approvedQuantity, :rejectedQuantity, :totalStock, :approvalStatus, :rejectionReason)";
+                ":approvedQuantity, :rejectedQuantity, :totalStock, :approvalStatus, :rejectionReason, :createdAt, :updatedAt)";
 
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue("movementId", movement.getMovementId())
@@ -76,7 +77,9 @@ public class GarmentMovementRepository {
                 .addValue("rejectedQuantity", movement.getRejectedQuantity())
                 .addValue("totalStock", movement.getTotalStock())
                 .addValue("approvalStatus", movement.getApprovalStatus())
-                .addValue("rejectionReason", movement.getRejectionReason());
+                .addValue("rejectionReason", movement.getRejectionReason())
+                .addValue("createdAt", movement.getCreatedAt()) // Add this
+                .addValue("updatedAt", movement.getUpdatedAt()); // Add this
 
         return namedJdbcTemplate.update(sql, params);
     }
@@ -85,7 +88,7 @@ public class GarmentMovementRepository {
         String sql = "UPDATE garment_movements SET garment_id = :garmentId, fabric_id = :fabricId, status = :status, " +
                 "movement_date = :movementDate, quantity = :quantity, approved_quantity = :approvedQuantity, " +
                 "rejected_quantity = :rejectedQuantity, total_stock = :totalStock, approval_status = :approvalStatus, " +
-                "rejection_reason = :rejectionReason WHERE movement_id = :movementId";
+                "rejection_reason = :rejectionReason, updated_at = :updatedAt WHERE movement_id = :movementId";
 
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue("movementId", movement.getMovementId())
@@ -98,7 +101,8 @@ public class GarmentMovementRepository {
                 .addValue("rejectedQuantity", movement.getRejectedQuantity())
                 .addValue("totalStock", movement.getTotalStock())
                 .addValue("approvalStatus", movement.getApprovalStatus())
-                .addValue("rejectionReason", movement.getRejectionReason());
+                .addValue("rejectionReason", movement.getRejectionReason())
+                .addValue("updatedAt", movement.getUpdatedAt()); // Add this
 
         return namedJdbcTemplate.update(sql, params);
     }
@@ -216,7 +220,8 @@ public class GarmentMovementRepository {
                 "rejected_quantity = :rejectedQuantity, " +
                 "total_stock = :totalStock, " +
                 "approval_status = :approvalStatus, " +
-                "rejection_reason = :rejectionReason " +
+                "rejection_reason = :rejectionReason, " +
+                "updated_at = :updatedAt " + // Add this line
                 "WHERE movement_id = :movementId";
 
         String approvalStatus = (rejectedQty != null && rejectedQty > 0) ? "PARTIALLY_APPROVED" : "APPROVED";
@@ -227,7 +232,8 @@ public class GarmentMovementRepository {
                 .addValue("rejectedQuantity", rejectedQty)
                 .addValue("totalStock", totalStock)
                 .addValue("approvalStatus", approvalStatus)
-                .addValue("rejectionReason", rejectionReason);
+                .addValue("rejectionReason", rejectionReason)
+                .addValue("updatedAt", LocalDateTime.now()); // Add this
 
         return namedJdbcTemplate.update(sql, params);
     }

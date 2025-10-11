@@ -20,12 +20,18 @@ public class GarmentRepository {
     private NamedParameterJdbcTemplate namedJdbcTemplate;
 
     // ---------------- RowMapper ----------------
+// In GarmentRepository.java - Update the RowMapper
     private final RowMapper<Garment> garmentRowMapper = (ResultSet rs, int rowNum) -> {
         Garment garment = new Garment();
         garment.setGarmentId(rs.getString("garment_id"));
         garment.setType(rs.getString("type"));
         garment.setSize(rs.getString("size"));
         garment.setFabricId(rs.getString("fabric_id"));
+
+        // Calculate current stock dynamically instead of using the stored value
+        String garmentId = rs.getString("garment_id");
+        int calculatedStock = calculateCurrentStock(garmentId);
+        garment.setCurrentStock(calculatedStock);
 
         // Handle timestamp conversion
         java.sql.Timestamp createdAt = rs.getTimestamp("created_at");
@@ -138,6 +144,7 @@ public class GarmentRepository {
     }
 
     // ---------------- Stock Calculation Methods ----------------
+    // In GarmentRepository.java - Fix the calculateCurrentStock method
     public int calculateCurrentStock(String garmentId) {
         String sql = "SELECT " +
                 "COALESCE(SUM(CASE WHEN status = 'In' THEN approved_quantity ELSE 0 END), 0) - " +
@@ -151,6 +158,7 @@ public class GarmentRepository {
             Integer stock = namedJdbcTemplate.queryForObject(sql, params, Integer.class);
             return stock != null ? stock : 0;
         } catch (Exception e) {
+            System.err.println("Error calculating stock for garment " + garmentId + ": " + e.getMessage());
             return 0;
         }
     }
@@ -210,7 +218,7 @@ public class GarmentRepository {
                 "COALESCE(SUM(CASE WHEN gm.status = 'Shipped' THEN gm.approved_quantity ELSE 0 END), 0)) as current_stock " +
                 "FROM garments g " +
                 "LEFT JOIN garment_movements gm ON g.garment_id = gm.garment_id AND gm.approval_status IN ('APPROVED', 'PARTIALLY_APPROVED') " +
-                "GROUP BY g.garment_id, g.type, g.size, g.fabric_id, g.created_at, g.updated_at, stock, current_stock " +
+                "GROUP BY g.garment_id, g.type, g.size, g.fabric_id, g.created_at, g.updated_at, current_stock " +
                 "ORDER BY g.created_at DESC";
 
         return namedJdbcTemplate.queryForList(sql, new MapSqlParameterSource());
@@ -223,7 +231,7 @@ public class GarmentRepository {
                 "FROM garments g " +
                 "LEFT JOIN garment_movements gm ON g.garment_id = gm.garment_id AND gm.approval_status IN ('APPROVED', 'PARTIALLY_APPROVED') " +
                 "WHERE g.garment_id = :garmentId " +
-                "GROUP BY g.garment_id, g.type, g.size, g.fabric_id, g.created_at, g.updated_at, stock, current_stock";
+                "GROUP BY g.garment_id, g.type, g.size, g.fabric_id, g.created_at, g.updated_at, current_stock";
 
         MapSqlParameterSource params = new MapSqlParameterSource("garmentId", garmentId);
         List<Map<String, Object>> results = namedJdbcTemplate.queryForList(sql, params);
@@ -231,5 +239,16 @@ public class GarmentRepository {
     }
 
 
+    // In GarmentRepository.java - Add this method
+    public int updateGarmentStock(String garmentId, int currentStock) {
+        String sql = "UPDATE garments SET current_stock = :currentStock, updated_at = :updatedAt WHERE garment_id = :garmentId";
+
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("currentStock", currentStock)
+                .addValue("updatedAt", LocalDateTime.now())
+                .addValue("garmentId", garmentId);
+
+        return namedJdbcTemplate.update(sql, params);
+    }
 
 }

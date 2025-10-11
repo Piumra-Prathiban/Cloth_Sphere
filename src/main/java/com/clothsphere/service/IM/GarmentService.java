@@ -6,6 +6,7 @@ import com.clothsphere.repository.IM.GarmentRepository;
 import com.clothsphere.repository.IM.GarmentMovementRepository;
 import com.clothsphere.strategy.IM.Garment.StockContext;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -161,6 +162,9 @@ public class GarmentService {
         // Save the updated movement
         garmentMovementRepository.updateApproval(movementId, approved, rejected, rejectionReason, currentStock);
 
+        // SYNC THE GARMENT STOCK
+        garmentRepository.updateGarmentStock(garmentId, currentStock);
+
         return movement;
     }
 
@@ -226,6 +230,11 @@ public class GarmentService {
         movement.setMovementDate(LocalDate.now());
         movement.setTotalStock(currentStock);
 
+        // Set timestamps
+        LocalDateTime now = LocalDateTime.now();
+        movement.setCreatedAt(now);
+        movement.setUpdatedAt(now);
+
         // Set approval status based on whether quantities are provided
         if (approved > 0 || rejected > 0) {
             String approvalStatus = rejected > 0 ? "PARTIALLY_APPROVED" : "APPROVED";
@@ -279,7 +288,6 @@ public class GarmentService {
     }
 
 
-    // Add this method to your existing GarmentService class
     @Transactional
     public GarmentMovement createInitialStockMovement(String garmentId, Integer initialStock) {
         Garment garment = getGarmentById(garmentId);
@@ -302,8 +310,32 @@ public class GarmentService {
         movement.setTotalStock(initialStock);
         movement.setApprovalStatus("APPROVED");
 
+        // Set timestamps explicitly
+        LocalDateTime now = LocalDateTime.now();
+        movement.setCreatedAt(now);
+        movement.setUpdatedAt(now);
+
         garmentMovementRepository.addMovement(movement);
+
+        // SYNC THE GARMENT STOCK
+        garmentRepository.updateGarmentStock(garmentId, initialStock);
+
         return movement;
+    }
+
+    // In GarmentService.java - Add this method
+    @Transactional
+    public void syncGarmentStock(String garmentId) {
+        int currentStock = getCurrentStock(garmentId);
+
+        String sql = "UPDATE garments SET current_stock = :currentStock, updated_at = :updatedAt WHERE garment_id = :garmentId";
+
+        // You'll need to inject jdbcTemplate or use garmentRepository
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("currentStock", currentStock)
+                .addValue("updatedAt", LocalDateTime.now())
+                .addValue("garmentId", garmentId);
+
     }
 
 }

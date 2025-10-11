@@ -159,21 +159,32 @@ function generateGarmentId() {
     const garmentIdInput = document.getElementById('newGarmentId');
     if (!garmentIdInput) return;
 
-    // Find the highest existing number
-    let maxNum = 0;
-    existingGarmentIds.forEach(id => {
-        const match = id.match(/GAR(\d{3})/);
-        if (match) {
-            const num = parseInt(match[1]);
-            if (num > maxNum) maxNum = num;
-        }
-    });
-
-    // Generate next ID
-    const nextNum = maxNum + 1;
-    const nextId = `GAR${String(nextNum).padStart(3, '0')}`;
-    garmentIdInput.value = nextId;
-    garmentIdInput.readOnly = true;
+    // Use the new endpoint to get the next garment ID
+    fetch('/api/inventory/garments/next-garment-id')
+        .then(res => {
+            if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+            return res.text();
+        })
+        .then(nextId => {
+            garmentIdInput.value = nextId;
+            garmentIdInput.readOnly = true;
+        })
+        .catch(err => {
+            console.error('Error generating garment ID:', err);
+            // Fallback to local calculation if API fails
+            let maxNum = 0;
+            existingGarmentIds.forEach(id => {
+                const match = id.match(/GAR(\d{3})/);
+                if (match) {
+                    const num = parseInt(match[1]);
+                    if (num > maxNum) maxNum = num;
+                }
+            });
+            const nextNum = maxNum + 1;
+            const nextId = `GAR${String(nextNum).padStart(3, '0')}`;
+            garmentIdInput.value = nextId;
+            garmentIdInput.readOnly = true;
+        });
 }
 
 // ============================================
@@ -1063,22 +1074,26 @@ function handleGarmentSubmit(e) {
     const size = form.size.value;
     const initialStock = parseInt(form.initialStock.value);
 
-    // Use the correct property names that backend expects
+    // Create GarmentCreationRequest with product details
     const data = {
-        garmentId: garmentId,
-        fabricId: fabricId,
-        type: garmentType, // Backend expects 'type' not 'garmentType'
+        garmentType: garmentType,
         size: size,
-        currentStock: initialStock // Backend expects 'currentStock' not 'stock'
+        fabricId: fabricId,
+        initialStock: initialStock,
+        name: generateProductName(garmentType, size, fabricId),
+        description: generateProductDescription(garmentType, size, fabricId),
+        price: calculateDefaultPrice(garmentType, size),
+        category: "Apparel"
     };
 
-    console.log('Submitting garment data:', data);
+    console.log('Submitting garment with product data:', data);
 
     const submitBtn = document.getElementById('submitGarmentBtn');
     submitBtn.disabled = true;
     submitBtn.textContent = 'Adding...';
 
-    fetch('/api/garments', {
+    // Use the combined endpoint that creates both garment and product
+    fetch('/api/inventory/garments/create-with-product', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -1097,9 +1112,9 @@ function handleGarmentSubmit(e) {
             return res.json();
         })
         .then(resp => {
-            console.log('Garment creation response:', resp);
+            console.log('Garment with product creation response:', resp);
             if (resp && resp.garmentId) {
-                showNotification(`Garment ${resp.garmentId} added successfully!`, 'success');
+                showNotification(`Garment ${resp.garmentId} and corresponding product created successfully!`, 'success');
                 closeGarmentModalFn();
 
                 // Update local arrays
@@ -1123,6 +1138,40 @@ function handleGarmentSubmit(e) {
             submitBtn.disabled = false;
             submitBtn.textContent = 'Add Garment';
         });
+}
+
+// Helper functions to generate product details
+function generateProductName(type, size, fabricId) {
+    return type + " - " + size + " (" + fabricId + ")";
+}
+
+function generateProductDescription(type, size, fabricId) {
+    return "High quality " + type.toLowerCase() + " in size " + size +
+        " made from fabric " + fabricId + ". Comfortable and durable.";
+}
+
+function calculateDefaultPrice(type, size) {
+    // Set default price based on garment type/size
+    const priceMap = {
+        "T-Shirt": 25.0,
+        "Shirt": 35.0,
+        "Pants": 45.0,
+        "Dress": 60.0,
+        "Jacket": 80.0
+    };
+
+    const basePrice = priceMap[type] || 30.0;
+
+    // Adjust for size if needed
+    const sizeMultiplier = {
+        "S": 1.0,
+        "M": 1.1,
+        "L": 1.2,
+        "XL": 1.3
+    };
+
+    const multiplier = sizeMultiplier[size] || 1.0;
+    return basePrice * multiplier;
 }
 
 function handleMovementSubmit(e) {
@@ -1348,8 +1397,8 @@ function refreshAllData() {
     console.log('Refreshing all data...');
 
     Promise.all([
-        loadGarmentsAsync ? loadGarmentsAsync() : loadGarments(),
-        loadMovementsAsync ? loadMovementsAsync() : loadMovements()
+        loadGarments(),
+        loadMovements()
     ]).then(() => {
         console.log('Both datasets refreshed, updating stats...');
         calculateAndDisplayStats();
