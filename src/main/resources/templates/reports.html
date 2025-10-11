@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Reports - Cloth Sphere</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        .reports-category {
+            margin-bottom: 30px;
+        }
+        .category-header {
+            background: linear-gradient(135deg, #4B0082, #6A1B9A);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px 10px 0 0;
+            margin-bottom: 0;
+        }
+        .category-header h3 {
+            margin: 0;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .category-content {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 0 0 10px 10px;
+            border: 1px solid #e9ecef;
+            border-top: none;
+        }
+        .date-selector {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .date-selector h4 {
+            color: #4B0082;
+            font-size: 14px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .date-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+        .date-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .date-input-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #555;
+        }
+        .date-input-group input {
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+        .date-input-group input:focus {
+            outline: none;
+            border-color: #4B0082;
+            box-shadow: 0 0 0 3px rgba(75, 0, 130, 0.1);
+        }
+        .view-report-btn {
+            background: linear-gradient(135deg, #4B0082, #6A1B9A);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        .view-report-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(75, 0, 130, 0.3);
+        }
+        .view-report-btn:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .report-actions {
+            text-align: center;
+        }
+        .reports-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+        }
+        .report-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .report-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+        .report-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .report-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: white;
+        }
+        .report-icon.availability {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+        }
+        .report-icon.movement {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+        }
+        .report-title h4 {
+            margin: 0 0 5px 0;
+            color: #2c3e50;
+            font-size: 16px;
+        }
+        .report-title p {
+            margin: 0;
+            color: #7f8c8d;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        @media (max-width: 768px) {
+            .date-inputs { grid-template-columns: 1fr; }
+            .reports-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<div class="container">
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <button class="menu-toggle" id="menuToggle">
+                <i class="fas fa-times"></i>
+            </button>
+            <h2>Inventory Management</h2>
+        </div>
+        <ul class="nav-list">
+            <li><a href="/inventoryDashboard" class="nav-item"><i class="fas fa-chart-pie"></i><span>Dashboard</span></a></li>
+            <li><a href="/fabrics" class="nav-item"><i class="fas fa-layer-group"></i><span>Fabrics</span></a></li>
+            <li><a href="/garments" class="nav-item"><i class="fas fa-boxes"></i><span>Garments</span></a></li>
+            <li><a href="/reports" class="nav-item active"><i class="fas fa-file-alt"></i><span>Stock Reports</span></a></li>
+            <li><a href="/user/profile" class="nav-item"><i class="fas fa-user"></i><span>Edit Profile</span></a></li>
+            <li><a href="/logout" class="nav-item logout-btn"><i class="fas fa-sign-out-alt"></i><span>Log Out</span></a></li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="page-header">
+            <button class="mobile-menu-btn" id="mobileMenuBtn">
+                <i class="fas fa-bars"></i>
+            </button>
+            <h2 class="page-title"><i class="fas fa-file-alt"></i> Stock Reports</h2>
+        </div>
+
+        <div class="welcome-text">
+            Generate comprehensive reports for fabric and garment inventory management.
+        </div>
+
+        <!-- Availability Reports Section -->
+        <div class="reports-category">
+            <div class="category-header">
+                <h3><i class="fas fa-warehouse"></i> Availability Reports</h3>
+            </div>
+            <div class="category-content">
+                <div class="reports-grid">
+                    <!-- Fabric Availability Report -->
+                    <div class="report-card">
+                        <div class="report-header">
+                            <div class="report-icon availability">
+                                <i class="fas fa-layer-group"></i>
+                            </div>
+                            <div class="report-title">
+                                <h4>Fabric Availability Report</h4>
+                                <p>Current stock levels of all fabrics with colors as of specific date</p>
+                            </div>
+                        </div>
+                        <div class="date-selector">
+                            <h4><i class="fas fa-calendar"></i> Select Date Range</h4>
+                            <div class="date-inputs">
+                                <div class="date-input-group">
+                                    <label>Start Date</label>
+                                    <input type="date" id="fabricAvailStart">
+                                </div>
+                                <div class="date-input-group">
+                                    <label>End Date</label>
+                                    <input type="date" id="fabricAvailEnd">
+                                </div>
+                            </div>
+                            <div class="report-actions">
+                                <button class="view-report-btn" onclick="openFabricAvailabilityReport()">
+                                    <i class="fas fa-external-link-alt"></i> View Report
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Garment Availability Report -->
+                    <div class="report-card">
+                        <div class="report-header">
+                            <div class="report-icon availability">
+                                <i class="fas fa-boxes"></i>
+                            </div>
+                            <div class="report-title">
+                                <h4>Garment Availability Report</h4>
+                                <p>Current stock levels of all finished garments as of specific date</p>
+                            </div>
+                        </div>
+                        <div class="date-selector">
+                            <h4><i class="fas fa-calendar"></i> Select Date Range</h4>
+                            <div class="date-inputs">
+                                <div class="date-input-group">
+                                    <label>Start Date</label>
+                                    <input type="date" id="garmentAvailStart">
+                                </div>
+                                <div class="date-input-group">
+                                    <label>End Date</label>
+                                    <input type="date" id="garmentAvailEnd">
+                                </div>
+                            </div>
+                            <div class="report-actions">
+                                <button class="view-report-btn" onclick="openGarmentAvailabilityReport()">
+                                    <i class="fas fa-external-link-alt"></i> View Report
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Movement Reports Section -->
+        <div class="reports-category">
+            <div class="category-header">
+                <h3><i class="fas fa-exchange-alt"></i> Movement Reports</h3>
+            </div>
+            <div class="category-content">
+                <div class="reports-grid">
+                    <!-- Fabric Usage Report -->
+                    <div class="report-card">
+                        <div class="report-header">
+                            <div class="report-icon movement">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="report-title">
+                                <h4>Fabric Usage Report</h4>
+                                <p>Track fabric consumption by type and color within a specific date range</p>
+                            </div>
+                        </div>
+                        <div class="date-selector">
+                            <h4><i class="fas fa-calendar"></i> Select Date Range</h4>
+                            <div class="date-inputs">
+                                <div class="date-input-group">
+                                    <label>Start Date</label>
+                                    <input type="date" id="fabricUsageStart">
+                                </div>
+                                <div class="date-input-group">
+                                    <label>End Date</label>
+                                    <input type="date" id="fabricUsageEnd">
+                                </div>
+                            </div>
+                            <div class="report-actions">
+                                <button class="view-report-btn" onclick="openFabricUsageReport()">
+                                    <i class="fas fa-external-link-alt"></i> View Report
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Garment Shipped Report -->
+                    <div class="report-card">
+                        <div class="report-header">
+                            <div class="report-icon movement">
+                                <i class="fas fa-shipping-fast"></i>
+                            </div>
+                            <div class="report-title">
+                                <h4>Garment Shipped Report</h4>
+                                <p>Track garment shipments and deliveries within a date range</p>
+                            </div>
+                        </div>
+                        <div class="date-selector">
+                            <h4><i class="fas fa-calendar"></i> Select Date Range</h4>
+                            <div class="date-inputs">
+                                <div class="date-input-group">
+                                    <label>Start Date</label>
+                                    <input type="date" id="garmentShippedStart">
+                                </div>
+                                <div class="date-input-group">
+                                    <label>End Date</label>
+                                    <input type="date" id="garmentShippedEnd">
+                                </div>
+                            </div>
+                            <div class="report-actions">
+                                <button class="view-report-btn" onclick="openGarmentShippedReport()">
+                                    <i class="fas fa-external-link-alt"></i> View Report
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        setupEventListeners();
+        setDefaultDates();
+    });
+
+    function setupEventListeners() {
+        const menuToggle = document.getElementById('menuToggle');
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+
+        // Menu toggle handlers
+        [menuToggle, mobileMenuBtn].forEach(btn => {
+            btn?.addEventListener('click', () => {
+                sidebar.classList.toggle('open');
+                overlay.classList.toggle('show');
+            });
+        });
+
+        overlay?.addEventListener('click', () => {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('show');
+        });
+    }
+
+    function setDefaultDates() {
+        const today = new Date().toISOString().split('T')[0];
+        const lastWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+        // Set default dates for all reports
+        document.getElementById('fabricAvailStart').value = lastWeek;
+        document.getElementById('fabricAvailEnd').value = today;
+        document.getElementById('garmentAvailStart').value = lastWeek;
+        document.getElementById('garmentAvailEnd').value = today;
+        document.getElementById('fabricUsageStart').value = lastWeek;
+        document.getElementById('fabricUsageEnd').value = today;
+        document.getElementById('garmentShippedStart').value = lastWeek;
+        document.getElementById('garmentShippedEnd').value = today;
+    }
+
+    function validateDates(startDateId, endDateId) {
+        const startDate = document.getElementById(startDateId).value;
+        const endDate = document.getElementById(endDateId).value;
+
+        if (!startDate || !endDate) {
+            showNotification('Please select both start and end dates', 'error');
+            return false;
+        }
+
+        if (new Date(startDate) > new Date(endDate)) {
+            showNotification('Start date cannot be after end date', 'error');
+            return false;
+        }
+
+        return { startDate, endDate };
+    }
+
+    // Availability Reports
+    function openFabricAvailabilityReport() {
+        const dates = validateDates('fabricAvailStart', 'fabricAvailEnd');
+        if (!dates) return;
+
+        const url = `/reports/fabric-availability?startDate=${dates.startDate}&endDate=${dates.endDate}`;
+        window.open(url, '_blank');
+    }
+
+    function openGarmentAvailabilityReport() {
+        const dates = validateDates('garmentAvailStart', 'garmentAvailEnd');
+        if (!dates) return;
+
+        const url = `/reports/garment-availability?startDate=${dates.startDate}&endDate=${dates.endDate}`;
+        window.open(url, '_blank');
+    }
+
+    // Movement Reports
+    function openFabricUsageReport() {
+        const dates = validateDates('fabricUsageStart', 'fabricUsageEnd');
+        if (!dates) return;
+
+        const url = `/reports/fabric-usage?startDate=${dates.startDate}&endDate=${dates.endDate}`;
+        window.open(url, '_blank');
+    }
+
+    function openGarmentShippedReport() {
+        const dates = validateDates('garmentShippedStart', 'garmentShippedEnd');
+        if (!dates) return;
+
+        const url = `/reports/garment-shipped?startDate=${dates.startDate}&endDate=${dates.endDate}`;
+        window.open(url, '_blank');
+    }
+
+    // Notification function
+    function showNotification(msg, type = 'info') {
+        // Remove existing notification
+        document.querySelector('.notification')?.remove();
+
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.innerHTML = `
+            <div class="notification-content">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : 'info-circle'}"></i>
+                <span>${msg}</span>
+            </div>
+        `;
+
+        // Add styles for notification
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            max-width: 400px;
+        `;
+
+        // Set background color based on type
+        if (type === 'success') {
+            notification.style.background = 'linear-gradient(135deg, #27ae60, #2ecc71)';
+        } else if (type === 'error') {
+            notification.style.background = 'linear-gradient(135deg, #e74c3c, #c0392b)';
+        } else {
+            notification.style.background = 'linear-gradient(135deg, #3498db, #2980b9)';
+        }
+
+        document.body.appendChild(notification);
+
+        // Animate in
+        setTimeout(() => {
+            notification.style.transform = 'translateX(0)';
+        }, 100);
+
+        // Animate out and remove
+        setTimeout(() => {
+            notification.style.transform = 'translateX(400px)';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 300);
+        }, 4000);
+    }
+</script>
+
+</body>
+</html>

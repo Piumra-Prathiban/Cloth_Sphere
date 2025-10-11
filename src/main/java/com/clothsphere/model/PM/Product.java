@@ -35,6 +35,15 @@ public class Product {
     @Column(name = "image_path")
     private String imagePath;
 
+    @Column(name = "fabric_id", length = 6)
+    private String fabricId;
+
+    @Column(name = "size", length = 10)
+    private String size;
+
+    @Column(name = "garment_type", length = 50)
+    private String garmentType;
+
     @Column(name = "is_active")
     private Boolean isActive = true;
 
@@ -64,6 +73,22 @@ public class Product {
         this.description = description;
         this.category = category;
         this.imagePath = imagePath;
+    }
+
+    public Product(String productId, String name, String code, Double price, Integer stock,
+                   String description, String category, String imagePath, String fabricId,
+                   String size, String garmentType) {
+        this.productId = productId;
+        this.name = name;
+        this.code = code;
+        this.price = price;
+        this.stock = stock;
+        this.description = description;
+        this.category = category;
+        this.imagePath = imagePath;
+        this.fabricId = fabricId;
+        this.size = size;
+        this.garmentType = garmentType;
     }
 
     // Getters and Setters
@@ -139,6 +164,30 @@ public class Product {
         this.imagePath = imagePath;
     }
 
+    public String getFabricId() {
+        return fabricId;
+    }
+
+    public void setFabricId(String fabricId) {
+        this.fabricId = fabricId;
+    }
+
+    public String getSize() {
+        return size;
+    }
+
+    public void setSize(String size) {
+        this.size = size;
+    }
+
+    public String getGarmentType() {
+        return garmentType;
+    }
+
+    public void setGarmentType(String garmentType) {
+        this.garmentType = garmentType;
+    }
+
     public Boolean getIsActive() {
         return isActive;
     }
@@ -191,9 +240,14 @@ public class Product {
                 ", description='" + description + '\'' +
                 ", category='" + category + '\'' +
                 ", imagePath='" + imagePath + '\'' +
+                ", fabricId='" + fabricId + '\'' +
+                ", size='" + size + '\'' +
+                ", garmentType='" + garmentType + '\'' +
                 ", isActive=" + isActive +
                 ", createdAt=" + createdAt +
                 ", updatedAt=" + updatedAt +
+                ", createdBy='" + createdBy + '\'' +
+                ", updatedBy='" + updatedBy + '\'' +
                 '}';
     }
 }

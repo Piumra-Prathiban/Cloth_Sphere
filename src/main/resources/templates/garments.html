@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Garment Management - Cloth Sphere</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/garment.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+</head>
+<body>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<div class="container">
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <button class="menu-toggle" id="menuToggle">
+                <i class="fas fa-times"></i>
+            </button>
+            <h2>Inventory Management</h2>
+        </div>
+        <ul class="nav-list">
+            <li><a href="/inventoryDashboard" class="nav-item"><i class="fas fa-chart-pie"></i><span>Dashboard</span></a></li>
+            <li><a href="/fabrics" class="nav-item"><i class="fas fa-layer-group"></i><span>Fabrics</span></a></li>
+            <li><a href="/garments" class="nav-item active"><i class="fas fa-boxes"></i><span>Garments</span></a></li>
+            <li><a href="/reports" class="nav-item"><i class="fas fa-file-alt"></i><span>Stock Reports</span></a></li>
+            <li><a href="/user/profile" class="nav-item"><i class="fas fa-user"></i><span>Edit Profile</span></a></li>
+            <li><a href="/logout" class="nav-item logout-btn"><i class="fas fa-sign-out-alt"></i><span>Log Out</span></a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <div class="page-header">
+            <h2 class="page-title"><i class="fas fa-boxes"></i> Garment Management</h2>
+        </div>
+
+        <div class="welcome-text">
+            Manage finished garments inventory, track production output, and monitor stock levels.
+        </div>
+
+        <h3 class="section-title" style="margin: 20px 0 15px 0;"><i class="fas fa-boxes"></i> Garment Inventory Overview</h3>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon purple"><i class="fas fa-boxes"></i></div>
+                <div class="stat-info">
+                    <h3 id="totalGarmentTypes">0</h3>
+                    <p>Garment Types</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon blue"><i class="fas fa-tshirt"></i></div>
+                <div class="stat-info">
+                    <h3 id="totalPieces">0</h3>
+                    <p>Total Pieces</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green"><i class="fas fa-arrow-up"></i></div>
+                <div class="stat-info">
+                    <h3 id="producedToday">0</h3>
+                    <p>Produced Today</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon orange"><i class="fas fa-times-circle"></i></div>
+                <div class="stat-info">
+                    <h3 id="shippedToday">0</h3>
+                    <p>Rejected Today</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="actions-header" style="display: flex; justify-content: flex-end; gap: 15px; margin: 30px 0 25px 0;">
+            <button class="btn add" id="addNewGarmentBtn"><i class="fas fa-plus-circle"></i> Add New Garment Type</button>
+            <button class="btn add" id="addMovementBtn"><i class="fas fa-exchange-alt"></i> Record Movement</button>
+        </div>
+
+        <div class="fabric-table-section" style="margin-bottom: 30px;">
+            <div class="actions-header">
+                <h3 class="section-title"><i class="fas fa-boxes"></i> Garment Types</h3>
+                <div class="action-buttons">
+                    <select id="sortGarmentSelect" class="filter-dropdown" style="margin-right: 10px;">
+                        <option value="">Sort By</option>
+                        <option value="stock-desc">Stock (High to Low)</option>
+                        <option value="stock-asc">Stock (Low to High)</option>
+                        <option value="id-asc">ID (A-Z)</option>
+                        <option value="id-desc">ID (Z-A)</option>
+                    </select>
+                    <select id="filterGarmentType" class="filter-dropdown" style="margin-right: 10px;">
+                        <option value="">All Types</option>
+                    </select>
+                    <select id="filterGarmentSize" class="filter-dropdown">
+                        <option value="">All Sizes</option>
+                    </select>
+                </div>
+            </div>
+            <table class="fabric-table">
+                <thead>
+                <tr>
+                    <th>Garment ID</th>
+                    <th>Type</th>
+                    <th>Size</th>
+                    <th>Fabric ID</th>
+                    <th>Current Stock (pcs)</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody id="garmentTableBody">
+                <tr><td colspan="6" style="text-align:center;color:#666;padding:30px;">
+                    <i class="fas fa-spinner fa-spin" style="font-size:24px;margin-bottom:10px;"></i>
+                    <br>Loading garments...
+                </td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="fabric-table-section">
+            <div class="actions-header">
+                <h3 class="section-title"><i class="fas fa-tasks"></i> Garment Movements</h3>
+                <div class="action-buttons">
+                    <select id="sortSelect" class="filter-dropdown" style="margin-right: 10px;">
+                        <option value="">Sort By</option>
+                        <option value="date-desc">Date (Newest First)</option>
+                        <option value="date-asc">Date (Oldest First)</option>
+                        <option value="quantity-desc">Quantity (High to Low)</option>
+                        <option value="quantity-asc">Quantity (Low to High)</option>
+                    </select>
+                    <select id="filterType" class="filter-dropdown" style="margin-right: 10px;">
+                        <option value="">All Garment Types</option>
+                    </select>
+                    <select id="filterStatus" class="filter-dropdown">
+                        <option value="">All Movements</option>
+                        <option value="In">Stock In</option>
+                    </select>
+                </div>
+            </div>
+
+            <table class="fabric-table">
+                <thead>
+                <tr>
+                    <th>Movement ID</th>
+                    <th>Garment ID</th>
+                    <th>Fabric ID</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th>Quantity (pcs)</th>
+                    <th>Approval Info</th>
+                    <th>Approved Quantity (pcs)</th>
+                    <th>Reject Quantity (pcs)</th>
+                    <th>Reject Reason </th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody id="movementTableBody">
+                <tr><td colspan="10" style="text-align:center;color:#666;padding:30px;">
+                    <i class="fas fa-spinner fa-spin" style="font-size:24px;margin-bottom:10px;"></i>
+                    <br>Loading movements...
+                </td></tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+
+<!-- Movement Approval Modal -->
+<div id="movementApprovalModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Approve / Reject Garment Movement</h3>
+            <span class="close" id="closeApprovalModal">&times;</span>
+        </div>
+        <form id="movementApprovalForm">
+            <input type="hidden" id="approvalMovementId" name="movementId">
+
+            <div class="form-group">
+                <label for="approvalGarmentId">Garment ID</label>
+                <input type="text" id="approvalGarmentId" name="garmentId" readonly>
+            </div>
+
+            <div class="form-group">
+                <label for="approvalFabricId">Fabric ID</label>
+                <input type="text" id="approvalFabricId" name="fabricId" readonly>
+            </div>
+
+            <div class="form-group">
+                <label for="approvalTotalQuantity">Total Quantity (pieces)</label>
+                <input type="number" id="approvalTotalQuantity" name="totalQuantity" readonly>
+            </div>
+
+            <div class="form-group">
+                <label for="approvedQuantity">Approved Quantity (pieces) <span class="required">*</span></label>
+                <input type="number" id="approvedQuantity" name="approvedQuantity" placeholder="Enter approved quantity" min="0" step="1" required>
+                <small class="form-help">Enter how many pieces to approve</small>
+            </div>
+
+            <div class="form-group">
+                <label for="rejectedQuantity">Rejected Quantity (pieces)</label>
+                <input type="number" id="rejectedQuantity" name="rejectedQuantity" placeholder="Enter rejected quantity" min="0" step="1">
+                <small class="form-help">Optional - enter how many pieces are rejected</small>
+            </div>
+
+            <div class="form-group" id="rejectReasonGroup" style="display:none;">
+                <label for="rejectReason">Rejection Reason</label>
+                <textarea id="rejectReason" name="rejectReason" rows="3" placeholder="Enter reason for rejection"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="decisionDate">Decision Date</label>
+                <input type="date" id="decisionDate" name="decisionDate" readonly>
+            </div>
+
+            <div class="form-buttons">
+                <button type="button" class="btn btn-cancel" id="cancelApprovalBtn">Cancel</button>
+                <button type="submit" class="btn btn-submit" id="submitApprovalBtn">Submit Decision</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Add New Garment Modal -->
+<div id="addGarmentModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title"><i class="fas fa-plus-circle"></i> Add New Garment Type</h3>
+            <span class="close" id="closeGarmentModal">&times;</span>
+        </div>
+        <div style="background: #e8f4fd; padding: 10px; border-radius: 5px; margin-bottom: 15px; border-left: 4px solid #3498db;">
+            <small style="color: #2c3e50;">
+                <i class="fas fa-info-circle"></i>
+                This will create both a garment record and a corresponding product automatically.
+            </small>
+        </div>
+        <form id="addGarmentForm">
+            <div class="form-group">
+                <label for="newGarmentId">Garment ID <span style="color:#e74c3c;">*</span></label>
+                <input type="text" id="newGarmentId" name="garmentId" placeholder="GAR001" maxlength="6" required style="text-transform: uppercase;">
+                <small class="form-help" id="garmentIdHelp">Format: GAR followed by 3 digits (e.g., GAR001)</small>
+                <div class="error-message" id="garmentIdError" style="display:none;"></div>
+            </div>
+            <div class="form-group">
+                <label for="newGarmentFabricId">Fabric ID <span style="color:#e74c3c;">*</span></label>
+                <select id="newGarmentFabricId" name="fabricId" required>
+                    <option value="">Select Fabric ID</option>
+                </select>
+                <small class="form-help">Select from available fabrics</small>
+            </div>
+            <div class="form-group">
+                <label for="newGarmentType">Garment Type <span style="color:#e74c3c;">*</span></label>
+                <select id="newGarmentType" name="garmentType" required>
+                    <option value="">Select Garment Type</option>
+                </select>
+                <small class="form-help">Select from existing types or add new</small>
+            </div>
+            <div class="form-group">
+                <label for="newGarmentSize">Size <span style="color:#e74c3c;">*</span></label>
+                <select id="newGarmentSize" name="size" required>
+                    <option value="">Select Size</option>
+                    <option value="S">S</option>
+                    <option value="M">M</option>
+                    <option value="L">L</option>
+                    <option value="XL">XL</option>
+                </select>
+                <small class="form-help" id="duplicateWarning" style="color:#f39c12; display:none;">
+                    <i class="fas fa-exclamation-triangle"></i> This type+size+fabric combination already exists
+                </small>
+            </div>
+            <div class="form-group">
+                <label for="initialStock">Initial Stock (pieces) <span style="color:#e74c3c;">*</span></label>
+                <input type="number" id="initialStock" name="initialStock" placeholder="Minimum 10 pieces" min="10" step="1" required>
+                <small class="form-help" id="stockHelp">Minimum initial stock is 10 pieces</small>
+                <div class="error-message" id="stockError" style="display:none;"></div>
+            </div>
+            <div class="form-buttons">
+                <button type="button" class="btn btn-cancel" id="cancelGarmentBtn">Cancel</button>
+                <button type="submit" class="btn add" id="submitGarmentBtn"><i class="fas fa-plus-circle"></i> Add Garment</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Add Movement Modal -->
+<div id="addMovementModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title"><i class="fas fa-exchange-alt"></i> Record Garment Movement</h3>
+            <span class="close" id="closeMovementModal">&times;</span>
+        </div>
+        <form id="addMovementForm">
+            <div class="form-group">
+                <label for="garmentSelect">Select Garment <span style="color:#e74c3c;">*</span></label>
+                <select id="garmentSelect" name="garmentId" required>
+                    <option value="">Choose Garment</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Garment Details</label>
+                <div id="garmentDetails" style="padding: 15px; background: #f8f9fa; border-radius: 8px; font-size: 14px; color: #555; line-height: 1.8;">
+                    Select a garment to see details
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="movementStatus">Movement Type <span style="color:#e74c3c;">*</span></label>
+                <select id="movementStatus" name="status" required>
+                    <option value="">Select Type</option>
+                    <option value="In">Stock In (Production)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="movementQuantity">Quantity (pieces) <span style="color:#e74c3c;">*</span></label>
+                <input type="number" id="movementQuantity" name="quantity" placeholder="Enter quantity" min="1" step="1" required>
+                <small class="form-help" id="quantityHelp">Enter the quantity in pieces</small>
+                <div class="error-message" id="quantityError" style="display:none;"></div>
+            </div>
+            <div class="form-group">
+                <label for="movementDate">Movement Date <span style="color:#e74c3c;">*</span></label>
+                <input type="date" id="movementDate" name="movementDate" required readonly>
+                <small class="form-help">Date is fixed to today</small>
+            </div>
+            <div class="form-buttons">
+                <button type="button" class="btn btn-cancel" id="cancelMovementBtn">Cancel</button>
+                <button type="submit" class="btn add" id="submitMovementBtn"><i class="fas fa-exchange-alt"></i> Record Movement</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="/js/garment.js"></script>
+
+</body>
+</html>

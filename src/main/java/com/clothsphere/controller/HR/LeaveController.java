@@ -49,7 +49,7 @@ public class LeaveController {
         return "employeeDashboard :: leave-content";
     }
 
-    // API to submit leave request
+    // API to submit leave request - WITH STRATEGY PATTERN
     @PostMapping("/request")
     public ResponseEntity<?> submitLeaveRequest(@RequestParam String reason,
                                                 @RequestParam String startDate,
@@ -66,12 +66,22 @@ public class LeaveController {
             leave.setStartDate(start);
             leave.setEndDate(end);
 
+            // USE STRATEGY PATTERN - This will auto-approve eligible leaves
             Leave savedLeave = leaveService.requestLeave(leave, employeeId);
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("message", "Leave request submitted successfully");
             response.put("leaveId", savedLeave.getLeaveId());
+            response.put("status", savedLeave.getStatus());
+
+            // Different messages based on auto-approval
+            if ("APPROVED".equals(savedLeave.getStatus())) {
+                response.put("message", "🎉 Leave request AUTO-APPROVED! " +
+                        savedLeave.getComments());
+            } else {
+                response.put("message", "Leave request submitted successfully. " +
+                        savedLeave.getComments());
+            }
 
             return ResponseEntity.ok(response);
 

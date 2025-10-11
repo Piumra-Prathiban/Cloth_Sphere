@@ -514,4 +514,41 @@ public class FactoryManagerController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    // Add this method to FactoryManagerController.java
+
+    /**
+     * Get task progress statistics
+     */
+    @GetMapping("/api/reports/task-progress")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> getTaskProgressStats() {
+        try {
+            Map<String, Object> taskStats = productionTaskService.getTaskStatistics();
+
+            long totalTasks = (Long) taskStats.get("totalTasks");
+            long completedTasks = (Long) taskStats.get("completedTasks");
+            long inProgressTasks = (Long) taskStats.get("inProgressTasks");
+            long pendingTasks = (Long) taskStats.get("pendingTasks");
+
+            // Calculate percentages
+            double completedPercentage = totalTasks > 0 ? (completedTasks * 100.0 / totalTasks) : 0;
+            double inProgressPercentage = totalTasks > 0 ? (inProgressTasks * 100.0 / totalTasks) : 0;
+            double pendingPercentage = totalTasks > 0 ? (pendingTasks * 100.0 / totalTasks) : 0;
+
+            Map<String, Object> progressStats = new HashMap<>();
+            progressStats.put("completedPercentage", Math.round(completedPercentage));
+            progressStats.put("inProgressPercentage", Math.round(inProgressPercentage));
+            progressStats.put("pendingPercentage", Math.round(pendingPercentage));
+            progressStats.put("completedTasks", completedTasks);
+            progressStats.put("inProgressTasks", inProgressTasks);
+            progressStats.put("pendingTasks", pendingTasks);
+            progressStats.put("totalTasks", totalTasks);
+
+            return ResponseEntity.ok(progressStats);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
 }
