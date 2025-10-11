@@ -3,15 +3,19 @@ const menuToggle = document.getElementById('menuToggle');
 const sidebar = document.getElementById('sidebar');
 const sidebarOverlay = document.getElementById('sidebarOverlay');
 
-menuToggle.addEventListener('click', function() {
-    sidebar.classList.toggle('open');
-    sidebarOverlay.classList.toggle('show');
-});
+if (menuToggle && sidebar && sidebarOverlay) {
+    menuToggle.addEventListener('click', function() {
+        sidebar.classList.toggle('open');
+        sidebarOverlay.classList.toggle('show');
+    });
+}
 
-sidebarOverlay.addEventListener('click', function() {
-    sidebar.classList.remove('open');
-    sidebarOverlay.classList.remove('show');
-});
+if (sidebarOverlay) {
+    sidebarOverlay.addEventListener('click', function() {
+        sidebar.classList.remove('open');
+        sidebarOverlay.classList.remove('show');
+    });
+}
 
 const navItems = document.querySelectorAll('.nav-item');
 navItems.forEach(item => {
@@ -28,95 +32,101 @@ let fabricMovementChart, garmentMovementChart;
 
 // Initialize charts
 function initializeCharts() {
+    console.log('Initializing charts...');
+
     // Fabric Movement Chart
-    const fabricCtx = document.getElementById('fabricMovementChart').getContext('2d');
-    fabricMovementChart = new Chart(fabricCtx, {
-        type: 'line',
-        data: {
-            labels: [],
-            datasets: [
-                {
-                    label: 'Stock IN (meters)',
-                    data: [],
-                    borderColor: '#27ae60',
-                    backgroundColor: 'rgba(39, 174, 96, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                },
-                {
-                    label: 'Stock OUT (meters)',
-                    data: [],
-                    borderColor: '#e74c3c',
-                    backgroundColor: 'rgba(231, 76, 60, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'top',
-                }
+    const fabricCtx = document.getElementById('fabricMovementChart');
+    if (fabricCtx) {
+        fabricMovementChart = new Chart(fabricCtx.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: getLast7Days(),
+                datasets: [
+                    {
+                        label: 'Stock IN (meters)',
+                        data: new Array(7).fill(0),
+                        borderColor: '#27ae60',
+                        backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        label: 'Stock OUT (meters)',
+                        data: new Array(7).fill(0),
+                        borderColor: '#e74c3c',
+                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }
+                ]
             },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: { color: 'rgba(0,0,0,0.1)' }
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
                 },
-                x: {
-                    grid: { color: 'rgba(0,0,0,0.1)' }
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(0,0,0,0.1)' }
+                    },
+                    x: {
+                        grid: { color: 'rgba(0,0,0,0.1)' }
+                    }
                 }
             }
-        }
-    });
+        });
+    }
 
     // Garment Movement Chart
-    const garmentCtx = document.getElementById('garmentMovementChart').getContext('2d');
-    garmentMovementChart = new Chart(garmentCtx, {
-        type: 'line',
-        data: {
-            labels: [],
-            datasets: [
-                {
-                    label: 'Stock IN (pieces)',
-                    data: [],
-                    borderColor: '#3498db',
-                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                },
-                {
-                    label: 'Shipped (pieces)',
-                    data: [],
-                    borderColor: '#f39c12',
-                    backgroundColor: 'rgba(243, 156, 18, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'top',
-                }
+    const garmentCtx = document.getElementById('garmentMovementChart');
+    if (garmentCtx) {
+        garmentMovementChart = new Chart(garmentCtx.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: getLast7Days(),
+                datasets: [
+                    {
+                        label: 'Stock IN (pieces)',
+                        data: new Array(7).fill(0),
+                        borderColor: '#3498db',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        label: 'Shipped (pieces)',
+                        data: new Array(7).fill(0),
+                        borderColor: '#f39c12',
+                        backgroundColor: 'rgba(243, 156, 18, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }
+                ]
             },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: { color: 'rgba(0,0,0,0.1)' }
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
                 },
-                x: {
-                    grid: { color: 'rgba(0,0,0,0.1)' }
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(0,0,0,0.1)' }
+                    },
+                    x: {
+                        grid: { color: 'rgba(0,0,0,0.1)' }
+                    }
                 }
             }
-        }
-    });
+        });
+    }
 }
 
 // Get last 7 days labels
@@ -133,6 +143,7 @@ function getLast7Days() {
 
 // Load all dashboard data
 function loadDashboardData() {
+    console.log('Loading dashboard data...');
     loadTotalStats();
     loadFabricMovementChart();
     loadGarmentMovementChart();
@@ -140,102 +151,161 @@ function loadDashboardData() {
     loadGarmentLowStockAlerts();
 }
 
-// Load total statistics
+// Load total statistics - UPDATED
 function loadTotalStats() {
-    // Load fabric total
-    fetch('/api/fabrics/all')
-        .then(res => res.json())
-        .then(data => {
-            const totalMeters = data.reduce((sum, f) => sum + (f.currentStock || 0), 0);
-            document.getElementById('totalFabricsInStock').textContent = totalMeters + 'm';
+    console.log('Loading dashboard stats...');
+    fetch('/api/dashboard/stats')
+        .then(res => {
+            console.log('Stats response status:', res.status);
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+            return res.json();
         })
-        .catch(err => console.error('Error loading fabric stats:', err));
-
-    // Load garment total
-    fetch('/api/garments/all')
-        .then(res => res.json())
-        .then(data => {
-            const totalPieces = data.reduce((sum, g) => sum + (g.currentStock || 0), 0);
-            document.getElementById('totalGarmentsInStock').textContent = totalPieces + 'pcs';
+        .then(stats => {
+            console.log('Dashboard stats received:', stats);
+            document.getElementById('totalFabricsInStock').textContent = stats.totalFabrics + 'm';
+            document.getElementById('totalGarmentsInStock').textContent = stats.totalGarments + 'pcs';
+            document.getElementById('totalRejectedFabrics').textContent = stats.rejectedFabrics;
+            document.getElementById('totalRejectedGarments').textContent = stats.rejectedGarments;
         })
-        .catch(err => console.error('Error loading garment stats:', err));
+        .catch(err => {
+            console.error('Error loading dashboard stats:', err);
+            // Set default values
+            document.getElementById('totalFabricsInStock').textContent = '0m';
+            document.getElementById('totalGarmentsInStock').textContent = '0pcs';
+            document.getElementById('totalRejectedFabrics').textContent = '0';
+            document.getElementById('totalRejectedGarments').textContent = '0';
+        });
 }
 
-// Load fabric movement chart
+// Load fabric movement chart - UPDATED
 function loadFabricMovementChart() {
-    fetch('/api/fabric-movements')
-        .then(res => res.json())
+    console.log('Loading fabric movements...');
+    fetch('/api/dashboard/fabric-movements')
+        .then(res => {
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+            return res.json();
+        })
         .then(movements => {
+            console.log('Fabric movements received:', movements);
             const labels = getLast7Days();
             const stockIn = new Array(7).fill(0);
             const stockOut = new Array(7).fill(0);
 
-            const today = new Date();
             movements.forEach(m => {
-                const movementDate = new Date(m.movementDate);
+                const movementDate = new Date(m.movement_date);
+                const today = new Date();
                 const diffDays = Math.floor((today - movementDate) / (1000 * 60 * 60 * 24));
 
                 if (diffDays >= 0 && diffDays < 7) {
                     const index = 6 - diffDays;
+                    const quantity = m.total_quantity || 0;
+
                     if (m.status === 'In') {
-                        stockIn[index] += m.quantity;
+                        stockIn[index] += quantity;
                     } else if (m.status === 'Out') {
-                        stockOut[index] += m.quantity;
+                        stockOut[index] += quantity;
                     }
                 }
             });
 
-            fabricMovementChart.data.labels = labels;
-            fabricMovementChart.data.datasets[0].data = stockIn;
-            fabricMovementChart.data.datasets[1].data = stockOut;
-            fabricMovementChart.update();
+            if (fabricMovementChart) {
+                fabricMovementChart.data.labels = labels;
+                fabricMovementChart.data.datasets[0].data = stockIn;
+                fabricMovementChart.data.datasets[1].data = stockOut;
+                fabricMovementChart.update();
+            }
         })
-        .catch(err => console.error('Error loading fabric movements:', err));
+        .catch(err => {
+            console.error('Error loading fabric movements:', err);
+            // Set empty data
+            const labels = getLast7Days();
+            if (fabricMovementChart) {
+                fabricMovementChart.data.labels = labels;
+                fabricMovementChart.data.datasets[0].data = new Array(7).fill(0);
+                fabricMovementChart.data.datasets[1].data = new Array(7).fill(0);
+                fabricMovementChart.update();
+            }
+        });
 }
 
-// Load garment movement chart
+// Load garment movement chart - UPDATED
 function loadGarmentMovementChart() {
-    fetch('/api/garment-movements')
-        .then(res => res.json())
+    console.log('Loading garment movements...');
+    fetch('/api/dashboard/garment-movements')
+        .then(res => {
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+            return res.json();
+        })
         .then(movements => {
+            console.log('Garment movements received:', movements);
             const labels = getLast7Days();
             const stockIn = new Array(7).fill(0);
             const shipped = new Array(7).fill(0);
 
-            const today = new Date();
             movements.forEach(m => {
-                const movementDate = new Date(m.movementDate);
+                const movementDate = new Date(m.movement_date);
+                const today = new Date();
                 const diffDays = Math.floor((today - movementDate) / (1000 * 60 * 60 * 24));
 
                 if (diffDays >= 0 && diffDays < 7) {
                     const index = 6 - diffDays;
+                    const quantity = m.total_quantity || 0;
+
                     if (m.status === 'In') {
-                        stockIn[index] += m.quantity;
+                        stockIn[index] += quantity;
                     } else if (m.status === 'Shipped') {
-                        shipped[index] += m.quantity;
+                        shipped[index] += quantity;
                     }
                 }
             });
 
-            garmentMovementChart.data.labels = labels;
-            garmentMovementChart.data.datasets[0].data = stockIn;
-            garmentMovementChart.data.datasets[1].data = shipped;
-            garmentMovementChart.update();
+            if (garmentMovementChart) {
+                garmentMovementChart.data.labels = labels;
+                garmentMovementChart.data.datasets[0].data = stockIn;
+                garmentMovementChart.data.datasets[1].data = shipped;
+                garmentMovementChart.update();
+            }
         })
-        .catch(err => console.error('Error loading garment movements:', err));
+        .catch(err => {
+            console.error('Error loading garment movements:', err);
+            // Set empty data
+            const labels = getLast7Days();
+            if (garmentMovementChart) {
+                garmentMovementChart.data.labels = labels;
+                garmentMovementChart.data.datasets[0].data = new Array(7).fill(0);
+                garmentMovementChart.data.datasets[1].data = new Array(7).fill(0);
+                garmentMovementChart.update();
+            }
+        });
 }
 
-// Load fabric low stock alerts
+// Load fabric low stock alerts - UPDATED
 function loadFabricLowStockAlerts() {
-    fetch('/api/dashboard/low-stock')
-        .then(res => res.json())
+    console.log('Loading fabric alerts...');
+    fetch('/api/dashboard/low-stock/fabrics')
+        .then(res => {
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+            return res.json();
+        })
         .then(data => {
+            console.log('Fabric alerts received:', data);
             const container = document.getElementById('fabricLowStockList');
 
             if (data && data.length > 0) {
                 container.innerHTML = '';
                 data.forEach(item => {
-                    const isCritical = item.currentQuantity < (item.threshold * 0.5);
+                    const currentStock = item.current_stock || 0;
+                    const reorderLevel = item.reorder_level || 0;
+                    const isCritical = currentStock < (reorderLevel * 0.3);
+
                     const alertDiv = document.createElement('div');
                     alertDiv.className = 'activity-item';
                     alertDiv.innerHTML = `
@@ -247,9 +317,8 @@ function loadFabricLowStockAlerts() {
                                 Fabric ${item.type} ${item.color} is below reorder level.
                                 ${isCritical ? '<span class="alert-badge critical">CRITICAL</span>' : '<span class="alert-badge warning">LOW</span>'}
                             </h5>
-                            <p><strong>Fabric ID:</strong> ${item.fabricId}</p>
-                            <p><strong>Current Stock:</strong> ${item.currentQuantity.toFixed(2)}m (${item.shortage.toFixed(2)}m below threshold of ${item.threshold}m)</p>
-                            <p><strong>Reorder Level:</strong> ${item.reorderLevel}m</p>
+                            <p><strong>Fabric ID:</strong> ${item.fabric_id}</p>
+                            <p><strong>Current Stock:</strong> ${currentStock}m (Reorder level: ${reorderLevel}m)</p>
                         </div>
                     `;
                     container.appendChild(alertDiv);
@@ -264,17 +333,27 @@ function loadFabricLowStockAlerts() {
         });
 }
 
-// Load garment low stock alerts
+// Load garment low stock alerts - UPDATED
 function loadGarmentLowStockAlerts() {
-    fetch('/api/garments/dashboard/low-stock')
-        .then(res => res.json())
+    console.log('Loading garment alerts...');
+    fetch('/api/dashboard/low-stock/garments')
+        .then(res => {
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+            return res.json();
+        })
         .then(data => {
+            console.log('Garment alerts received:', data);
             const container = document.getElementById('garmentLowStockList');
 
             if (data && data.length > 0) {
                 container.innerHTML = '';
                 data.forEach(item => {
-                    const isCritical = item.criticalLevel;
+                    const currentStock = item.current_stock || 0;
+                    const reorderLevel = item.reorder_level || 0;
+                    const isCritical = currentStock < (reorderLevel * 0.3);
+
                     const alertDiv = document.createElement('div');
                     alertDiv.className = 'activity-item';
                     alertDiv.innerHTML = `
@@ -283,12 +362,11 @@ function loadGarmentLowStockAlerts() {
                         </div>
                         <div class="activity-content">
                             <h5>
-                                Garment ${item.garmentType} (${item.size}) ${item.fabricType} ${item.color} is below reorder level.
+                                Garment ${item.type} (${item.size}) is below reorder level.
                                 ${isCritical ? '<span class="alert-badge critical">CRITICAL</span>' : '<span class="alert-badge warning">LOW</span>'}
                             </h5>
-                            <p><strong>Garment ID:</strong> ${item.garmentId}</p>
-                            <p><strong>Current Stock:</strong> ${item.currentQuantity}pcs (${item.shortage}pcs below threshold of ${item.threshold}pcs)</p>
-                            <p><strong>Reorder Level:</strong> ${item.reorderLevel}pcs</p>
+                            <p><strong>Garment ID:</strong> ${item.garment_id}</p>
+                            <p><strong>Current Stock:</strong> ${currentStock}pcs (Reorder level: ${reorderLevel}pcs)</p>
                         </div>
                     `;
                     container.appendChild(alertDiv);
@@ -308,6 +386,7 @@ setInterval(loadDashboardData, 300000);
 
 // Initialize dashboard on page load
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing dashboard...');
     initializeCharts();
     loadDashboardData();
 });

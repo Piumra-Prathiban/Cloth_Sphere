@@ -220,11 +220,6 @@ public class LoginController {
         return "redirect:/factory/dashboard";
     }
 
-    @GetMapping("/inventoryDashboard")
-    public String showInventoryDashboard(HttpSession session, Model model) {
-        return loadDashboard("inventoryDashboard", session, model);
-    }
-
     @GetMapping("/customerDashboard")
     public String showCustomerDashboard(HttpSession session, Model model) {
         return loadDashboard("customerDashboard", session, model);

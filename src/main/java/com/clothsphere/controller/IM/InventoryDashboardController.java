@@ -1,12 +1,20 @@
 package com.clothsphere.controller.IM;
 
+import com.clothsphere.service.IM.DashboardService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 
-
 @Controller
-
 public class InventoryDashboardController {
+
+    @Autowired
+    private DashboardService dashboardService;
+
+    @GetMapping("/inventoryDashboard")
+    public String showDashboard() {
+        return "inventorydashboard";  // returns inventorydashboard.html
+    }
 
     // Fabrics management page
     @GetMapping("/fabrics")
@@ -19,13 +27,4 @@ public class InventoryDashboardController {
     public String showGarments() {
         return "garments";  // returns garments.html
     }
-
-    // Profile page
-    @GetMapping("/profile")
-    public String showProfile() {
-        return "profile";  // returns profile.html
-    }
-
-
-
 }
