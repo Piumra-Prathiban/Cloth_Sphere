@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloth Sphere - My Profile</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-blue-gray: #5A738A;
+            --secondary-darker: #425A6C;
+            --background-cream: #F7F5EC;
+            --accent-yellow: #EBD372;
+            --white: #FFFFFF;
+            --light-gray: #F5F5F5;
+            --border-color: #E0E0E0;
+            --success-green: #4caf50;
+            --error-red: #f44336;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Open Sans', sans-serif;
+            background-color: var(--background-cream);
+            color: var(--secondary-darker);
+            line-height: 1.6;
+        }
+
+        /* Header Styles */
+        header {
+            background-color: var(--white);
+            padding: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: 300;
+            letter-spacing: 3px;
+            color: var(--primary-blue-gray);
+            text-decoration: none;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 40px;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: var(--primary-blue-gray);
+            font-size: 15px;
+            letter-spacing: 1px;
+            transition: color 0.3s ease;
+            font-weight: 400;
+        }
+
+        nav a:hover, nav a.active {
+            color: var(--secondary-darker);
+        }
+
+        .header-icons {
+            display: flex;
+            gap: 25px;
+            align-items: center;
+        }
+
+        .icon-btn {
+            position: relative;
+            cursor: pointer;
+            font-size: 24px;
+            background: none;
+            border: none;
+            padding: 0;
+        }
+
+        .badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: var(--error-red);
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 8px 15px;
+            background: var(--light-gray);
+            border-radius: 6px;
+        }
+
+        .user-name {
+            font-weight: 500;
+            color: var(--secondary-darker);
+            font-size: 14px;
+        }
+
+        .logout-btn {
+            padding: 10px 20px;
+            background: var(--primary-blue-gray);
+            color: var(--white);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: var(--secondary-darker);
+        }
+
+        /* Page Header */
+        .page-header {
+            background: linear-gradient(135deg, var(--primary-blue-gray) 0%, var(--secondary-darker) 100%);
+            color: var(--white);
+            padding: 60px 40px;
+            text-align: center;
+        }
+
+        .page-header h1 {
+            font-size: 42px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+
+        .page-header p {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+
+        /* Main Content */
+        .main-content {
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 0 40px;
+        }
+
+        /* Profile Container */
+        .profile-container {
+            background: var(--white);
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+
+        .profile-tabs {
+            display: flex;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+            background: var(--light-gray);
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--primary-blue-gray);
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            background: var(--white);
+            color: var(--secondary-darker);
+            border-bottom: 3px solid var(--primary-blue-gray);
+        }
+
+        .tab:hover {
+            background: var(--white);
+        }
+
+        .tab-content {
+            display: none;
+            padding: 40px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .section-title {
+            font-size: 24px;
+            font-weight: 400;
+            color: var(--primary-blue-gray);
+            margin-bottom: 25px;
+            letter-spacing: 1px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--secondary-darker);
+            margin-bottom: 8px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 15px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-blue-gray);
+        }
+
+        .form-group input:disabled {
+            background: var(--light-gray);
+            cursor: not-allowed;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: var(--primary-blue-gray);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background: var(--secondary-darker);
+        }
+
+        .btn-secondary {
+            background: var(--light-gray);
+            color: var(--secondary-darker);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-color);
+        }
+
+        .info-card {
+            background: var(--light-gray);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: var(--primary-blue-gray);
+        }
+
+        .info-value {
+            color: var(--secondary-darker);
+        }
+
+        .password-requirements {
+            background: var(--light-gray);
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-size: 13px;
+            color: var(--primary-blue-gray);
+        }
+
+        .password-requirements ul {
+            margin-top: 8px;
+            margin-left: 20px;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--primary-blue-gray);
+            color: var(--white);
+            padding: 40px 0 20px;
+            margin-top: 80px;
+            text-align: center;
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--success-green);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: none;
+            z-index: 2000;
+            animation: slideIn 0.3s ease;
+        }
+
+        .toast.error {
+            background: var(--error-red);
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(400px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            nav {
+                display: none;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .profile-tabs {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-container">
+            <a href="/buyer/dashboard" class="logo">CLOTH SPHERE</a>
+            <nav>
+                <ul>
+                    <li><a href="/buyer/dashboard">Dashboard</a></li>
+                    <li><a href="/buyer/products">Products</a></li>
+                    <li><a href="/buyer/orders">My Orders</a></li>
+                    <li><a href="/buyer/wishlist">Wishlist</a></li>
+                    <li><a href="/buyer/profile" class="active">Profile</a></li>
+                </ul>
+            </nav>
+            <div class="header-icons">
+                <button class="icon-btn" onclick="window.location.href='/buyer/wishlist'">
+                    ❤️
+                    <span class="badge" id="wishlistBadge">0</span>
+                </button>
+                <button class="icon-btn" onclick="window.location.href='/buyer/cart'">
+                    🛒
+                    <span class="badge" id="cartBadge" th:text="${cartCount}">0</span>
+                </button>
+                <div class="user-info">
+                    <span class="user-name" th:text="${buyer.customerName}">Customer</span>
+                </div>
+                <a href="/buyer/logout" class="logout-btn">Logout</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Page Header -->
+    <section class="page-header">
+        <h1>My Profile</h1>
+        <p>Manage your account settings and preferences</p>
+    </section>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="profile-container">
+            <!-- Tabs -->
+            <div class="profile-tabs">
+                <button class="tab active" onclick="showTab('profile')">Profile Information</button>
+                <button class="tab" onclick="showTab('address')">Delivery Address</button>
+                <button class="tab" onclick="showTab('password')">Change Password</button>
+            </div>
+
+            <!-- Profile Information Tab -->
+            <div id="profile-tab" class="tab-content active">
+                <h2 class="section-title">Personal Information</h2>
+
+                <form id="profileForm" onsubmit="updateProfile(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="customerName">Full Name *</label>
+                            <input type="text" id="customerName" name="customerName"
+                                   th:value="${buyer.customerName}" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email">Email Address *</label>
+                            <input type="email" id="email" name="email"
+                                   th:value="${buyer.email}" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="phone">Phone Number</label>
+                            <input type="tel" id="phone" name="phone"
+                                   th:value="${buyer.phone}">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="buyerId">Buyer ID</label>
+                            <input type="text" id="buyerId" th:value="${buyer.buyerId}" disabled>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Update Profile</button>
+                </form>
+            </div>
+
+            <!-- Delivery Address Tab -->
+            <div id="address-tab" class="tab-content">
+                <h2 class="section-title">Delivery Address</h2>
+
+                <form id="addressForm" onsubmit="updateAddress(event)">
+                    <div class="form-group">
+                        <label for="address">Full Address</label>
+                        <input type="text" id="address" name="address"
+                               th:value="${buyer.address}"
+                               placeholder="Enter your complete delivery address">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Update Address</button>
+                </form>
+            </div>
+
+            <!-- Change Password Tab -->
+            <div id="password-tab" class="tab-content">
+                <h2 class="section-title">Change Password</h2>
+
+                <form id="passwordForm" onsubmit="changePassword(event)">
+                    <div class="form-group">
+                        <label for="currentPassword">Current Password *</label>
+                        <input type="password" id="currentPassword" name="currentPassword" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="newPassword">New Password *</label>
+                        <input type="password" id="newPassword" name="newPassword" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirm New Password *</label>
+                        <input type="password" id="confirmPassword" name="confirmPassword" required>
+                    </div>
+
+                    <div class="password-requirements">
+                        <strong>Password Requirements:</strong>
+                        <ul>
+                            <li>At least 8 characters long</li>
+                            <li>Contains uppercase letter (A-Z)</li>
+                            <li>Contains lowercase letter (a-z)</li>
+                            <li>Contains number (0-9)</li>
+                        </ul>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="margin-top: 20px;">Change Password</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <p>&copy; 2024 Cloth Sphere. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <script>
+        // Show tab
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName + '-tab').classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Update profile
+        function updateProfile(event) {
+            event.preventDefault();
+
+            const formData = new FormData(event.target);
+
+            fetch('/buyer/profile/update', {
+                method: 'POST',
+                body: new URLSearchParams(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    // Update user name in header
+                    document.querySelector('.user-name').textContent = formData.get('customerName');
+                } else {
+                    showToast(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                showToast('An error occurred', 'error');
+                console.error('Error:', error);
+            });
+        }
+
+        // Update address
+        function updateAddress(event) {
+            event.preventDefault();
+
+            const formData = new FormData(event.target);
+
+            fetch('/buyer/profile/update-address', {
+                method: 'POST',
+                body: new URLSearchParams(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                showToast(data.message, data.success ? 'success' : 'error');
+            })
+            .catch(error => {
+                showToast('An error occurred', 'error');
+                console.error('Error:', error);
+            });
+        }
+
+        // Change password
+        function changePassword(event) {
+            event.preventDefault();
+
+            const formData = new FormData(event.target);
+
+            fetch('/buyer/profile/change-password', {
+                method: 'POST',
+                body: new URLSearchParams(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    event.target.reset();
+                } else {
+                    showToast(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                showToast('An error occurred', 'error');
+                console.error('Error:', error);
+            });
+        }
+
+        // Show toast notification
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast ' + (type === 'error' ? 'error' : '');
+            toast.style.display = 'block';
+
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        }
+
+        // Load counts on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            fetch('/buyer/cart/count')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('cartBadge').textContent = data.cartCount || 0;
+            })
+            .catch(error => console.error('Error fetching cart count:', error));
+
+            fetch('/buyer/wishlist/count')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('wishlistBadge').textContent = data.wishlistCount || 0;
+            })
+            .catch(error => console.error('Error fetching wishlist count:', error));
+        });
+    </script>
+</body>
+</html>

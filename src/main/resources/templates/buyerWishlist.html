@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloth Sphere - My Wishlist</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-blue-gray: #5A738A;
+            --secondary-darker: #425A6C;
+            --background-cream: #F7F5EC;
+            --accent-yellow: #EBD372;
+            --white: #FFFFFF;
+            --light-gray: #F5F5F5;
+            --border-color: #E0E0E0;
+            --success-green: #4caf50;
+            --error-red: #f44336;
+            --warning-orange: #ff9800;
+            --info-blue: #2196F3;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Open Sans', sans-serif;
+            background-color: var(--background-cream);
+            color: var(--secondary-darker);
+            line-height: 1.6;
+        }
+
+        /* Header Styles */
+        header {
+            background-color: var(--white);
+            padding: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: 300;
+            letter-spacing: 3px;
+            color: var(--primary-blue-gray);
+            text-decoration: none;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 40px;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: var(--primary-blue-gray);
+            font-size: 15px;
+            letter-spacing: 1px;
+            transition: color 0.3s ease;
+            font-weight: 400;
+        }
+
+        nav a:hover, nav a.active {
+            color: var(--secondary-darker);
+        }
+
+        .header-icons {
+            display: flex;
+            gap: 25px;
+            align-items: center;
+        }
+
+        .icon-btn {
+            position: relative;
+            cursor: pointer;
+            font-size: 24px;
+            background: none;
+            border: none;
+            padding: 0;
+        }
+
+        .badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: var(--error-red);
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 8px 15px;
+            background: var(--light-gray);
+            border-radius: 6px;
+        }
+
+        .user-name {
+            font-weight: 500;
+            color: var(--secondary-darker);
+            font-size: 14px;
+        }
+
+        .logout-btn {
+            padding: 10px 20px;
+            background: var(--primary-blue-gray);
+            color: var(--white);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: var(--secondary-darker);
+        }
+
+        /* Page Header */
+        .page-header {
+            background: linear-gradient(135deg, var(--primary-blue-gray) 0%, var(--secondary-darker) 100%);
+            color: var(--white);
+            padding: 60px 40px;
+            text-align: center;
+        }
+
+        .page-header h1 {
+            font-size: 42px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+
+        .page-header p {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+
+        /* Main Content */
+        .main-content {
+            max-width: 1400px;
+            margin: 40px auto;
+            padding: 0 40px;
+        }
+
+        /* Wishlist Container */
+        .wishlist-container {
+            background: var(--white);
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .section-title {
+            font-size: 24px;
+            font-weight: 400;
+            color: var(--primary-blue-gray);
+            margin-bottom: 20px;
+            letter-spacing: 1px;
+        }
+
+        /* Wishlist Grid */
+        .wishlist-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .wishlist-item {
+            background: var(--white);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .wishlist-item:hover {
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transform: translateY(-5px);
+        }
+
+        .remove-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: var(--white);
+            border: none;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .remove-btn:hover {
+            background: var(--error-red);
+            color: var(--white);
+            transform: scale(1.1);
+        }
+
+        .product-image {
+            width: 100%;
+            height: 320px;
+            object-fit: cover;
+            cursor: pointer;
+        }
+
+        .product-info {
+            padding: 20px;
+        }
+
+        .product-name {
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--secondary-darker);
+            margin-bottom: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            display: block;
+        }
+
+        .product-name:hover {
+            color: var(--primary-blue-gray);
+        }
+
+        .product-code {
+            font-size: 13px;
+            color: var(--primary-blue-gray);
+            opacity: 0.7;
+            margin-bottom: 12px;
+        }
+
+        .product-price {
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--secondary-darker);
+            margin-bottom: 15px;
+        }
+
+        .product-stock {
+            font-size: 13px;
+            margin-bottom: 15px;
+        }
+
+        .in-stock {
+            color: var(--success-green);
+        }
+
+        .out-of-stock {
+            color: var(--error-red);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: var(--primary-blue-gray);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background: var(--secondary-darker);
+        }
+
+        .btn-primary:disabled {
+            background: var(--border-color);
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: var(--light-gray);
+            color: var(--secondary-darker);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-color);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+        }
+
+        .empty-state-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .empty-state h3 {
+            font-size: 24px;
+            font-weight: 400;
+            color: var(--primary-blue-gray);
+            margin-bottom: 10px;
+        }
+
+        .empty-state p {
+            color: var(--primary-blue-gray);
+            opacity: 0.7;
+            margin-bottom: 30px;
+        }
+
+        .shop-now-btn {
+            padding: 12px 30px;
+            background: var(--primary-blue-gray);
+            color: var(--white);
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+
+        .shop-now-btn:hover {
+            background: var(--secondary-darker);
+        }
+
+        /* Footer */
+        footer {
+            background: var(--primary-blue-gray);
+            color: var(--white);
+            padding: 40px 0 20px;
+            margin-top: 80px;
+            text-align: center;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .wishlist-grid {
+                grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+                gap: 20px;
+            }
+
+            nav {
+                display: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .wishlist-grid {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-container">
+            <a href="/buyer/dashboard" class="logo">CLOTH SPHERE</a>
+            <nav>
+                <ul>
+                    <li><a href="/buyer/dashboard">Dashboard</a></li>
+                    <li><a href="/buyer/products">Products</a></li>
+                    <li><a href="/buyer/orders">My Orders</a></li>
+                    <li><a href="/buyer/wishlist" class="active">Wishlist</a></li>
+                    <li><a href="/buyer/profile">Profile</a></li>
+                </ul>
+            </nav>
+            <div class="header-icons">
+                <button class="icon-btn" onclick="window.location.href='/buyer/wishlist'">
+                    ❤️
+                    <span class="badge" id="wishlistBadge" th:text="${wishlistItems.size()}">0</span>
+                </button>
+                <button class="icon-btn" onclick="window.location.href='/buyer/cart'">
+                    🛒
+                    <span class="badge" id="cartBadge" th:text="${cartCount}">0</span>
+                </button>
+                <div class="user-info">
+                    <span class="user-name" th:text="${buyer.customerName}">Customer</span>
+                </div>
+                <a href="/buyer/logout" class="logout-btn">Logout</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Page Header -->
+    <section class="page-header">
+        <h1>My Wishlist</h1>
+        <p>Your favorite items saved for later</p>
+    </section>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="wishlist-container">
+            <h2 class="section-title">Saved Items (<span th:text="${wishlistItems.size()}">0</span>)</h2>
+
+            <!-- Wishlist Grid -->
+            <div th:if="${wishlistItems != null and !wishlistItems.empty}" class="wishlist-grid">
+                <div class="wishlist-item" th:each="item : ${wishlistItems}">
+                    <button class="remove-btn" th:onclick="'removeFromWishlist(' + ${item.productId} + ')'" title="Remove from wishlist">×</button>
+
+                    <img th:src="@{${item.product.imagePath}}"
+                         th:alt="${item.product.name}"
+                         class="product-image"
+                         th:onclick="'window.location.href=\'/buyer/products/' + ${item.productId} + '\''"
+                         onerror="this.src='/images/placeholder.jpg'">
+
+                    <div class="product-info">
+                        <a th:href="@{/buyer/products/{id}(id=${item.productId})}"
+                           class="product-name"
+                           th:text="${item.product.name}">Product Name</a>
+
+                        <div class="product-code" th:text="${item.product.productCode}">PRD-001</div>
+
+                        <div class="product-price" th:text="'$' + ${#numbers.formatDecimal(item.product.price, 1, 2)}">$0.00</div>
+
+                        <div class="product-stock"
+                             th:classappend="${item.product.stockQuantity > 0 ? 'in-stock' : 'out-of-stock'}">
+                            <span th:if="${item.product.stockQuantity > 0}">✓ In Stock</span>
+                            <span th:if="${item.product.stockQuantity == 0}">✗ Out of Stock</span>
+                        </div>
+
+                        <div class="action-buttons">
+                            <button class="btn btn-primary"
+                                    th:onclick="'moveToCart(' + ${item.productId} + ')'"
+                                    th:disabled="${item.product.stockQuantity == 0}">
+                                Add to Cart
+                            </button>
+                            <button class="btn btn-secondary"
+                                    th:onclick="'window.location.href=\'/buyer/products/' + ${item.productId} + '\''">
+                                View
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div th:if="${wishlistItems == null or wishlistItems.empty}" class="empty-state">
+                <div class="empty-state-icon">❤️</div>
+                <h3>Your Wishlist is Empty</h3>
+                <p>Save your favorite items here for later!</p>
+                <a href="/buyer/products" class="shop-now-btn">Browse Products</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <p>&copy; 2024 Cloth Sphere. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Remove from wishlist
+        function removeFromWishlist(productId) {
+            if (!confirm('Remove this item from your wishlist?')) {
+                return;
+            }
+
+            fetch('/buyer/wishlist/remove', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'productId=' + productId
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert(data.message || 'Failed to remove item');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred');
+            });
+        }
+
+        // Move to cart
+        function moveToCart(productId) {
+            fetch('/buyer/wishlist/move-to-cart', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'productId=' + productId
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    updateCartBadge(data.cartCount);
+                    location.reload();
+                } else {
+                    alert(data.message || 'Failed to add to cart');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred');
+            });
+        }
+
+        // Update cart badge
+        function updateCartBadge(count) {
+            document.getElementById('cartBadge').textContent = count;
+        }
+
+        // Load counts on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            // Update cart count
+            fetch('/buyer/cart/count')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('cartBadge').textContent = data.cartCount || 0;
+            })
+            .catch(error => console.error('Error fetching cart count:', error));
+
+            // Update wishlist count
+            fetch('/buyer/wishlist/count')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('wishlistBadge').textContent = data.wishlistCount || 0;
+            })
+            .catch(error => console.error('Error fetching wishlist count:', error));
+        });
+    </script>
+</body>
+</html>

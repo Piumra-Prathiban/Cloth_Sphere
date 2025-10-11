@@ -127,10 +127,15 @@ public class LoginController {
         }
 
         if (PasswordEncoder.matches(password, user.getPassword())) {
+            // Update log count
+            user.setLogCount(user.getLogCount() + 1);
+            systemUserService.updateLogCount(username, user.getLogCount());
+
             // Set ALL session attributes including userEmail
+            session.setAttribute("loggedInUser", user);
             session.setAttribute("currentUser", user);
             session.setAttribute("username", username);
-            session.setAttribute("userEmail", user.getEmail()); // ADD THIS
+            session.setAttribute("userEmail", user.getEmail());
 
             String lowerRole = userRole.toLowerCase().trim();
 
@@ -148,6 +153,8 @@ public class LoginController {
                 case "employee":
                     session.setAttribute("employeeId", actualEmployeeId);
                     return "redirect:/employeeDashboard";
+                case "customer & product management officer":
+                    return "redirect:/officer/dashboard";
                 default:
                     return "redirect:/dashboard";
             }
