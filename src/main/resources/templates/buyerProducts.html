@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloth Sphere - Products</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-blue-gray: #5A738A;
+            --secondary-darker: #425A6C;
+            --background-cream: #F7F5EC;
+            --accent-yellow: #EBD372;
+            --white: #FFFFFF;
+            --light-gray: #F5F5F5;
+            --border-color: #E0E0E0;
+            --success-green: #4caf50;
+            --error-red: #f44336;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Open Sans', sans-serif;
+            background-color: var(--background-cream);
+            color: var(--secondary-darker);
+            line-height: 1.6;
+        }
+
+        /* Header Styles */
+        header {
+            background-color: var(--white);
+            padding: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: 300;
+            letter-spacing: 3px;
+            color: var(--primary-blue-gray);
+            text-decoration: none;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 40px;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: var(--primary-blue-gray);
+            font-size: 15px;
+            letter-spacing: 1px;
+            transition: color 0.3s ease;
+            font-weight: 400;
+        }
+
+        nav a:hover {
+            color: var(--secondary-darker);
+        }
+
+        .header-icons {
+            display: flex;
+            gap: 25px;
+            align-items: center;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 8px 15px;
+            background: var(--light-gray);
+            border-radius: 6px;
+        }
+
+        .user-name {
+            font-weight: 500;
+            color: var(--secondary-darker);
+            font-size: 14px;
+        }
+
+        .logout-btn {
+            padding: 10px 20px;
+            background: var(--primary-blue-gray);
+            color: var(--white);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: var(--secondary-darker);
+        }
+
+        /* Page Header */
+        .page-header {
+            background: linear-gradient(135deg, var(--primary-blue-gray) 0%, var(--secondary-darker) 100%);
+            color: var(--white);
+            padding: 60px 40px;
+            text-align: center;
+        }
+
+        .page-header h1 {
+            font-size: 42px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+
+        .page-header p {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+
+        /* Main Content */
+        .main-content {
+            max-width: 1400px;
+            margin: 40px auto;
+            padding: 0 40px;
+        }
+
+        /* Filter & Search Section */
+        .filter-section {
+            background: var(--white);
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr auto;
+            gap: 15px;
+            align-items: end;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .filter-group label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--primary-blue-gray);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .filter-group input,
+        .filter-group select {
+            padding: 10px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 14px;
+            color: var(--secondary-darker);
+            transition: border-color 0.3s ease;
+        }
+
+        .filter-group input:focus,
+        .filter-group select:focus {
+            outline: none;
+            border-color: var(--primary-blue-gray);
+        }
+
+        .filter-btn {
+            padding: 10px 25px;
+            background: var(--primary-blue-gray);
+            color: var(--white);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+        }
+
+        .filter-btn:hover {
+            background: var(--secondary-darker);
+        }
+
+        /* Products Table */
+        .table-container {
+            background: var(--white);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 25px;
+            border-bottom: 2px solid var(--background-cream);
+        }
+
+        .table-title {
+            font-size: 24px;
+            font-weight: 400;
+            color: var(--primary-blue-gray);
+            letter-spacing: 1px;
+        }
+
+        .results-count {
+            font-size: 14px;
+            color: var(--primary-blue-gray);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: var(--light-gray);
+        }
+
+        th {
+            padding: 15px 20px;
+            text-align: left;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--primary-blue-gray);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        td {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 14px;
+            color: var(--secondary-darker);
+        }
+
+        tbody tr {
+            transition: background-color 0.2s ease;
+        }
+
+        tbody tr:hover {
+            background-color: var(--background-cream);
+        }
+
+        .product-image {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+
+        .product-name {
+            font-weight: 500;
+            color: var(--secondary-darker);
+            margin-bottom: 3px;
+        }
+
+        .product-code {
+            font-size: 12px;
+            color: var(--primary-blue-gray);
+            font-family: monospace;
+        }
+
+        .price {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--secondary-darker);
+        }
+
+        .stock-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .stock-in-stock {
+            background: #e8f5e9;
+            color: var(--success-green);
+        }
+
+        .stock-low {
+            background: #fff3e0;
+            color: #ff9800;
+        }
+
+        .stock-out {
+            background: #ffebee;
+            color: var(--error-red);
+        }
+
+        .category-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            background: var(--background-cream);
+            border-radius: 4px;
+            font-size: 12px;
+            color: var(--primary-blue-gray);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: var(--primary-blue-gray);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background: var(--secondary-darker);
+        }
+
+        .btn-secondary {
+            background: var(--background-cream);
+            color: var(--primary-blue-gray);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-color);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+        }
+
+        .empty-state-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .empty-state h3 {
+            font-size: 24px;
+            font-weight: 400;
+            color: var(--primary-blue-gray);
+            margin-bottom: 10px;
+        }
+
+        .empty-state p {
+            color: var(--primary-blue-gray);
+            opacity: 0.7;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--primary-blue-gray);
+            color: var(--white);
+            padding: 40px 0 20px;
+            margin-top: 80px;
+            text-align: center;
+        }
+
+        .footer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 40px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .filter-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            table {
+                font-size: 13px;
+            }
+
+            th, td {
+                padding: 12px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header-container {
+                flex-wrap: wrap;
+            }
+
+            nav {
+                display: none;
+            }
+
+            .filter-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .table-container {
+                overflow-x: auto;
+            }
+
+            table {
+                min-width: 800px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-container">
+            <a href="/buyer/dashboard" class="logo">CLOTH SPHERE</a>
+            <nav>
+                <ul>
+                    <li><a href="/buyer/dashboard">Dashboard</a></li>
+                    <li><a href="/buyer/products">Products</a></li>
+                    <li><a href="/buyer/orders">My Orders</a></li>
+                    <li><a href="/buyer/wishlist">Wishlist</a></li>
+                    <li><a href="/buyer/profile">Profile</a></li>
+                </ul>
+            </nav>
+            <div class="header-icons">
+                <div class="wishlist-icon" onclick="window.location.href='/buyer/wishlist'" style="position: relative; cursor: pointer; font-size: 24px; margin-right: 15px;">
+                    ❤️
+                    <span id="wishlistBadge" style="position: absolute; top: -8px; right: -8px; background: #f44336; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold;">0</span>
+                </div>
+                <div class="cart-icon" onclick="window.location.href='/buyer/cart'" style="position: relative; cursor: pointer; font-size: 24px; margin-right: 15px;">
+                    🛒
+                    <span id="cartBadge" style="position: absolute; top: -8px; right: -8px; background: #f44336; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold;">0</span>
+                </div>
+                <div class="user-info">
+                    <span class="user-name" th:text="${buyer != null ? buyer.customerName : 'Guest'}">Customer Name</span>
+                </div>
+                <a href="/buyer/logout" class="logout-btn">Logout</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Page Header -->
+    <section class="page-header">
+        <h1>Our Products</h1>
+        <p>Discover our premium collection of fashion items</p>
+    </section>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Filter Section -->
+        <div class="filter-section">
+            <form action="/buyer/products" method="get">
+                <div class="filter-grid">
+                    <div class="filter-group">
+                        <label for="search">Search Products</label>
+                        <input type="text" id="search" name="search" placeholder="Search by name or code..." th:value="${param.search}">
+                    </div>
+                    <div class="filter-group">
+                        <label for="category">Category</label>
+                        <select id="category" name="category">
+                            <option value="">All Categories</option>
+                            <option value="Men's Clothing" th:selected="${param.category != null and param.category[0] == 'Men''s Clothing'}">Men's Clothing</option>
+                            <option value="Women's Clothing" th:selected="${param.category != null and param.category[0] == 'Women''s Clothing'}">Women's Clothing</option>
+                            <option value="Accessories" th:selected="${param.category != null and param.category[0] == 'Accessories'}">Accessories</option>
+                            <option value="Shirts" th:selected="${param.category != null and param.category[0] == 'Shirts'}">Shirts</option>
+                            <option value="Pants" th:selected="${param.category != null and param.category[0] == 'Pants'}">Pants</option>
+                            <option value="Dresses" th:selected="${param.category != null and param.category[0] == 'Dresses'}">Dresses</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="sort">Sort By</label>
+                        <select id="sort" name="sort">
+                            <option value="name" th:selected="${param.sort != null and param.sort[0] == 'name'}">Name</option>
+                            <option value="price_asc" th:selected="${param.sort != null and param.sort[0] == 'price_asc'}">Price: Low to High</option>
+                            <option value="price_desc" th:selected="${param.sort != null and param.sort[0] == 'price_desc'}">Price: High to Low</option>
+                            <option value="newest" th:selected="${param.sort != null and param.sort[0] == 'newest'}">Newest First</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="filter-btn">Apply Filters</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Products Table -->
+        <div class="table-container">
+            <div class="table-header">
+                <h2 class="table-title">Available Products</h2>
+                <span class="results-count" th:text="${products != null ? products.size() : 0} + ' Products Found'">0 Products Found</span>
+            </div>
+
+            <!-- Products Table Content -->
+            <div th:if="${products != null and !products.empty}">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Image</th>
+                            <th>Product Details</th>
+                            <th>Category</th>
+                            <th>Price</th>
+                            <th>Stock Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="product : ${products}">
+                            <td>
+                                <img th:if="${product.imagePath != null and !product.imagePath.empty}"
+                                     th:src="@{${product.imagePath}}"
+                                     alt="Product Image"
+                                     class="product-image">
+                                <img th:unless="${product.imagePath != null and !product.imagePath.empty}"
+                                     src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Crect fill='%23E0E0E0' width='60' height='60'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='12' fill='%235A738A'%3ENo Image%3C/text%3E%3C/svg%3E"
+                                     alt="No Image"
+                                     class="product-image">
+                            </td>
+                            <td>
+                                <div class="product-name" th:text="${product.name}">Product Name</div>
+                                <div class="product-code" th:text="${product.code}">PROD-001</div>
+                            </td>
+                            <td>
+                                <span class="category-badge" th:text="${product.category}">Category</span>
+                            </td>
+                            <td>
+                                <span class="price" th:text="'$' + ${#numbers.formatDecimal(product.price, 1, 2)}">$0.00</span>
+                            </td>
+                            <td>
+                                <span th:if="${product.stock > 20}" class="stock-badge stock-in-stock">
+                                    In Stock (<span th:text="${product.stock}">0</span>)
+                                </span>
+                                <span th:if="${product.stock > 0 and product.stock <= 20}" class="stock-badge stock-low">
+                                    Low Stock (<span th:text="${product.stock}">0</span>)
+                                </span>
+                                <span th:if="${product.stock == 0}" class="stock-badge stock-out">
+                                    Out of Stock
+                                </span>
+                            </td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn btn-primary" th:if="${product.stock > 0}"
+                                            th:onclick="'addToCart(' + ${product.id} + ')'">Add to Cart</button>
+                                    <button class="btn btn-primary" th:if="${product.stock == 0}" disabled
+                                            style="opacity: 0.5; cursor: not-allowed;">Out of Stock</button>
+                                    <button class="btn btn-secondary"
+                                            th:onclick="'toggleWishlist(' + ${product.id} + ')'"
+                                            style="padding: 8px 12px;">❤️</button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Empty State -->
+            <div th:if="${products == null or products.empty}" class="empty-state">
+                <div class="empty-state-icon">📦</div>
+                <h3>No Products Found</h3>
+                <p>Try adjusting your search or filter criteria</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <p>&copy; 2024 Cloth Sphere. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Notification Toast -->
+    <div id="notification" style="position: fixed; top: 20px; right: 20px; background: #4caf50; color: white; padding: 15px 25px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: none; z-index: 2000; animation: slideIn 0.3s ease;"></div>
+
+    <style>
+        @keyframes slideIn {
+            from { transform: translateX(400px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .notification.error { background: #f44336 !important; }
+    </style>
+
+    <script>
+        // Load cart count on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            updateCartCount();
+            updateWishlistCount();
+        });
+
+        // Add product to cart
+        function addToCart(productId) {
+            fetch('/buyer/cart/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'productId=' + productId + '&quantity=1'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Product added to cart!', 'success');
+                    updateCartCount();
+                } else {
+                    showNotification(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                showNotification('Error adding to cart', 'error');
+                console.error('Error:', error);
+            });
+        }
+
+        // Toggle wishlist
+        function toggleWishlist(productId) {
+            // Check if already in wishlist
+            fetch('/buyer/wishlist/check?productId=' + productId)
+            .then(response => response.json())
+            .then(data => {
+                if (data.inWishlist) {
+                    // Remove from wishlist
+                    removeFromWishlist(productId);
+                } else {
+                    // Add to wishlist
+                    addToWishlist(productId);
+                }
+            })
+            .catch(error => {
+                console.error('Error checking wishlist:', error);
+            });
+        }
+
+        // Add to wishlist
+        function addToWishlist(productId) {
+            fetch('/buyer/wishlist/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'productId=' + productId
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Added to wishlist!', 'success');
+                    updateWishlistCount();
+                } else {
+                    showNotification(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                showNotification('Error adding to wishlist', 'error');
+                console.error('Error:', error);
+            });
+        }
+
+        // Remove from wishlist
+        function removeFromWishlist(productId) {
+            fetch('/buyer/wishlist/remove', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'productId=' + productId
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Removed from wishlist', 'success');
+                    updateWishlistCount();
+                } else {
+                    showNotification(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                showNotification('Error removing from wishlist', 'error');
+                console.error('Error:', error);
+            });
+        }
+
+        // Update cart count badge
+        function updateCartCount() {
+            fetch('/buyer/cart/count')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('cartBadge').textContent = data.cartCount || 0;
+            })
+            .catch(error => {
+                console.error('Error fetching cart count:', error);
+            });
+        }
+
+        // Update wishlist count badge
+        function updateWishlistCount() {
+            fetch('/buyer/wishlist/count')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('wishlistBadge').textContent = data.wishlistCount || 0;
+            })
+            .catch(error => {
+                console.error('Error fetching wishlist count:', error);
+            });
+        }
+
+        // Show notification toast
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = type === 'error' ? 'notification error' : 'notification';
+            notification.style.display = 'block';
+
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

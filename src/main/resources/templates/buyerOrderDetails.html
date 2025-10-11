@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloth Sphere - Order Details</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-blue-gray: #5A738A;
+            --secondary-darker: #425A6C;
+            --background-cream: #F7F5EC;
+            --white: #FFFFFF;
+            --light-gray: #F5F5F5;
+            --border-color: #E0E0E0;
+            --success-green: #4caf50;
+            --error-red: #f44336;
+            --warning-orange: #ff9800;
+            --info-blue: #2196F3;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Open Sans', sans-serif;
+            background-color: var(--background-cream);
+            color: var(--secondary-darker);
+            line-height: 1.6;
+        }
+
+        /* Header */
+        header {
+            background-color: var(--white);
+            padding: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: 300;
+            letter-spacing: 3px;
+            color: var(--primary-blue-gray);
+            text-decoration: none;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 40px;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: var(--primary-blue-gray);
+            font-size: 15px;
+            letter-spacing: 1px;
+            transition: color 0.3s ease;
+        }
+
+        nav a:hover {
+            color: var(--secondary-darker);
+        }
+
+        .header-icons {
+            display: flex;
+            gap: 25px;
+            align-items: center;
+        }
+
+        .cart-icon {
+            position: relative;
+            cursor: pointer;
+            font-size: 24px;
+        }
+
+        .cart-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: var(--error-red);
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 8px 15px;
+            background: var(--light-gray);
+            border-radius: 6px;
+        }
+
+        .logout-btn {
+            padding: 10px 20px;
+            background: var(--primary-blue-gray);
+            color: var(--white);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: var(--secondary-darker);
+        }
+
+        /* Page Header */
+        .page-header {
+            background: linear-gradient(135deg, var(--primary-blue-gray) 0%, var(--secondary-darker) 100%);
+            color: var(--white);
+            padding: 40px 40px;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .page-header h1 {
+            font-size: 32px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+        }
+
+        .page-header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .back-btn {
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.2);
+            color: var(--white);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+
+        .back-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        /* Main Content */
+        .main-content {
+            max-width: 1400px;
+            margin: 40px auto;
+            padding: 0 40px;
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 30px;
+        }
+
+        /* Order Info */
+        .order-info-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .info-card {
+            background: var(--white);
+            border-radius: 8px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 500;
+            color: var(--primary-blue-gray);
+            margin-bottom: 20px;
+            letter-spacing: 0.5px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .info-label {
+            font-size: 12px;
+            color: var(--primary-blue-gray);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--secondary-darker);
+        }
+
+        /* Order Items */
+        .order-item {
+            display: grid;
+            grid-template-columns: 80px 1fr auto;
+            gap: 15px;
+            padding: 15px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .order-item:last-child {
+            border-bottom: none;
+        }
+
+        .item-image {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+
+        .item-details h4 {
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+
+        .item-code {
+            font-size: 12px;
+            color: var(--primary-blue-gray);
+            font-family: monospace;
+            margin-bottom: 5px;
+        }
+
+        .item-quantity {
+            font-size: 13px;
+            color: var(--primary-blue-gray);
+        }
+
+        .item-price {
+            text-align: right;
+        }
+
+        .item-unit-price {
+            font-size: 14px;
+            color: var(--primary-blue-gray);
+            margin-bottom: 5px;
+        }
+
+        .item-total-price {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--secondary-darker);
+        }
+
+        /* Order Summary */
+        .order-summary {
+            height: fit-content;
+            position: sticky;
+            top: 100px;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 15px;
+        }
+
+        .summary-row.total {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--secondary-darker);
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 2px solid var(--border-color);
+        }
+
+        /* Status Badge */
+        .status-badge {
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-pending { background: #fff3e0; color: var(--warning-orange); }
+        .status-confirmed { background: #e3f2fd; color: var(--info-blue); }
+        .status-processing { background: #e8eaf6; color: #5c6bc0; }
+        .status-shipped { background: #e0f2f1; color: #00897b; }
+        .status-delivered { background: #e8f5e9; color: var(--success-green); }
+        .status-cancelled { background: #ffebee; color: var(--error-red); }
+
+        /* Status Timeline */
+        .status-timeline {
+            margin-top: 20px;
+        }
+
+        .timeline-item {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .timeline-item:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            left: 15px;
+            top: 35px;
+            width: 2px;
+            height: calc(100% + 5px);
+            background: var(--border-color);
+        }
+
+        .timeline-item.completed::after {
+            background: var(--success-green);
+        }
+
+        .timeline-dot {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--border-color);
+            border: 3px solid var(--white);
+            flex-shrink: 0;
+        }
+
+        .timeline-item.completed .timeline-dot {
+            background: var(--success-green);
+        }
+
+        .timeline-item.active .timeline-dot {
+            background: var(--info-blue);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.4); }
+            50% { box-shadow: 0 0 0 10px rgba(33, 150, 243, 0); }
+        }
+
+        .timeline-content h4 {
+            font-size: 15px;
+            font-weight: 500;
+            margin-bottom: 3px;
+        }
+
+        .timeline-date {
+            font-size: 12px;
+            color: var(--primary-blue-gray);
+        }
+
+        /* Actions */
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-cancel {
+            background: var(--error-red);
+            color: white;
+        }
+
+        .btn-cancel:hover {
+            background: #d32f2f;
+        }
+
+        .btn-cancel:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--success-green);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: none;
+            z-index: 2000;
+            animation: slideIn 0.3s ease;
+        }
+
+        .notification.error { background: var(--error-red); }
+        .notification.show { display: block; }
+
+        @keyframes slideIn {
+            from { transform: translateX(400px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        footer {
+            background: var(--primary-blue-gray);
+            color: var(--white);
+            padding: 40px 0 20px;
+            margin-top: 80px;
+            text-align: center;
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .order-summary {
+                position: relative;
+                top: 0;
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-container">
+            <a href="/buyer/dashboard" class="logo">CLOTH SPHERE</a>
+            <nav>
+                <ul>
+                    <li><a href="/buyer/dashboard">Dashboard</a></li>
+                    <li><a href="/buyer/products">Products</a></li>
+                    <li><a href="/buyer/orders">My Orders</a></li>
+                    <li><a href="/buyer/wishlist">Wishlist</a></li>
+                    <li><a href="/buyer/profile">Profile</a></li>
+                </ul>
+            </nav>
+            <div class="header-icons">
+                <div class="cart-icon" onclick="window.location.href='/buyer/cart'">
+                    🛒
+                    <span class="cart-badge" id="cartBadge" th:text="${cartCount}">0</span>
+                </div>
+                <div class="user-info">
+                    <span class="user-name" th:text="${buyer.customerName}">Customer</span>
+                </div>
+                <a href="/buyer/logout" class="logout-btn">Logout</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Page Header -->
+    <section class="page-header">
+        <div class="header-content">
+            <div>
+                <h1 th:text="'Order #' + ${order.orderNumber}">Order #ORD-20240101-0001</h1>
+                <p th:text="'Placed on ' + ${#temporals.format(order.orderDate, 'MMMM dd, yyyy at hh:mm a')}">Placed on January 01, 2024</p>
+            </div>
+            <a href="/buyer/orders" class="back-btn">← Back to Orders</a>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Order Information -->
+        <div class="order-info-section">
+            <!-- Order Status -->
+            <div class="info-card">
+                <h2 class="section-title">Order Status</h2>
+                <div style="margin-bottom: 20px;">
+                    <span class="status-badge"
+                          th:classappend="${order.status == 'PENDING' ? 'status-pending' :
+                                           order.status == 'CONFIRMED' ? 'status-confirmed' :
+                                           order.status == 'PROCESSING' ? 'status-processing' :
+                                           order.status == 'SHIPPED' ? 'status-shipped' :
+                                           order.status == 'DELIVERED' ? 'status-delivered' :
+                                           'status-cancelled'}"
+                          th:text="${order.status}">PENDING</span>
+                </div>
+
+                <!-- Timeline -->
+                <div class="status-timeline">
+                    <div class="timeline-item completed">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-content">
+                            <h4>Order Placed</h4>
+                            <div class="timeline-date" th:text="${#temporals.format(order.orderDate, 'MMM dd, yyyy hh:mm a')}">Jan 01, 2024 10:30 AM</div>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item" th:classappend="${order.confirmedDate != null ? 'completed' : ''}">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-content">
+                            <h4>Order Confirmed</h4>
+                            <div class="timeline-date" th:text="${order.confirmedDate != null ? #temporals.format(order.confirmedDate, 'MMM dd, yyyy hh:mm a') : 'Pending'}">Pending</div>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item" th:classappend="${order.shippedDate != null ? 'completed' : (order.status == 'SHIPPED' ? 'active' : '')}">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-content">
+                            <h4>Shipped</h4>
+                            <div class="timeline-date" th:text="${order.shippedDate != null ? #temporals.format(order.shippedDate, 'MMM dd, yyyy hh:mm a') : 'Pending'}">Pending</div>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item" th:classappend="${order.deliveredDate != null ? 'completed' : ''}">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-content">
+                            <h4>Delivered</h4>
+                            <div class="timeline-date" th:text="${order.deliveredDate != null ? #temporals.format(order.deliveredDate, 'MMM dd, yyyy hh:mm a') : 'Pending'}">Pending</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cancel Button -->
+                <div class="action-buttons" th:if="${order.status == 'PENDING'}">
+                    <button class="btn btn-cancel" th:onclick="'cancelOrder(' + ${order.orderId} + ')'">Cancel Order</button>
+                </div>
+            </div>
+
+            <!-- Order Items -->
+            <div class="info-card">
+                <h2 class="section-title">Order Items</h2>
+                <div class="order-item" th:each="item : ${order.orderItems}">
+                    <img th:if="${item.productImagePath != null and !item.productImagePath.empty}"
+                         th:src="@{${item.productImagePath}}"
+                         alt="Product"
+                         class="item-image">
+                    <img th:unless="${item.productImagePath != null and !item.productImagePath.empty}"
+                         src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect fill='%23E0E0E0' width='80' height='80'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='10' fill='%235A738A'%3ENo Image%3C/text%3E%3C/svg%3E"
+                         alt="No Image"
+                         class="item-image">
+
+                    <div class="item-details">
+                        <h4 th:text="${item.productName}">Product Name</h4>
+                        <div class="item-code" th:text="${item.productCode}">CODE-001</div>
+                        <div class="item-quantity" th:text="'Quantity: ' + ${item.quantity}">Quantity: 1</div>
+                    </div>
+
+                    <div class="item-price">
+                        <div class="item-unit-price" th:text="'$' + ${#numbers.formatDecimal(item.unitPrice, 1, 2)} + ' each'">$0.00 each</div>
+                        <div class="item-total-price" th:text="'$' + ${#numbers.formatDecimal(item.itemTotal, 1, 2)}">$0.00</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delivery Information -->
+            <div class="info-card">
+                <h2 class="section-title">Delivery Information</h2>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Recipient Name</span>
+                        <span class="info-value" th:text="${order.deliveryName}">Name</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Phone</span>
+                        <span class="info-value" th:text="${order.deliveryPhone}">Phone</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Email</span>
+                        <span class="info-value" th:text="${order.deliveryEmail}">Email</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">City</span>
+                        <span class="info-value" th:text="${order.deliveryCity}">City</span>
+                    </div>
+                    <div class="info-item" style="grid-column: 1 / -1;">
+                        <span class="info-label">Delivery Address</span>
+                        <span class="info-value" th:text="${order.deliveryAddress}">Address</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Summary Sidebar -->
+        <div class="order-summary">
+            <div class="info-card">
+                <h2 class="section-title">Order Summary</h2>
+
+                <div class="info-grid" style="margin-bottom: 20px;">
+                    <div class="info-item">
+                        <span class="info-label">Order Number</span>
+                        <span class="info-value" th:text="${order.orderNumber}">ORD-001</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Payment Method</span>
+                        <span class="info-value" th:text="${order.paymentMethod}">COD</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Payment Status</span>
+                        <span class="status-badge" style="padding: 4px 12px; font-size: 11px;"
+                              th:classappend="${order.paymentStatus == 'PAID' ? 'status-delivered' : 'status-pending'}"
+                              th:text="${order.paymentStatus}">PENDING</span>
+                    </div>
+                </div>
+
+                <div class="summary-row">
+                    <span>Subtotal:</span>
+                    <span th:text="'$' + ${#numbers.formatDecimal(order.subtotal, 1, 2)}">$0.00</span>
+                </div>
+                <div class="summary-row">
+                    <span>Shipping:</span>
+                    <span th:text="'$' + ${#numbers.formatDecimal(order.shippingFee, 1, 2)}">$0.00</span>
+                </div>
+                <div class="summary-row">
+                    <span>Tax:</span>
+                    <span th:text="'$' + ${#numbers.formatDecimal(order.taxAmount, 1, 2)}">$0.00</span>
+                </div>
+                <div class="summary-row" th:if="${order.discountAmount != null and order.discountAmount > 0}">
+                    <span>Discount:</span>
+                    <span th:text="'-$' + ${#numbers.formatDecimal(order.discountAmount, 1, 2)}">$0.00</span>
+                </div>
+
+                <div class="summary-row total">
+                    <span>Total:</span>
+                    <span th:text="'$' + ${#numbers.formatDecimal(order.totalAmount, 1, 2)}">$0.00</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div id="notification" class="notification"></div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <p>&copy; 2024 Cloth Sphere. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Load cart count
+        window.addEventListener('DOMContentLoaded', function() {
+            fetch('/buyer/cart/count')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('cartBadge').textContent = data.cartCount || 0;
+            });
+        });
+
+        function cancelOrder(orderId) {
+            if (!confirm('Are you sure you want to cancel this order?')) return;
+
+            fetch('/buyer/orders/' + orderId + '/cancel', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Order cancelled successfully', 'success');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showNotification(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                showNotification('Error cancelling order', 'error');
+            });
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = 'notification ' + type + ' show';
+            setTimeout(() => notification.classList.remove('show'), 3000);
+        }
+    </script>
+</body>
+</html>

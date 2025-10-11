@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Officer Dashboard - Cloth Sphere</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-blue-gray: #5A738A;
+            --secondary-darker: #425A6C;
+            --background-cream: #F7F5EC;
+            --accent-yellow: #EBD372;
+            --white: #FFFFFF;
+            --light-gray: #F5F5F5;
+            --success-green: #4caf50;
+            --danger-red: #f44336;
+            --warning-orange: #ff9800;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Open Sans', sans-serif;
+            background-color: var(--background-cream);
+            color: var(--secondary-darker);
+            line-height: 1.6;
+        }
+
+        /* Header */
+        header {
+            background-color: var(--white);
+            padding: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: 300;
+            letter-spacing: 3px;
+            color: var(--primary-blue-gray);
+            text-decoration: none;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 40px;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: var(--primary-blue-gray);
+            font-size: 15px;
+            letter-spacing: 1px;
+            transition: color 0.3s ease;
+            font-weight: 400;
+        }
+
+        nav a:hover {
+            color: var(--secondary-darker);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 8px 15px;
+            background: var(--light-gray);
+            border-radius: 6px;
+        }
+
+        .user-name {
+            font-weight: 500;
+            color: var(--secondary-darker);
+            font-size: 14px;
+        }
+
+        .user-role {
+            font-size: 12px;
+            color: var(--primary-blue-gray);
+        }
+
+        .logout-btn {
+            padding: 10px 20px;
+            background: var(--primary-blue-gray);
+            color: var(--white);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: var(--secondary-darker);
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, var(--primary-blue-gray) 0%, var(--secondary-darker) 100%);
+            color: var(--white);
+            padding: 60px 40px;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: 42px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+
+        .hero p {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+
+        /* Main Content */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 60px 40px;
+        }
+
+        .section-title {
+            font-size: 32px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            color: var(--primary-blue-gray);
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        /* Statistics Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-bottom: 60px;
+        }
+
+        .stat-card {
+            background: var(--white);
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .stat-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .stat-value {
+            font-size: 36px;
+            font-weight: 500;
+            color: var(--secondary-darker);
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: var(--primary-blue-gray);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Action Cards */
+        .action-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .action-card {
+            background: var(--white);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .action-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .action-icon {
+            background: linear-gradient(135deg, #F0EFE8 0%, #E5E3DA 100%);
+            padding: 60px;
+            text-align: center;
+            font-size: 72px;
+        }
+
+        .action-content {
+            padding: 30px;
+        }
+
+        .action-title {
+            font-size: 22px;
+            font-weight: 400;
+            letter-spacing: 1px;
+            color: var(--secondary-darker);
+            margin-bottom: 10px;
+        }
+
+        .action-description {
+            font-size: 14px;
+            color: var(--primary-blue-gray);
+            line-height: 1.6;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--primary-blue-gray);
+            color: var(--white);
+            text-align: center;
+            padding: 30px;
+            margin-top: 80px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-container {
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            nav ul {
+                gap: 20px;
+            }
+
+            .hero h1 {
+                font-size: 32px;
+            }
+
+            .container {
+                padding: 40px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-container">
+            <a href="/officer/dashboard" class="logo">CLOTH SPHERE</a>
+            <nav>
+                <ul>
+                    <li><a href="/officer/dashboard">Dashboard</a></li>
+                    <li><a href="/officer/products">Products</a></li>
+                    <li><a href="/officer/messages">Messages</a></li>
+                </ul>
+            </nav>
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <div class="user-info">
+                    <div>
+                        <div class="user-name" th:text="${officer.userName}">Officer</div>
+                        <div class="user-role">Product Management Officer</div>
+                    </div>
+                </div>
+                <a href="/logout" class="logout-btn">Logout</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <h1>Welcome, <span th:text="${officer.userName}">Officer</span></h1>
+        <p>Customer & Product Management Dashboard</p>
+    </section>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Statistics Section -->
+        <h2 class="section-title">Overview Statistics</h2>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">📦</div>
+                <div class="stat-value" th:text="${totalProducts}">0</div>
+                <div class="stat-label">Total Products</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">✅</div>
+                <div class="stat-value" th:text="${activeProducts}">0</div>
+                <div class="stat-label">Active Products</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">📬</div>
+                <div class="stat-value" th:text="${messageStats.open}">0</div>
+                <div class="stat-label">Open Messages</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">🔄</div>
+                <div class="stat-value" th:text="${messageStats.in_progress}">0</div>
+                <div class="stat-label">In Progress</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">✔️</div>
+                <div class="stat-value" th:text="${messageStats.resolved}">0</div>
+                <div class="stat-label">Resolved</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">📊</div>
+                <div class="stat-value" th:text="${messageStats.total}">0</div>
+                <div class="stat-label">Total Messages</div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <h2 class="section-title">Quick Actions</h2>
+        <div class="action-grid">
+            <div class="action-card" onclick="window.location.href='/officer/products'">
+                <div class="action-icon">🛍️</div>
+                <div class="action-content">
+                    <h3 class="action-title">MANAGE PRODUCTS</h3>
+                    <p class="action-description">Add, edit, or remove products. Update pricing and descriptions.</p>
+                </div>
+            </div>
+
+            <div class="action-card" onclick="window.location.href='/officer/messages'">
+                <div class="action-icon">💬</div>
+                <div class="action-content">
+                    <h3 class="action-title">BUYER MESSAGES</h3>
+                    <p class="action-description">Handle buyer inquiries, complaints, and support requests.</p>
+                </div>
+            </div>
+
+            <div class="action-card" onclick="window.location.href='/officer/products/add'">
+                <div class="action-icon">➕</div>
+                <div class="action-content">
+                    <h3 class="action-title">ADD NEW PRODUCT</h3>
+                    <p class="action-description">Create a new product listing with details and pricing.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2024 Cloth Sphere. Customer & Product Management Portal.</p>
+    </footer>
+</body>
+</html>

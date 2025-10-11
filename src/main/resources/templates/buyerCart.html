@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloth Sphere - Shopping Cart</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-blue-gray: #5A738A;
+            --secondary-darker: #425A6C;
+            --background-cream: #F7F5EC;
+            --accent-yellow: #EBD372;
+            --white: #FFFFFF;
+            --light-gray: #F5F5F5;
+            --border-color: #E0E0E0;
+            --success-green: #4caf50;
+            --error-red: #f44336;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Open Sans', sans-serif;
+            background-color: var(--background-cream);
+            color: var(--secondary-darker);
+            line-height: 1.6;
+        }
+
+        /* Header Styles */
+        header {
+            background-color: var(--white);
+            padding: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: 300;
+            letter-spacing: 3px;
+            color: var(--primary-blue-gray);
+            text-decoration: none;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 40px;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: var(--primary-blue-gray);
+            font-size: 15px;
+            letter-spacing: 1px;
+            transition: color 0.3s ease;
+            font-weight: 400;
+        }
+
+        nav a:hover {
+            color: var(--secondary-darker);
+        }
+
+        .header-icons {
+            display: flex;
+            gap: 25px;
+            align-items: center;
+        }
+
+        .cart-icon {
+            position: relative;
+            cursor: pointer;
+            font-size: 24px;
+        }
+
+        .cart-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: var(--error-red);
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 8px 15px;
+            background: var(--light-gray);
+            border-radius: 6px;
+        }
+
+        .user-name {
+            font-weight: 500;
+            color: var(--secondary-darker);
+            font-size: 14px;
+        }
+
+        .logout-btn {
+            padding: 10px 20px;
+            background: var(--primary-blue-gray);
+            color: var(--white);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: var(--secondary-darker);
+        }
+
+        /* Page Header */
+        .page-header {
+            background: linear-gradient(135deg, var(--primary-blue-gray) 0%, var(--secondary-darker) 100%);
+            color: var(--white);
+            padding: 60px 40px;
+            text-align: center;
+        }
+
+        .page-header h1 {
+            font-size: 42px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+
+        .page-header p {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+
+        /* Main Content */
+        .main-content {
+            max-width: 1400px;
+            margin: 40px auto;
+            padding: 0 40px;
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 30px;
+        }
+
+        /* Cart Items Section */
+        .cart-items-section {
+            background: var(--white);
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .section-title {
+            font-size: 24px;
+            font-weight: 400;
+            color: var(--primary-blue-gray);
+            margin-bottom: 20px;
+            letter-spacing: 1px;
+        }
+
+        .cart-item {
+            display: grid;
+            grid-template-columns: 100px 1fr auto;
+            gap: 20px;
+            padding: 20px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .cart-item:last-child {
+            border-bottom: none;
+        }
+
+        .item-image {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+
+        .item-details {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .item-name {
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--secondary-darker);
+            margin-bottom: 5px;
+        }
+
+        .item-code {
+            font-size: 13px;
+            color: var(--primary-blue-gray);
+            font-family: monospace;
+            margin-bottom: 10px;
+        }
+
+        .item-price {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--secondary-darker);
+        }
+
+        .item-actions {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            justify-content: space-between;
+        }
+
+        .quantity-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .qty-btn {
+            width: 32px;
+            height: 32px;
+            border: 1px solid var(--border-color);
+            background: var(--white);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .qty-btn:hover {
+            background: var(--light-gray);
+            border-color: var(--primary-blue-gray);
+        }
+
+        .qty-input {
+            width: 60px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 6px;
+            font-size: 14px;
+        }
+
+        .remove-btn {
+            background: none;
+            border: none;
+            color: var(--error-red);
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: underline;
+            transition: opacity 0.3s ease;
+        }
+
+        .remove-btn:hover {
+            opacity: 0.7;
+        }
+
+        .stock-warning {
+            color: var(--error-red);
+            font-size: 13px;
+            margin-top: 5px;
+        }
+
+        /* Cart Summary */
+        .cart-summary {
+            background: var(--white);
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            height: fit-content;
+            position: sticky;
+            top: 100px;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            font-size: 15px;
+        }
+
+        .summary-row.total {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--secondary-darker);
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid var(--border-color);
+        }
+
+        .checkout-btn {
+            width: 100%;
+            padding: 15px;
+            background: var(--primary-blue-gray);
+            color: var(--white);
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 500;
+            letter-spacing: 1px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .checkout-btn:hover {
+            background: var(--secondary-darker);
+        }
+
+        .continue-shopping {
+            width: 100%;
+            padding: 12px;
+            background: var(--white);
+            color: var(--primary-blue-gray);
+            border: 2px solid var(--primary-blue-gray);
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 1px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+            text-align: center;
+            text-decoration: none;
+            display: block;
+        }
+
+        .continue-shopping:hover {
+            background: var(--light-gray);
+        }
+
+        /* Empty Cart */
+        .empty-cart {
+            text-align: center;
+            padding: 80px 20px;
+        }
+
+        .empty-cart-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .empty-cart h3 {
+            font-size: 24px;
+            font-weight: 400;
+            color: var(--primary-blue-gray);
+            margin-bottom: 10px;
+        }
+
+        .empty-cart p {
+            color: var(--primary-blue-gray);
+            opacity: 0.7;
+            margin-bottom: 30px;
+        }
+
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--success-green);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: none;
+            z-index: 2000;
+            animation: slideIn 0.3s ease;
+        }
+
+        .notification.error {
+            background: var(--error-red);
+        }
+
+        .notification.show {
+            display: block;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Footer */
+        footer {
+            background: var(--primary-blue-gray);
+            color: var(--white);
+            padding: 40px 0 20px;
+            margin-top: 80px;
+            text-align: center;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .cart-summary {
+                position: relative;
+                top: 0;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .cart-item {
+                grid-template-columns: 80px 1fr;
+                gap: 15px;
+            }
+
+            .item-actions {
+                grid-column: 2;
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+                margin-top: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-container">
+            <a href="/buyer/dashboard" class="logo">CLOTH SPHERE</a>
+            <nav>
+                <ul>
+                    <li><a href="/buyer/dashboard">Dashboard</a></li>
+                    <li><a href="/buyer/products">Products</a></li>
+                    <li><a href="/buyer/orders">My Orders</a></li>
+                    <li><a href="/buyer/wishlist">Wishlist</a></li>
+                    <li><a href="/buyer/profile">Profile</a></li>
+                </ul>
+            </nav>
+            <div class="header-icons">
+                <div class="cart-icon" onclick="window.location.href='/buyer/cart'">
+                    🛒
+                    <span class="cart-badge" id="cartBadge" th:text="${cartCount}">0</span>
+                </div>
+                <div class="user-info">
+                    <span class="user-name" th:text="${buyer.customerName}">Customer</span>
+                </div>
+                <a href="/buyer/logout" class="logout-btn">Logout</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Page Header -->
+    <section class="page-header">
+        <h1>Shopping Cart</h1>
+        <p>Review your items before checkout</p>
+    </section>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Cart Items -->
+        <div class="cart-items-section">
+            <h2 class="section-title">Your Cart Items</h2>
+
+            <!-- Cart Items List -->
+            <div th:if="${cartItems != null and !cartItems.empty}">
+                <div class="cart-item" th:each="item : ${cartItems}">
+                    <img th:if="${item.product.imagePath != null and !item.product.imagePath.empty}"
+                         th:src="@{${item.product.imagePath}}"
+                         alt="Product Image"
+                         class="item-image">
+                    <img th:unless="${item.product.imagePath != null and !item.product.imagePath.empty}"
+                         src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect fill='%23E0E0E0' width='100' height='100'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='12' fill='%235A738A'%3ENo Image%3C/text%3E%3C/svg%3E"
+                         alt="No Image"
+                         class="item-image">
+
+                    <div class="item-details">
+                        <div>
+                            <div class="item-name" th:text="${item.product.name}">Product Name</div>
+                            <div class="item-code" th:text="${item.product.code}">CODE-001</div>
+                            <div class="item-price" th:text="'$' + ${#numbers.formatDecimal(item.product.price, 1, 2)}">$0.00</div>
+                        </div>
+                        <div th:if="${item.quantity > item.product.stock}" class="stock-warning">
+                            Only <span th:text="${item.product.stock}">0</span> available in stock
+                        </div>
+                    </div>
+
+                    <div class="item-actions">
+                        <div class="quantity-control">
+                            <button class="qty-btn" th:onclick="'updateQuantity(' + ${item.product.id} + ', ' + ${item.quantity - 1} + ')'">-</button>
+                            <input type="number" class="qty-input" th:value="${item.quantity}"
+                                   th:id="'qty-' + ${item.product.id}" min="1" readonly>
+                            <button class="qty-btn" th:onclick="'updateQuantity(' + ${item.product.id} + ', ' + ${item.quantity + 1} + ')'">+</button>
+                        </div>
+                        <button class="remove-btn" th:onclick="'removeItem(' + ${item.product.id} + ')'">Remove</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty Cart Message -->
+            <div th:if="${cartItems == null or cartItems.empty}" class="empty-cart">
+                <div class="empty-cart-icon">🛒</div>
+                <h3>Your cart is empty</h3>
+                <p>Add some products to get started</p>
+                <a href="/buyer/products" class="checkout-btn" style="max-width: 300px; margin: 0 auto; display: block;">Browse Products</a>
+            </div>
+        </div>
+
+        <!-- Cart Summary -->
+        <div class="cart-summary" th:if="${cartItems != null and !cartItems.empty}">
+            <h2 class="section-title">Order Summary</h2>
+
+            <div class="summary-row">
+                <span>Subtotal:</span>
+                <span id="subtotalAmount" th:text="'$' + ${#numbers.formatDecimal(subtotal, 1, 2)}">$0.00</span>
+            </div>
+            <div class="summary-row">
+                <span>Shipping:</span>
+                <span>Calculated at checkout</span>
+            </div>
+            <div class="summary-row">
+                <span>Tax:</span>
+                <span>Calculated at checkout</span>
+            </div>
+
+            <div class="summary-row total">
+                <span>Total:</span>
+                <span id="totalAmount" th:text="'$' + ${#numbers.formatDecimal(subtotal, 1, 2)}">$0.00</span>
+            </div>
+
+            <button class="checkout-btn" onclick="proceedToCheckout()">Proceed to Checkout</button>
+            <a href="/buyer/products" class="continue-shopping">Continue Shopping</a>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div id="notification" class="notification"></div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <p>&copy; 2024 Cloth Sphere. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Update cart item quantity
+        function updateQuantity(productId, newQuantity) {
+            if (newQuantity < 1) return;
+
+            fetch('/buyer/cart/update', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `productId=${productId}&quantity=${newQuantity}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update quantity input
+                    document.getElementById('qty-' + productId).value = newQuantity;
+
+                    // Update cart badge
+                    document.getElementById('cartBadge').textContent = data.cartCount;
+
+                    // Update subtotal
+                    document.getElementById('subtotalAmount').textContent = '$' + data.subtotal.toFixed(2);
+                    document.getElementById('totalAmount').textContent = '$' + data.subtotal.toFixed(2);
+
+                    // Reload page to update item totals
+                    location.reload();
+                } else {
+                    showNotification(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                showNotification('Error updating cart', 'error');
+            });
+        }
+
+        // Remove item from cart
+        function removeItem(productId) {
+            if (!confirm('Remove this item from cart?')) return;
+
+            fetch('/buyer/cart/remove', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `productId=${productId}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification(data.message, 'success');
+                    location.reload();
+                } else {
+                    showNotification(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                showNotification('Error removing item', 'error');
+            });
+        }
+
+        // Proceed to checkout
+        function proceedToCheckout() {
+            window.location.href = '/buyer/orders/checkout';
+        }
+
+        // Show notification
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = 'notification ' + type + ' show';
+
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

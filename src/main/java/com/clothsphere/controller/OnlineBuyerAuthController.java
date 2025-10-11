@@ -1,6 +1,8 @@
 package com.clothsphere.controller;
 
+import com.clothsphere.model.PM.Product;
 import com.clothsphere.model.SOM.OnlineBuyerLogin;
+import com.clothsphere.service.PM.ProductService;
 import com.clothsphere.service.SOM.OnlineBuyerLoginService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,12 +10,18 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Controller
 @RequestMapping("/buyer")
 public class OnlineBuyerAuthController {
 
     @Autowired
     private OnlineBuyerLoginService buyerLoginService;
+
+    @Autowired
+    private ProductService productService;
 
     // ========================= Buyer Login/Register Page =========================
 
@@ -52,7 +60,7 @@ public class OnlineBuyerAuthController {
         buyerLoginService.updateLogCount(username, buyer.getLogCount());
 
         // Set session attributes
-        session.setAttribute("buyerUser", buyer);
+        session.setAttribute("loggedInBuyer", buyer);
         session.setAttribute("buyerId", buyer.getBuyerId());
         session.setAttribute("buyerUsername", username);
         session.setAttribute("buyerEmail", buyer.getEmail());
@@ -136,7 +144,7 @@ public class OnlineBuyerAuthController {
 
     @GetMapping("/dashboard")
     public String showBuyerDashboard(HttpSession session, Model model) {
-        OnlineBuyerLogin buyer = (OnlineBuyerLogin) session.getAttribute("buyerUser");
+        OnlineBuyerLogin buyer = (OnlineBuyerLogin) session.getAttribute("loggedInBuyer");
 
         if (buyer == null) {
             System.out.println("No buyer in session, redirecting to login");
@@ -164,5 +172,81 @@ public class OnlineBuyerAuthController {
     @PostMapping("/logout")
     public String buyerLogoutPost(HttpSession session) {
         return buyerLogout(session);
+    }
+
+    // ========================= Products Page =========================
+
+    @GetMapping("/products")
+    public String showProductsPage(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String sort,
+            HttpSession session,
+            Model model) {
+
+        OnlineBuyerLogin buyer = (OnlineBuyerLogin) session.getAttribute("loggedInBuyer");
+
+        if (buyer == null) {
+            System.out.println("No buyer in session, redirecting to login");
+            return "redirect:/buyer/login";
+        }
+
+        System.out.println("=== BUYER PRODUCTS PAGE ===");
+        System.out.println("Search: " + search);
+        System.out.println("Category: " + category);
+        System.out.println("Sort: " + sort);
+
+        // Get all products
+        List<Product> products = productService.getAllProducts();
+
+        // Apply search filter
+        if (search != null && !search.trim().isEmpty()) {
+            String searchLower = search.toLowerCase();
+            products = products.stream()
+                    .filter(p -> p.getName().toLowerCase().contains(searchLower) ||
+                               p.getCode().toLowerCase().contains(searchLower))
+                    .collect(Collectors.toList());
+        }
+
+        // Apply category filter
+        if (category != null && !category.trim().isEmpty()) {
+            products = products.stream()
+                    .filter(p -> p.getCategory().equalsIgnoreCase(category))
+                    .collect(Collectors.toList());
+        }
+
+        // Apply sorting
+        if (sort != null && !sort.trim().isEmpty()) {
+            switch (sort) {
+                case "price_asc":
+                    products = products.stream()
+                            .sorted((p1, p2) -> p1.getPrice().compareTo(p2.getPrice()))
+                            .collect(Collectors.toList());
+                    break;
+                case "price_desc":
+                    products = products.stream()
+                            .sorted((p1, p2) -> p2.getPrice().compareTo(p1.getPrice()))
+                            .collect(Collectors.toList());
+                    break;
+                case "name":
+                    products = products.stream()
+                            .sorted((p1, p2) -> p1.getName().compareTo(p2.getName()))
+                            .collect(Collectors.toList());
+                    break;
+                case "newest":
+                    // Assuming products are already ordered by ID (newest first)
+                    products = products.stream()
+                            .sorted((p1, p2) -> p2.getId().compareTo(p1.getId()))
+                            .collect(Collectors.toList());
+                    break;
+            }
+        }
+
+        model.addAttribute("buyer", buyer);
+        model.addAttribute("products", products);
+
+        System.out.println("Products found: " + products.size());
+
+        return "buyerProducts";
     }
 }
