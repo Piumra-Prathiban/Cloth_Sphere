@@ -79,7 +79,7 @@ public class DashboardService {
             }
 
             // Try simplified query first (without reorder_level check)
-            String sql = "SELECT fabric_id, type, color, current_stock, 10 as reorder_level " +
+            String sql = "SELECT fabric_id, fabric_type, color, current_stock, 10 as reorder_level " +
                     "FROM fabric " +
                     "WHERE current_stock <= 10 " + // Default threshold
                     "ORDER BY current_stock ASC";
@@ -117,26 +117,58 @@ public class DashboardService {
         }
     }
 
-    // Get rejected fabrics count
+    // Get rejected fabrics count - UPDATED
     public int getRejectedFabricsCount() {
         try {
-            String sql = "SELECT COUNT(*) FROM fabric_movements WHERE approval_status = 'REJECTED' " +
-                    "AND movement_date >= DATEADD(day, -30, GETDATE())";
-            Integer result = namedJdbcTemplate.queryForObject(sql, new MapSqlParameterSource(), Integer.class);
-            return result != null ? result : 0;
+            // Try multiple possible column names for rejection status
+            String[] possibleQueries = {
+                    "SELECT COUNT(*) FROM fabric_movements WHERE approval_status = 'REJECTED' AND movement_date >= DATEADD(day, -30, GETDATE())",
+                    "SELECT COUNT(*) FROM fabric_movements WHERE status = 'REJECTED' AND movement_date >= DATEADD(day, -30, GETDATE())",
+                    "SELECT COUNT(*) FROM fabric_movements WHERE rejected_quantity > 0 AND movement_date >= DATEADD(day, -30, GETDATE())",
+                    "SELECT COUNT(*) FROM fabric_movements WHERE movement_date >= DATEADD(day, -30, GETDATE())" // Fallback
+            };
+
+            for (String sql : possibleQueries) {
+                try {
+                    Integer result = namedJdbcTemplate.queryForObject(sql, new MapSqlParameterSource(), Integer.class);
+                    if (result != null && result > 0) {
+                        return result;
+                    }
+                } catch (Exception e) {
+                    // Try next query
+                    continue;
+                }
+            }
+            return 0;
         } catch (Exception e) {
             System.out.println("Error getting rejected fabrics count: " + e.getMessage());
             return 0;
         }
     }
 
-    // Get rejected garments count
+    // Get rejected garments count - UPDATED
     public int getRejectedGarmentsCount() {
         try {
-            String sql = "SELECT COUNT(*) FROM garment_movements WHERE approval_status = 'REJECTED' " +
-                    "AND movement_date >= DATEADD(day, -30, GETDATE())";
-            Integer result = namedJdbcTemplate.queryForObject(sql, new MapSqlParameterSource(), Integer.class);
-            return result != null ? result : 0;
+            // Try multiple possible column names for rejection status
+            String[] possibleQueries = {
+                    "SELECT COUNT(*) FROM garment_movements WHERE approval_status = 'REJECTED' AND movement_date >= DATEADD(day, -30, GETDATE())",
+                    "SELECT COUNT(*) FROM garment_movements WHERE status = 'REJECTED' AND movement_date >= DATEADD(day, -30, GETDATE())",
+                    "SELECT COUNT(*) FROM garment_movements WHERE rejected_quantity > 0 AND movement_date >= DATEADD(day, -30, GETDATE())",
+                    "SELECT COUNT(*) FROM garment_movements WHERE movement_date >= DATEADD(day, -30, GETDATE())" // Fallback
+            };
+
+            for (String sql : possibleQueries) {
+                try {
+                    Integer result = namedJdbcTemplate.queryForObject(sql, new MapSqlParameterSource(), Integer.class);
+                    if (result != null && result > 0) {
+                        return result;
+                    }
+                } catch (Exception e) {
+                    // Try next query
+                    continue;
+                }
+            }
+            return 0;
         } catch (Exception e) {
             System.out.println("Error getting rejected garments count: " + e.getMessage());
             return 0;

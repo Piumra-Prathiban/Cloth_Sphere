@@ -66,12 +66,20 @@ function initializeCharts() {
                 plugins: {
                     legend: {
                         position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Fabric IN vs OUT (Last 7 Days)'
                     }
                 },
                 scales: {
                     y: {
                         beginAtZero: true,
-                        grid: { color: 'rgba(0,0,0,0.1)' }
+                        grid: { color: 'rgba(0,0,0,0.1)' },
+                        title: {
+                            display: true,
+                            text: 'Quantity (meters)'
+                        }
                     },
                     x: {
                         grid: { color: 'rgba(0,0,0,0.1)' }
@@ -79,9 +87,11 @@ function initializeCharts() {
                 }
             }
         });
+    } else {
+        console.error('Fabric chart canvas element not found');
     }
 
-    // Garment Movement Chart
+    // Garment Movement Chart - UPDATED to IN vs REJECT
     const garmentCtx = document.getElementById('garmentMovementChart');
     if (garmentCtx) {
         garmentMovementChart = new Chart(garmentCtx.getContext('2d'), {
@@ -98,10 +108,10 @@ function initializeCharts() {
                         fill: true
                     },
                     {
-                        label: 'Shipped (pieces)',
+                        label: 'Rejected (pieces)',
                         data: new Array(7).fill(0),
-                        borderColor: '#f39c12',
-                        backgroundColor: 'rgba(243, 156, 18, 0.1)',
+                        borderColor: '#e74c3c',
+                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
                         tension: 0.4,
                         fill: true
                     }
@@ -113,12 +123,20 @@ function initializeCharts() {
                 plugins: {
                     legend: {
                         position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Garment IN vs REJECT (Last 7 Days)'
                     }
                 },
                 scales: {
                     y: {
                         beginAtZero: true,
-                        grid: { color: 'rgba(0,0,0,0.1)' }
+                        grid: { color: 'rgba(0,0,0,0.1)' },
+                        title: {
+                            display: true,
+                            text: 'Quantity (pieces)'
+                        }
                     },
                     x: {
                         grid: { color: 'rgba(0,0,0,0.1)' }
@@ -126,7 +144,11 @@ function initializeCharts() {
                 }
             }
         });
+    } else {
+        console.error('Garment chart canvas element not found');
     }
+
+    console.log('Charts initialized successfully');
 }
 
 // Get last 7 days labels
@@ -232,7 +254,7 @@ function loadFabricMovementChart() {
         });
 }
 
-// Load garment movement chart - UPDATED
+// Load garment movement chart - UPDATED to show IN vs REJECT
 function loadGarmentMovementChart() {
     console.log('Loading garment movements...');
     fetch('/api/dashboard/garment-movements')
@@ -246,7 +268,7 @@ function loadGarmentMovementChart() {
             console.log('Garment movements received:', movements);
             const labels = getLast7Days();
             const stockIn = new Array(7).fill(0);
-            const shipped = new Array(7).fill(0);
+            const rejected = new Array(7).fill(0);
 
             movements.forEach(m => {
                 const movementDate = new Date(m.movement_date);
@@ -256,11 +278,18 @@ function loadGarmentMovementChart() {
                 if (diffDays >= 0 && diffDays < 7) {
                     const index = 6 - diffDays;
                     const quantity = m.total_quantity || 0;
+                    const rejectedQty = m.rejected_quantity || 0;
 
                     if (m.status === 'In') {
                         stockIn[index] += quantity;
-                    } else if (m.status === 'Shipped') {
-                        shipped[index] += quantity;
+                    }
+                    // Count rejected items regardless of status
+                    if (rejectedQty > 0) {
+                        rejected[index] += rejectedQty;
+                    }
+                    // Alternative: check approval_status
+                    if (m.approval_status === 'REJECTED') {
+                        rejected[index] += quantity;
                     }
                 }
             });
@@ -268,7 +297,7 @@ function loadGarmentMovementChart() {
             if (garmentMovementChart) {
                 garmentMovementChart.data.labels = labels;
                 garmentMovementChart.data.datasets[0].data = stockIn;
-                garmentMovementChart.data.datasets[1].data = shipped;
+                garmentMovementChart.data.datasets[1].data = rejected;
                 garmentMovementChart.update();
             }
         })
