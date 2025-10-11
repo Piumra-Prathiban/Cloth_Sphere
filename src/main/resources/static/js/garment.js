@@ -537,18 +537,41 @@ function displayMovementsFiltered(movements) {
             const statusClass = m.status === 'In' ? 'status-in' : 'status-shipped';
             const statusText = m.status === 'In' ? 'Stock In' : 'Shipped';
 
-            // Approval status display
-            let approvalInfo = '<span style="color:#f39c12;">Pending</span>';
-            let approvedQty = 'N/A';
-            let rejectedQty = 'N/A';
+            // FIXED: Handle all approval statuses properly
+            let approvalInfo = '';
+            let approvedQty = '0';
+            let rejectedQty = '0';
             let rejectReason = 'N/A';
 
-            // Check if movement is approved
-            if (m.approvalStatus === 'APPROVED') {
-                approvalInfo = `<span style="color:#27ae60;">Approved</span>`;
-                approvedQty = m.approvedQuantity ? m.approvedQuantity : '0';
-                rejectedQty = m.rejectedQuantity ? m.rejectedQuantity : '0';
-                rejectReason = m.rejectionReason || 'N/A';
+            switch (m.approvalStatus) {
+                case 'APPROVED':
+                    approvalInfo = '<span style="color:#27ae60;">Approved</span>';
+                    approvedQty = m.approvedQuantity !== null && m.approvedQuantity !== undefined ? m.approvedQuantity : m.quantity;
+                    rejectedQty = m.rejectedQuantity !== null && m.rejectedQuantity !== undefined ? m.rejectedQuantity : '0';
+                    rejectReason = m.rejectionReason || 'N/A';
+                    break;
+
+                case 'PARTIALLY_APPROVED':
+                    approvalInfo = '<span style="color:#e67e22;">Partially Approved</span>';
+                    approvedQty = m.approvedQuantity !== null && m.approvedQuantity !== undefined ? m.approvedQuantity : '0';
+                    rejectedQty = m.rejectedQuantity !== null && m.rejectedQuantity !== undefined ? m.rejectedQuantity : '0';
+                    rejectReason = m.rejectionReason || 'N/A';
+                    break;
+
+                case 'REJECTED':
+                    approvalInfo = '<span style="color:#e74c3c;">Rejected</span>';
+                    approvedQty = m.approvedQuantity !== null && m.approvedQuantity !== undefined ? m.approvedQuantity : '0';
+                    rejectedQty = m.rejectedQuantity !== null && m.rejectedQuantity !== undefined ? m.rejectedQuantity : m.quantity;
+                    rejectReason = m.rejectionReason || 'No reason provided';
+                    break;
+
+                case 'PENDING':
+                default:
+                    approvalInfo = '<span style="color:#f39c12;">Pending</span>';
+                    approvedQty = 'N/A';
+                    rejectedQty = 'N/A';
+                    rejectReason = 'N/A';
+                    break;
             }
 
             const row = document.createElement('tr');
@@ -564,7 +587,7 @@ function displayMovementsFiltered(movements) {
                 <td>${rejectedQty}</td>
                 <td>${rejectReason}</td>
                 <td class="action-buttons-table">
-                    ${m.approvalStatus !== 'APPROVED' ?
+                    ${m.approvalStatus === 'PENDING' ?
                 `<button class="btn add approve-btn" data-movement-id="${m.movementId}" data-garment-id="${m.garmentId}" data-quantity="${m.quantity}" data-status="${m.status}">
                             <i class="fas fa-check"></i> Approve
                         </button>` : ''}
@@ -1052,6 +1075,34 @@ function validateApprovalForm() {
     }
 
     return true;
+}
+
+function updateRejectedQuantity() {
+    const approvedQty = parseFloat(document.getElementById('approvedQuantity').value) || 0;
+    const totalQty = parseFloat(document.getElementById('approvalTotalQuantity').value) || 0;
+    const rejectedQty = document.getElementById('rejectedQuantity');
+
+    if (approvedQty <= totalQty) {
+        const calculatedRejected = totalQty - approvedQty;
+        rejectedQty.value = calculatedRejected > 0 ? calculatedRejected : 0;
+        toggleRejectReason();
+    }
+}
+
+function toggleRejectReason() {
+    const rejectedQty = document.getElementById('rejectedQuantity');
+    const reasonGroup = document.getElementById('rejectReasonGroup');
+
+    if (rejectedQty && reasonGroup) {
+        const hasRejection = parseFloat(rejectedQty.value) > 0;
+        reasonGroup.style.display = hasRejection ? 'block' : 'none';
+
+        // Make reject reason required if there are rejected items
+        const rejectReason = document.getElementById('rejectReason');
+        if (rejectReason) {
+            rejectReason.required = hasRejection;
+        }
+    }
 }
 
 // ============================================

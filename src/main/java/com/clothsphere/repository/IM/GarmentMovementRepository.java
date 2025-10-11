@@ -213,6 +213,7 @@ public class GarmentMovementRepository {
     }
 
     // ---------------- Update Approval Method ----------------
+    // In GarmentMovementRepository.java - Fix the updateApproval method
     public int updateApproval(String movementId, Integer approvedQty, Integer rejectedQty,
                               String rejectionReason, Integer totalStock) {
         String sql = "UPDATE garment_movements SET " +
@@ -221,10 +222,20 @@ public class GarmentMovementRepository {
                 "total_stock = :totalStock, " +
                 "approval_status = :approvalStatus, " +
                 "rejection_reason = :rejectionReason, " +
-                "updated_at = :updatedAt " + // Add this line
+                "updated_at = :updatedAt " +
                 "WHERE movement_id = :movementId";
 
-        String approvalStatus = (rejectedQty != null && rejectedQty > 0) ? "PARTIALLY_APPROVED" : "APPROVED";
+        // Determine correct approval status
+        String approvalStatus;
+        if (approvedQty == 0 && rejectedQty > 0) {
+            approvalStatus = "REJECTED";
+        } else if (approvedQty > 0 && rejectedQty > 0) {
+            approvalStatus = "PARTIALLY_APPROVED";
+        } else if (approvedQty > 0 && rejectedQty == 0) {
+            approvalStatus = "APPROVED";
+        } else {
+            approvalStatus = "PENDING";
+        }
 
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue("movementId", movementId)
@@ -233,7 +244,7 @@ public class GarmentMovementRepository {
                 .addValue("totalStock", totalStock)
                 .addValue("approvalStatus", approvalStatus)
                 .addValue("rejectionReason", rejectionReason)
-                .addValue("updatedAt", LocalDateTime.now()); // Add this
+                .addValue("updatedAt", LocalDateTime.now());
 
         return namedJdbcTemplate.update(sql, params);
     }
@@ -284,4 +295,7 @@ public class GarmentMovementRepository {
         MapSqlParameterSource params = new MapSqlParameterSource().addValue("limit", limit);
         return namedJdbcTemplate.query(sql, params, movementRowMapper);
     }
+
+
+
 }

@@ -240,6 +240,7 @@ public class GarmentRepository {
 
 
     // In GarmentRepository.java - Add this method
+// In GarmentRepository.java - Add this method
     public int updateGarmentStock(String garmentId, int currentStock) {
         String sql = "UPDATE garments SET current_stock = :currentStock, updated_at = :updatedAt WHERE garment_id = :garmentId";
 
@@ -250,5 +251,4 @@ public class GarmentRepository {
 
         return namedJdbcTemplate.update(sql, params);
     }
-
 }

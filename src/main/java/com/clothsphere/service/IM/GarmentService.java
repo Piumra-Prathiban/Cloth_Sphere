@@ -7,6 +7,7 @@ import com.clothsphere.repository.IM.GarmentMovementRepository;
 import com.clothsphere.strategy.IM.Garment.StockContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,9 @@ public class GarmentService {
 
     @Autowired
     private GarmentMovementRepository garmentMovementRepository;
+
+    @Autowired
+    private NamedParameterJdbcTemplate namedJdbcTemplate;
 
     private final StockContext stockContext = new StockContext();
 
@@ -145,25 +149,49 @@ public class GarmentService {
                 .orElseThrow(() -> new IllegalArgumentException("Movement not found"));
         Garment garment = getGarmentById(garmentId);
 
+        if (garment == null) {
+            throw new IllegalArgumentException("Garment not found with id: " + garmentId);
+        }
+
+        // Validate that approved + rejected equals original quantity
+        int originalQuantity = movement.getQuantity();
+        if (approved + rejected != originalQuantity) {
+            throw new IllegalArgumentException(
+                    String.format("Approved (%d) + Rejected (%d) must equal original quantity (%d)",
+                            approved, rejected, originalQuantity)
+            );
+        }
+
         // Update movement with approval data
         movement.setApprovedQuantity(approved);
         movement.setRejectedQuantity(rejected);
         movement.setRejectionReason(rejectionReason);
 
-        String approvalStatus = rejected > 0 ? "PARTIALLY_APPROVED" : "APPROVED";
+        // Set appropriate approval status
+        String approvalStatus;
+        if (approved == 0 && rejected > 0) {
+            approvalStatus = "REJECTED";
+        } else if (approved > 0 && rejected > 0) {
+            approvalStatus = "PARTIALLY_APPROVED";
+        } else if (approved > 0 && rejected == 0) {
+            approvalStatus = "APPROVED";
+        } else {
+            approvalStatus = "PENDING";
+        }
         movement.setApprovalStatus(approvalStatus);
 
-        // Calculate current stock for the garment
+        // Calculate current stock for the garment (only approved quantities affect stock)
         int currentStock = garmentRepository.calculateCurrentStock(garmentId);
 
         // Update movement with total stock
         movement.setTotalStock(currentStock);
+        movement.setUpdatedAt(LocalDateTime.now());
 
         // Save the updated movement
-        garmentMovementRepository.updateApproval(movementId, approved, rejected, rejectionReason, currentStock);
+        garmentMovementRepository.updateMovement(movement);
 
         // SYNC THE GARMENT STOCK
-        garmentRepository.updateGarmentStock(garmentId, currentStock);
+        syncGarmentStock(garmentId);
 
         return movement;
     }
@@ -190,8 +218,24 @@ public class GarmentService {
     }
 
     // -------------------- STOCK MANAGEMENT --------------------
+// In GarmentService.java - Ensure stock calculation is correct
     public int getCurrentStock(String garmentId) {
-        return garmentRepository.calculateCurrentStock(garmentId);
+        try {
+            // Calculate stock from APPROVED movements only
+            String sql = "SELECT " +
+                    "COALESCE(SUM(CASE WHEN status = 'In' AND approval_status IN ('APPROVED', 'PARTIALLY_APPROVED') THEN approved_quantity ELSE 0 END), 0) - " +
+                    "COALESCE(SUM(CASE WHEN status = 'Shipped' AND approval_status IN ('APPROVED', 'PARTIALLY_APPROVED') THEN approved_quantity ELSE 0 END), 0) " +
+                    "FROM garment_movements " +
+                    "WHERE garment_id = :garmentId";
+
+            MapSqlParameterSource params = new MapSqlParameterSource().addValue("garmentId", garmentId);
+
+            Integer stock = namedJdbcTemplate.queryForObject(sql, params, Integer.class);
+            return stock != null ? Math.max(stock, 0) : 0; // Ensure stock doesn't go negative
+        } catch (Exception e) {
+            System.err.println("Error calculating stock for garment " + garmentId + ": " + e.getMessage());
+            return 0;
+        }
     }
 
     // -------------------- INTERNAL HELPER METHODS --------------------
@@ -323,19 +367,22 @@ public class GarmentService {
         return movement;
     }
 
-    // In GarmentService.java - Add this method
     @Transactional
     public void syncGarmentStock(String garmentId) {
         int currentStock = getCurrentStock(garmentId);
 
+        // Update the garment's current_stock field
         String sql = "UPDATE garments SET current_stock = :currentStock, updated_at = :updatedAt WHERE garment_id = :garmentId";
 
-        // You'll need to inject jdbcTemplate or use garmentRepository
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue("currentStock", currentStock)
                 .addValue("updatedAt", LocalDateTime.now())
                 .addValue("garmentId", garmentId);
 
+        // You'll need to inject NamedParameterJdbcTemplate or add this method to GarmentRepository
+        namedJdbcTemplate.update(sql, params);
     }
+
+
 
 }
