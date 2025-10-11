@@ -1,9 +1,550 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="UTF-8"><title>Message Details</title></head>
-<body style="font-family: Arial; padding: 40px;">
-    <h1>Message Details - Coming Soon</h1>
-    <p>This page will show message details and allow responses.</p>
-    <a href="/officer/messages">← Back to Messages</a>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Message Details - ClothSphere</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            background: linear-gradient(180deg, #1a1a2e, #16213e);
+            color: white;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            transition: width 0.3s ease;
+            z-index: 1000;
+        }
+
+        .sidebar h2 {
+            padding: 20px;
+            font-size: 1.5rem;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .sidebar ul li {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .sidebar ul li a {
+            color: white;
+            text-decoration: none;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar ul li a:hover,
+        .sidebar ul li a.active {
+            background: rgba(255, 255, 255, 0.1);
+            border-left: 4px solid #4a90e2;
+            padding-left: 16px;
+        }
+
+        /* Main content */
+        .main {
+            margin-left: 250px;
+            padding: 20px;
+            width: calc(100% - 250px);
+            min-height: 100vh;
+        }
+
+        .dashboard-header {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .dashboard-header h1 {
+            color: #333;
+            font-size: 1.8rem;
+        }
+
+        .logout-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.9rem;
+            transition: transform 0.2s;
+        }
+
+        .logout-btn:hover {
+            transform: scale(1.05);
+        }
+
+        /* Card */
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .card h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        /* Message Container */
+        .message-container {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+
+        /* Message Header */
+        .message-header {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .message-subject {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .message-meta {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .message-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* Message Content */
+        .message-content {
+            padding: 20px;
+            background: #fff;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            line-height: 1.6;
+            color: #444;
+        }
+
+        /* Sender Info */
+        .sender-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .sender-info-row {
+            display: flex;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .sender-info-row:last-child {
+            border-bottom: none;
+        }
+
+        .sender-label {
+            font-weight: 600;
+            color: #666;
+            min-width: 100px;
+            font-size: 0.85rem;
+        }
+
+        .sender-value {
+            color: #333;
+            font-size: 0.9rem;
+        }
+
+        /* Response Section */
+        .response-section {
+            margin-top: 30px;
+        }
+
+        .response-textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            resize: vertical;
+        }
+
+        .response-textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        /* Quick Responses */
+        .quick-responses {
+            margin-bottom: 15px;
+        }
+
+        .quick-response-btn {
+            padding: 6px 12px;
+            background: #e9ecef;
+            border: 1px solid #dee2e6;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            margin-right: 8px;
+            margin-bottom: 8px;
+            transition: all 0.3s;
+        }
+
+        .quick-response-btn:hover {
+            background: #dee2e6;
+            border-color: #adb5bd;
+        }
+
+        /* Status Badge */
+        .badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            display: inline-block;
+        }
+
+        .badge-open {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .badge-progress {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .badge-resolved {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .badge-high {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .badge-medium {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .badge-low {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            text-decoration: none;
+            margin-right: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #ff9800 0%, #ffb74d 100%);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        /* Coming Soon */
+        .coming-soon {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .coming-soon i {
+            font-size: 4rem;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .coming-soon h2 {
+            color: #333;
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .coming-soon p {
+            color: #666;
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 60px;
+            }
+
+            .sidebar h2 {
+                font-size: 0.8rem;
+            }
+
+            .sidebar ul li a span {
+                display: none;
+            }
+
+            .main {
+                margin-left: 60px;
+                width: calc(100% - 60px);
+            }
+
+            .message-container {
+                grid-template-columns: 1fr;
+            }
+
+            .action-buttons {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+    <h2>Officer Portal</h2>
+    <ul>
+        <li><a href="/officer/dashboard">
+            <i class="fas fa-tachometer-alt"></i> <span>Dashboard</span></a></li>
+        <li><a href="/officer/products">
+            <i class="fas fa-box"></i> <span>Products</span></a></li>
+        <li><a href="/officer/messages" class="active">
+            <i class="fas fa-envelope"></i> <span>Messages</span></a></li>
+        <li><a href="/officer/inventory">
+            <i class="fas fa-warehouse"></i> <span>Inventory</span></a></li>
+        <li><a href="/officer/reports">
+            <i class="fas fa-chart-line"></i> <span>Reports</span></a></li>
+    </ul>
+</div>
+
+<!-- Main content -->
+<div class="main">
+    <div class="dashboard-header">
+        <h1>Message Details</h1>
+        <button class="logout-btn" onclick="logout()">
+            <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
+    </div>
+
+    <!-- Coming Soon Card -->
+    <div class="card">
+        <div class="coming-soon">
+            <i class="fas fa-envelope-open-text"></i>
+            <h2>Message Details Coming Soon</h2>
+            <p>This feature will allow you to view and respond to individual buyer messages with full conversation history.</p>
+
+            <a href="/officer/messages" class="btn btn-primary">
+                <i class="fas fa-arrow-left"></i> Back to Messages
+            </a>
+        </div>
+    </div>
+
+    <!-- Preview of Future Features -->
+    <div class="message-container">
+        <!-- Message Content Card -->
+        <div class="card">
+            <h3><i class="fas fa-message"></i> Message Preview</h3>
+
+            <div class="message-header">
+                <div class="message-subject">Sample: Product Inquiry - Blue Cotton Shirt</div>
+                <div class="message-meta">
+                    <div class="message-meta-item">
+                        <i class="fas fa-user"></i> John Doe
+                    </div>
+                    <div class="message-meta-item">
+                        <i class="fas fa-calendar"></i> Jan 15, 2024
+                    </div>
+                    <div class="message-meta-item">
+                        <i class="fas fa-clock"></i> 2:30 PM
+                    </div>
+                    <div class="message-meta-item">
+                        <span class="badge badge-open">Open</span>
+                    </div>
+                    <div class="message-meta-item">
+                        <span class="badge badge-high">High Priority</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="message-content">
+                <p>This is a sample message content area. When the feature is fully implemented, actual buyer messages will appear here with their complete text.</p>
+            </div>
+
+            <!-- Response Section -->
+            <div class="response-section">
+                <h4 style="margin-bottom: 15px; color: #333;">
+                    <i class="fas fa-reply"></i> Your Response
+                </h4>
+
+                <div class="quick-responses">
+                    <button class="quick-response-btn" onclick="insertQuickResponse('Thank you for your inquiry')">
+                        Thank you for your inquiry
+                    </button>
+                    <button class="quick-response-btn" onclick="insertQuickResponse('We will get back to you shortly')">
+                        We will get back to you shortly
+                    </button>
+                    <button class="quick-response-btn" onclick="insertQuickResponse('Please provide more details')">
+                        Please provide more details
+                    </button>
+                </div>
+
+                <textarea class="response-textarea" placeholder="Type your response here..." disabled></textarea>
+
+                <div class="action-buttons">
+                    <button class="btn btn-success" disabled>
+                        <i class="fas fa-paper-plane"></i> Send Response
+                    </button>
+                    <button class="btn btn-warning" disabled>
+                        <i class="fas fa-save"></i> Save Draft
+                    </button>
+                    <button class="btn btn-secondary" disabled>
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sender Details Card -->
+        <div class="card">
+            <h3><i class="fas fa-user-circle"></i> Sender Details</h3>
+
+            <div class="sender-info">
+                <div class="sender-info-row">
+                    <span class="sender-label">Name:</span>
+                    <span class="sender-value">John Doe</span>
+                </div>
+                <div class="sender-info-row">
+                    <span class="sender-label">Email:</span>
+                    <span class="sender-value">john.doe@example.com</span>
+                </div>
+                <div class="sender-info-row">
+                    <span class="sender-label">Phone:</span>
+                    <span class="sender-value">+1 234-567-8900</span>
+                </div>
+                <div class="sender-info-row">
+                    <span class="sender-label">Customer ID:</span>
+                    <span class="sender-value">CUST001234</span>
+                </div>
+                <div class="sender-info-row">
+                    <span class="sender-label">Total Orders:</span>
+                    <span class="sender-value">5</span>
+                </div>
+                <div class="sender-info-row">
+                    <span class="sender-label">Member Since:</span>
+                    <span class="sender-value">Jan 2023</span>
+                </div>
+            </div>
+
+            <div class="action-buttons" style="margin-top: 20px;">
+                <button class="btn btn-primary" disabled>
+                    <i class="fas fa-history"></i> View History
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function logout() {
+        if (confirm('Are you sure you want to logout?')) {
+            window.location.href = '/logout';
+        }
+    }
+
+    function insertQuickResponse(text) {
+        const textarea = document.querySelector('.response-textarea');
+        textarea.value = text + '\n\n';
+        textarea.focus();
+    }
+</script>
+
 </body>
 </html>

@@ -1,9 +1,329 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="UTF-8"><title>Buyer Messages</title></head>
-<body style="font-family: Arial; padding: 40px;">
-    <h1>Buyer Messages - Coming Soon</h1>
-    <p>This page will show all buyer messages and complaints.</p>
-    <a href="/officer/dashboard">← Back to Dashboard</a>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClothSphere - Buyer Messages</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            background: linear-gradient(180deg, #1a1a2e, #16213e);
+            color: white;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            transition: width 0.3s ease;
+            z-index: 1000;
+        }
+
+        .sidebar h2 {
+            padding: 20px;
+            font-size: 1.5rem;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .sidebar ul li {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .sidebar ul li a {
+            color: white;
+            text-decoration: none;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar ul li a:hover,
+        .sidebar ul li a.active {
+            background: rgba(255, 255, 255, 0.1);
+            border-left: 4px solid #4a90e2;
+            padding-left: 16px;
+        }
+
+        /* Main content */
+        .main {
+            margin-left: 250px;
+            padding: 20px;
+            width: calc(100% - 250px);
+            min-height: 100vh;
+        }
+
+        .dashboard-header {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .dashboard-header h1 {
+            color: #333;
+            font-size: 1.8rem;
+        }
+
+        .logout-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.9rem;
+            transition: transform 0.2s;
+        }
+
+        .logout-btn:hover {
+            transform: scale(1.05);
+        }
+
+        /* Card */
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .card h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Coming Soon */
+        .coming-soon {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .coming-soon i {
+            font-size: 4rem;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .coming-soon h2 {
+            color: #333;
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .coming-soon p {
+            color: #666;
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        /* Features Grid */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 40px;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .feature-card i {
+            font-size: 2.5rem;
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .feature-card h4 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .feature-card p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 60px;
+            }
+
+            .sidebar h2 {
+                font-size: 0.8rem;
+            }
+
+            .sidebar ul li a span {
+                display: none;
+            }
+
+            .main {
+                margin-left: 60px;
+                width: calc(100% - 60px);
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+    <h2>Officer Portal</h2>
+    <ul>
+        <li><a href="/officer/dashboard">
+            <i class="fas fa-tachometer-alt"></i> <span>Dashboard</span></a></li>
+        <li><a href="/officer/products">
+            <i class="fas fa-box"></i> <span>Products</span></a></li>
+        <li><a href="/officer/messages" class="active">
+            <i class="fas fa-envelope"></i> <span>Messages</span></a></li>
+        <li><a href="/officer/inventory">
+            <i class="fas fa-warehouse"></i> <span>Inventory</span></a></li>
+        <li><a href="/officer/reports">
+            <i class="fas fa-chart-line"></i> <span>Reports</span></a></li>
+    </ul>
+</div>
+
+<!-- Main content -->
+<div class="main">
+    <div class="dashboard-header">
+        <h1>Buyer Messages</h1>
+        <button class="logout-btn" onclick="logout()">
+            <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
+    </div>
+
+    <!-- Coming Soon Card -->
+    <div class="card">
+        <div class="coming-soon">
+            <i class="fas fa-comments"></i>
+            <h2>Message Center Coming Soon</h2>
+            <p>We're building a comprehensive messaging system to help you manage all buyer inquiries and complaints efficiently.</p>
+
+            <a href="/officer/dashboard" class="btn btn-primary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+
+        <!-- Features Preview -->
+        <div class="features-grid">
+            <div class="feature-card">
+                <i class="fas fa-inbox"></i>
+                <h4>Unified Inbox</h4>
+                <p>All buyer messages in one organized location</p>
+            </div>
+
+            <div class="feature-card">
+                <i class="fas fa-reply"></i>
+                <h4>Quick Responses</h4>
+                <p>Respond to customer inquiries efficiently</p>
+            </div>
+
+            <div class="feature-card">
+                <i class="fas fa-tags"></i>
+                <h4>Message Tags</h4>
+                <p>Categorize and prioritize messages</p>
+            </div>
+
+            <div class="feature-card">
+                <i class="fas fa-chart-bar"></i>
+                <h4>Analytics</h4>
+                <p>Track response times and satisfaction</p>
+            </div>
+
+            <div class="feature-card">
+                <i class="fas fa-bell"></i>
+                <h4>Notifications</h4>
+                <p>Real-time alerts for urgent messages</p>
+            </div>
+
+            <div class="feature-card">
+                <i class="fas fa-history"></i>
+                <h4>Message History</h4>
+                <p>Complete conversation tracking</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function logout() {
+        if (confirm('Are you sure you want to logout?')) {
+            window.location.href = '/logout';
+        }
+    }
+</script>
+
 </body>
 </html>
