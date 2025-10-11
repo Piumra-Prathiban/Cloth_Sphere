@@ -1245,24 +1245,18 @@ function handleApprovalSubmit(e) {
     const rejectedQuantity = parseFloat(form.rejectedQuantity.value) || 0;
     const rejectReason = form.rejectReason.value.trim();
 
-    const data = {
-        movementId: movementId,
-        garmentId: garmentId,
-        approvedQuantity: approvedQuantity,
-        rejectedQuantity: rejectedQuantity,
-        rejectionReason: rejectReason || null
-    };
-
     const submitBtn = document.getElementById('submitApprovalBtn');
     if (submitBtn) {
         submitBtn.disabled = true;
         submitBtn.textContent = 'Submitting...';
     }
 
-    fetch('/api/garments/movements/approve', {
+    // FIX: Use the correct endpoint with path variable
+    const url = `/api/garments/movements/${movementId}/approve?garmentId=${garmentId}&approvedQty=${approvedQuantity}&rejectedQty=${rejectedQuantity}&rejectionReason=${encodeURIComponent(rejectReason)}`;
+
+    fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        headers: { 'Content-Type': 'application/json' }
     })
         .then(res => {
             if (!res.ok) {
@@ -1290,7 +1284,6 @@ function handleApprovalSubmit(e) {
             }
         });
 }
-
 // ============================================
 // ACTION HANDLERS
 // ============================================
