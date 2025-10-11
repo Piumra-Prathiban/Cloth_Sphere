@@ -1,4 +1,4 @@
-package com.clothsphere.model.Production;
+package com.clothsphere.model.FM;
 
 import com.clothsphere.model.HR.Employee;
 import jakarta.persistence.*;

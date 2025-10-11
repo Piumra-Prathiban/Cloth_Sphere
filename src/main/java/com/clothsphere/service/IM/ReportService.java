@@ -68,4 +68,39 @@ public class ReportService {
             throw new IllegalArgumentException("Start date cannot be after end date");
         }
     }
+
+    // Add these methods to ReportService.java
+
+    /**
+     * Get Garment Availability Report Data
+     */
+    public List<Map<String, Object>> getGarmentAvailabilityData(String startDateStr, String endDateStr) {
+        try {
+            LocalDate startDate = LocalDate.parse(startDateStr, DATE_FORMATTER);
+            LocalDate endDate = LocalDate.parse(endDateStr, DATE_FORMATTER);
+            validateDates(startDate, endDate);
+
+            // TODO: Implement repository method for garment availability
+            return List.of(); // Return empty list for now
+        } catch (Exception e) {
+            throw new RuntimeException("Error getting garment availability data: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Get Garment Shipped Report Data
+     */
+    public List<Map<String, Object>> getGarmentShippedData(String startDateStr, String endDateStr) {
+        try {
+            LocalDate startDate = LocalDate.parse(startDateStr, DATE_FORMATTER);
+            LocalDate endDate = LocalDate.parse(endDateStr, DATE_FORMATTER);
+            validateDates(startDate, endDate);
+
+            // TODO: Implement repository method for garment shipments
+            return List.of(); // Return empty list for now
+        } catch (Exception e) {
+            throw new RuntimeException("Error getting garment shipped data: " + e.getMessage(), e);
+        }
+    }
+
 }

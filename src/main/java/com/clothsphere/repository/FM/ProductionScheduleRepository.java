@@ -1,6 +1,6 @@
-package com.clothsphere.repository.Production;
+package com.clothsphere.repository.FM;
 
-import com.clothsphere.model.Production.ProductionSchedule;
+import com.clothsphere.model.FM.ProductionSchedule;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;

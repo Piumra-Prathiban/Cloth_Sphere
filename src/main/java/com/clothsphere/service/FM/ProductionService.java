@@ -1,16 +1,14 @@
-package com.clothsphere.service.Production;
+package com.clothsphere.service.FM;
 
-import com.clothsphere.model.HR.Employee;
-import com.clothsphere.model.Production.*;
+import com.clothsphere.model.FM.*;
 import com.clothsphere.repository.HR.EmployeeRepository;
-import com.clothsphere.repository.Production.*;
+import com.clothsphere.repository.FM.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 public class ProductionService {

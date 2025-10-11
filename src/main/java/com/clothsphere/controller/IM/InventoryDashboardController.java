@@ -20,12 +20,6 @@ public class InventoryDashboardController {
         return "garments";  // returns garments.html
     }
 
-    // Reports page
-    @GetMapping("/reports")
-    public String showReports() {
-        return "reports";  // returns reports.html
-    }
-
     // Profile page
     @GetMapping("/profile")
     public String showProfile() {

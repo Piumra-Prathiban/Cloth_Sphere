@@ -1,4 +1,4 @@
-package com.clothsphere.controller.Production;
+package com.clothsphere.controller.FM;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;

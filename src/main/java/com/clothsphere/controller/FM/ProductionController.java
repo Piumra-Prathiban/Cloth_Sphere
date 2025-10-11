@@ -1,9 +1,9 @@
-package com.clothsphere.controller.Production;
+package com.clothsphere.controller.FM;
 
 import com.clothsphere.model.HR.Employee;
-import com.clothsphere.model.Production.*;
+import com.clothsphere.model.FM.*;
 import com.clothsphere.repository.HR.EmployeeRepository;
-import com.clothsphere.service.Production.ProductionService;
+import com.clothsphere.service.FM.ProductionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

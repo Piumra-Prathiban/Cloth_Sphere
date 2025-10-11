@@ -135,29 +135,27 @@
     <div class="report-meta">
         <div class="meta-item">
             <strong>Report Period:</strong> <span th:text="${startDate}"></span> to <span th:text="${endDate}"></span>
-        </div>
-        <div class="meta-item">
-            <strong>Generated:</strong> <span th:text="${report.generatedDate}"></span>
-        </div>
-        <div class="meta-item">
-            <strong>Total Records:</strong> <span th:text="${report.totalGarments}"></span>
-        </div>
-    </div>
+            <!-- In the report-meta section, change this: -->
+            <div class="meta-item">
+                <strong>Generated:</strong> <span th:text="${generatedDate}"></span>
+            </div>
+            <div class="meta-item">
+                <strong>Total Records:</strong> <span th:text="${totalGarments}"></span>
+            </div>
 
-    <table class="data-table">
-        <thead>
-        <tr>
-            <th>Garment ID</th>
-            <th>Type</th>
-            <th>Size</th>
-            <th>Fabric Type</th>
-            <th>Color</th>
-            <th>Stock (pcs)</th>
-            <th>Threshold</th>
-            <th>Reorder</th>
-            <th>Status</th>
-            <th>Last Updated</th>
-        </tr>
+            <!-- And in the table body, change this: -->
+            <tr th:each="item : ${data}">
+                <td th:text="${item.garmentId}">GAR001</td>
+                <td th:text="${item.type}">T-Shirt</td>
+                <td th:text="${item.size}">M</td>
+                <td th:text="${item.fabricType}">Cotton</td>
+                <td th:text="${item.color}">Blue</td>
+                <td th:text="${item.currentStock}">0</td>
+                <td th:text="${item.threshold}">50</td>
+                <td th:text="${item.reorderLevel}">100</td>
+                <td th:text="${item.status}">Normal</td>
+                <td th:text="${item.lastUpdated}">N/A</td>
+            </tr>
         </thead>
         <tbody>
         <tr th:each="item : ${report.data}">
