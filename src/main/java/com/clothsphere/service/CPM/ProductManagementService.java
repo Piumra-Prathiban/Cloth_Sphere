@@ -176,7 +176,9 @@ public class ProductManagementService {
         }
 
         Product product = productOpt.get();
-        product.setIsActive(!product.getIsActive());
+        // Handle null isActive (for existing products)
+        Boolean currentStatus = product.getIsActive();
+        product.setIsActive(currentStatus == null || !currentStatus);
         product.setUpdatedAt(LocalDateTime.now());
         product.setUpdatedBy(updatedBy);
 

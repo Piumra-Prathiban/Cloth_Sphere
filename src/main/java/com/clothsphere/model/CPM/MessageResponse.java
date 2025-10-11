@@ -14,10 +14,6 @@ public class MessageResponse {
     @Column(name = "message_id", length = 15, nullable = false)
     private String messageId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "message_id", referencedColumnName = "message_id", insertable = false, updatable = false)
-    private BuyerMessage buyerMessage;
-
     @Column(name = "response_text", columnDefinition = "VARCHAR(MAX)", nullable = false)
     private String responseText;
 
@@ -55,14 +51,6 @@ public class MessageResponse {
 
     public void setMessageId(String messageId) {
         this.messageId = messageId;
-    }
-
-    public BuyerMessage getBuyerMessage() {
-        return buyerMessage;
-    }
-
-    public void setBuyerMessage(BuyerMessage buyerMessage) {
-        this.buyerMessage = buyerMessage;
     }
 
     public String getResponseText() {

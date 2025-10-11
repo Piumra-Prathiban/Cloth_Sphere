@@ -31,7 +31,7 @@ public class OnlineOrderController {
      */
     @GetMapping("/checkout")
     public String showCheckoutPage(HttpSession session, Model model) {
-        OnlineBuyerLogin buyer = (OnlineBuyerLogin) session.getAttribute("buyerUser");
+        OnlineBuyerLogin buyer = (OnlineBuyerLogin) session.getAttribute("loggedInBuyer");
 
         if (buyer == null) {
             return "redirect:/buyer/login";
@@ -74,7 +74,7 @@ public class OnlineOrderController {
         Map<String, Object> response = new HashMap<>();
 
         try {
-            OnlineBuyerLogin buyer = (OnlineBuyerLogin) session.getAttribute("buyerUser");
+            OnlineBuyerLogin buyer = (OnlineBuyerLogin) session.getAttribute("loggedInBuyer");
 
             if (buyer == null) {
                 response.put("success", false);
@@ -104,7 +104,7 @@ public class OnlineOrderController {
      */
     @GetMapping
     public String showOrdersPage(HttpSession session, Model model) {
-        OnlineBuyerLogin buyer = (OnlineBuyerLogin) session.getAttribute("buyerUser");
+        OnlineBuyerLogin buyer = (OnlineBuyerLogin) session.getAttribute("loggedInBuyer");
 
         if (buyer == null) {
             return "redirect:/buyer/login";
@@ -124,7 +124,7 @@ public class OnlineOrderController {
      */
     @GetMapping("/{orderId}")
     public String showOrderDetails(@PathVariable Long orderId, HttpSession session, Model model) {
-        OnlineBuyerLogin buyer = (OnlineBuyerLogin) session.getAttribute("buyerUser");
+        OnlineBuyerLogin buyer = (OnlineBuyerLogin) session.getAttribute("loggedInBuyer");
 
         if (buyer == null) {
             return "redirect:/buyer/login";
@@ -156,7 +156,7 @@ public class OnlineOrderController {
         Map<String, Object> response = new HashMap<>();
 
         try {
-            OnlineBuyerLogin buyer = (OnlineBuyerLogin) session.getAttribute("buyerUser");
+            OnlineBuyerLogin buyer = (OnlineBuyerLogin) session.getAttribute("loggedInBuyer");
 
             if (buyer == null) {
                 response.put("success", false);
@@ -191,7 +191,7 @@ public class OnlineOrderController {
         Map<String, Object> response = new HashMap<>();
 
         try {
-            OnlineBuyerLogin buyer = (OnlineBuyerLogin) session.getAttribute("buyerUser");
+            OnlineBuyerLogin buyer = (OnlineBuyerLogin) session.getAttribute("loggedInBuyer");
 
             if (buyer == null) {
                 response.put("success", false);

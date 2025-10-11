@@ -13,12 +13,8 @@ public class ProductPricingHistory {
     @Column(name = "history_id")
     private Long historyId;
 
-    @Column(name = "product_id", length = 20, nullable = false)
+    @Column(name = "product_id", nullable = false)
     private String productId;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id", referencedColumnName = "product_id", insertable = false, updatable = false)
-    private Product product;
 
     @Column(name = "old_price", nullable = false)
     private Double oldPrice;
@@ -65,14 +61,6 @@ public class ProductPricingHistory {
 
     public void setProductId(String productId) {
         this.productId = productId;
-    }
-
-    public Product getProduct() {
-        return product;
-    }
-
-    public void setProduct(Product product) {
-        this.product = product;
     }
 
     public Double getOldPrice() {

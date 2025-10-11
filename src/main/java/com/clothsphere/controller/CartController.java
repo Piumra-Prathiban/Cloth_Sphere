@@ -27,7 +27,7 @@ public class CartController {
      */
     @GetMapping
     public String showCart(HttpSession session, Model model) {
-        OnlineBuyerLogin buyer = (OnlineBuyerLogin) session.getAttribute("buyerUser");
+        OnlineBuyerLogin buyer = (OnlineBuyerLogin) session.getAttribute("loggedInBuyer");
 
         if (buyer == null) {
             return "redirect:/buyer/login";
@@ -58,7 +58,7 @@ public class CartController {
         Map<String, Object> response = new HashMap<>();
 
         try {
-            OnlineBuyerLogin buyer = (OnlineBuyerLogin) session.getAttribute("buyerUser");
+            OnlineBuyerLogin buyer = (OnlineBuyerLogin) session.getAttribute("loggedInBuyer");
 
             if (buyer == null) {
                 response.put("success", false);
@@ -95,7 +95,7 @@ public class CartController {
         Map<String, Object> response = new HashMap<>();
 
         try {
-            OnlineBuyerLogin buyer = (OnlineBuyerLogin) session.getAttribute("buyerUser");
+            OnlineBuyerLogin buyer = (OnlineBuyerLogin) session.getAttribute("loggedInBuyer");
 
             if (buyer == null) {
                 response.put("success", false);
@@ -132,7 +132,7 @@ public class CartController {
         Map<String, Object> response = new HashMap<>();
 
         try {
-            OnlineBuyerLogin buyer = (OnlineBuyerLogin) session.getAttribute("buyerUser");
+            OnlineBuyerLogin buyer = (OnlineBuyerLogin) session.getAttribute("loggedInBuyer");
 
             if (buyer == null) {
                 response.put("success", false);
@@ -166,7 +166,7 @@ public class CartController {
         Map<String, Object> response = new HashMap<>();
 
         try {
-            OnlineBuyerLogin buyer = (OnlineBuyerLogin) session.getAttribute("buyerUser");
+            OnlineBuyerLogin buyer = (OnlineBuyerLogin) session.getAttribute("loggedInBuyer");
 
             if (buyer == null) {
                 response.put("success", false);
@@ -197,7 +197,7 @@ public class CartController {
     public ResponseEntity<Map<String, Object>> getCartCount(HttpSession session) {
         Map<String, Object> response = new HashMap<>();
 
-        OnlineBuyerLogin buyer = (OnlineBuyerLogin) session.getAttribute("buyerUser");
+        OnlineBuyerLogin buyer = (OnlineBuyerLogin) session.getAttribute("loggedInBuyer");
 
         if (buyer == null) {
             response.put("cartCount", 0);

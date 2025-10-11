@@ -12,12 +12,8 @@ public class BuyerMessage {
     @Column(name = "message_id", length = 15)
     private String messageId;
 
-    @Column(name = "buyer_id", length = 10, nullable = false)
+    @Column(name = "buyer_id", nullable = false)
     private String buyerId;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "buyer_id", referencedColumnName = "buyer_id", insertable = false, updatable = false)
-    private OnlineBuyerLogin buyer;
 
     @Column(name = "subject", length = 200, nullable = false)
     private String subject;
@@ -75,14 +71,6 @@ public class BuyerMessage {
 
     public void setBuyerId(String buyerId) {
         this.buyerId = buyerId;
-    }
-
-    public OnlineBuyerLogin getBuyer() {
-        return buyer;
-    }
-
-    public void setBuyer(OnlineBuyerLogin buyer) {
-        this.buyer = buyer;
     }
 
     public String getSubject() {
