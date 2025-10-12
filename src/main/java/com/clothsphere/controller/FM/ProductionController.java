@@ -15,6 +15,9 @@ import jakarta.servlet.http.HttpSession;
 import java.time.LocalDate;
 import java.util.*;
 
+import com.clothsphere.model.FM.ProductionReportDTO;
+import com.clothsphere.model.FM.ProductionOverviewDTO;
+
 @Controller
 @RequestMapping("/production")
 public class ProductionController {
@@ -442,6 +445,71 @@ public class ProductionController {
             return new ResponseEntity<>(stats, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // ===================== PRODUCTION REPORTS (STORED PROCEDURES) =====================
+
+    /**
+     * Generate production summary report
+     * Calls stored procedure: generate_production_report
+     */
+    @GetMapping("/api/reports/production-summary")
+    @ResponseBody
+    public ResponseEntity<?> getProductionSummaryReport(
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+        try {
+            // Default to current month if dates not provided
+            LocalDate start = startDate != null ? LocalDate.parse(startDate) : LocalDate.now().withDayOfMonth(1);
+            LocalDate end = endDate != null ? LocalDate.parse(endDate) : LocalDate.now();
+
+            List<ProductionReportDTO> report = productionService.generateProductionReport(start, end);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("startDate", start);
+            response.put("endDate", end);
+            response.put("reportData", report);
+            response.put("totalRecords", report.size());
+
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Error generating production report: " + e.getMessage());
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Get production overview statistics
+     * Calls stored procedure: get_production_overview
+     */
+    @GetMapping("/api/reports/production-overview")
+    @ResponseBody
+    public ResponseEntity<?> getProductionOverview(
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+        try {
+            // Default to current month if dates not provided
+            LocalDate start = startDate != null ? LocalDate.parse(startDate) : LocalDate.now().withDayOfMonth(1);
+            LocalDate end = endDate != null ? LocalDate.parse(endDate) : LocalDate.now();
+
+            ProductionOverviewDTO overview = productionService.getProductionOverview(start, end);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("startDate", start);
+            response.put("endDate", end);
+            response.put("overview", overview);
+
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Error generating production overview: " + e.getMessage());
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

@@ -10,6 +10,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.*;
 
+import com.clothsphere.model.FM.ProductionReportDTO;
+import com.clothsphere.model.FM.ProductionOverviewDTO;
+
 @Service
 public class ProductionService {
 
@@ -635,5 +638,35 @@ public class ProductionService {
         stats.put("todayAssignments", getTodayAssignments().size());
 
         return stats;
+    }
+
+    // ===================== PRODUCTION REPORTS (STORED PROCEDURES) =====================
+
+    /**
+     * Generate production summary report using stored procedure
+     */
+    public List<ProductionReportDTO> generateProductionReport(LocalDate startDate, LocalDate endDate) {
+        List<Object[]> results = orderRepository.generateProductionReport(startDate, endDate);
+        List<ProductionReportDTO> report = new ArrayList<>();
+
+        for (Object[] row : results) {
+            report.add(ProductionReportDTO.fromObjectArray(row));
+        }
+
+        return report;
+    }
+
+    /**
+     * Get production overview using stored procedure
+     */
+    public ProductionOverviewDTO getProductionOverview(LocalDate startDate, LocalDate endDate) {
+        List<Object[]> results = orderRepository.getProductionOverview(startDate, endDate);
+
+        if (!results.isEmpty()) {
+            return ProductionOverviewDTO.fromObjectArray(results.get(0));
+        }
+
+        // Return empty DTO if no data
+        return new ProductionOverviewDTO();
     }
 }

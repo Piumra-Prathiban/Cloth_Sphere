@@ -108,4 +108,20 @@ public interface ProductionOrderRepository extends JpaRepository<ProductionOrder
     @Query("SELECT po FROM ProductionOrder po WHERE po.deadline BETWEEN :today AND :futureDate AND po.status != 'COMPLETED'")
     List<ProductionOrder> findUpcomingOrders(@Param("today") LocalDate today,
                                              @Param("futureDate") LocalDate futureDate);
+
+    // ===================== STORED PROCEDURE CALLS =====================
+
+    /**
+     * Call stored procedure to generate production summary report
+     */
+    @Query(value = "EXEC dbo.generate_production_report @start_date = :startDate, @end_date = :endDate", nativeQuery = true)
+    List<Object[]> generateProductionReport(@Param("startDate") LocalDate startDate,
+                                           @Param("endDate") LocalDate endDate);
+
+    /**
+     * Call stored procedure to get production overview
+     */
+    @Query(value = "EXEC dbo.get_production_overview @start_date = :startDate, @end_date = :endDate", nativeQuery = true)
+    List<Object[]> getProductionOverview(@Param("startDate") LocalDate startDate,
+                                        @Param("endDate") LocalDate endDate);
 }
