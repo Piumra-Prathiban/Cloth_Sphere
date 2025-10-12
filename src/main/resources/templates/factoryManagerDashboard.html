@@ -577,28 +577,43 @@
                     </div>
                 </div>
             </div>
-
             <!-- Task Progress Card -->
             <div class="card">
                 <h3>Task Progress</h3>
 
-                <p>Completed Tasks</p>
+                <p>Completed Tasks (<span id="completedCount" th:text="${taskStats != null ? taskStats.completedTasks : '0'}">0</span>)</p>
                 <div class="progress-bar">
-                    <div class="progress finish" style="width: 50%">50%</div>
+                    <div class="progress finish" id="completedProgress"
+                         th:style="'width: ' + ${taskStats != null ? (taskStats.completedTasks / (taskStats.totalTasks > 0 ? taskStats.totalTasks : 1) * 100) : '0'} + '%;'"
+                         th:text="${taskStats != null ? (taskStats.completedTasks / (taskStats.totalTasks > 0 ? taskStats.totalTasks : 1) * 100) : '0'} + '%'">0%</div>
                 </div>
 
-                <p style="margin-top:15px;">In Progress Tasks</p>
+                <p style="margin-top:15px;">In Progress Tasks (<span id="inProgressCount" th:text="${taskStats != null ? taskStats.inProgressTasks : '0'}">0</span>)</p>
                 <div class="progress-bar">
-                    <div class="progress in-progress" style="width: 30%">30%</div>
+                    <div class="progress in-progress" id="inProgressProgress"
+                         th:style="'width: ' + ${taskStats != null ? (taskStats.inProgressTasks / (taskStats.totalTasks > 0 ? taskStats.totalTasks : 1) * 100) : '0'} + '%;'"
+                         th:text="${taskStats != null ? (taskStats.inProgressTasks / (taskStats.totalTasks > 0 ? taskStats.totalTasks : 1) * 100) : '0'} + '%'">0%</div>
                 </div>
 
-                <p style="margin-top:15px;">Pending Tasks</p>
+                <p style="margin-top:15px;">Pending Tasks (<span id="pendingCount" th:text="${taskStats != null ? taskStats.pendingTasks : '0'}">0</span>)</p>
                 <div class="progress-bar">
-                    <div class="progress pending" style="width: 20%">20%</div>
+                    <div class="progress pending" id="pendingProgress"
+                         th:style="'width: ' + ${taskStats != null ? (taskStats.pendingTasks / (taskStats.totalTasks > 0 ? taskStats.totalTasks : 1) * 100) : '0'} + '%;'"
+                         th:text="${taskStats != null ? (taskStats.pendingTasks / (taskStats.totalTasks > 0 ? taskStats.totalTasks : 1) * 100) : '0'} + '%'">0%</div>
                 </div>
 
                 <div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
-                    <small><strong>Summary:</strong> Monitor production task distribution</small>
+                    <small><strong>Summary:</strong>
+                        <span id="progressSummary">
+                <th:block th:if="${taskStats != null}">
+                    Total <span th:text="${taskStats.totalTasks}">0</span> tasks:
+                    <span th:text="${taskStats.completedTasks}">0</span> completed,
+                    <span th:text="${taskStats.inProgressTasks}">0</span> in progress,
+                    <span th:text="${taskStats.pendingTasks}">0</span> pending
+                </th:block>
+                <th:block th:unless="${taskStats != null}">Monitor production task distribution</th:block>
+            </span>
+                    </small>
                 </div>
             </div>
         </div>
@@ -1087,6 +1102,11 @@
                     alert('✅ Task created successfully!');
                     closeModal('createTaskModal');
                     document.getElementById('createTaskForm').reset();
+
+                    // Update task progress after successful creation
+                    updateTaskProgress();
+
+                    // Reload the page to show the new task
                     location.reload();
                 } else {
                     alert('❌ Error: ' + data.message);
@@ -1140,6 +1160,10 @@
                     alert('✅ ' + data.message);
                     closeModal('assignTaskModal');
                     document.getElementById('assignTaskForm').reset();
+
+                    // Update task progress after assignment
+                    updateTaskProgress();
+
                     location.reload();
                 } else {
                     alert('❌ Error: ' + data.message);
@@ -1488,6 +1512,10 @@ Created: ${task.createdDate}
                 if (data.success) {
                     alert('✅ Task updated successfully!');
                     closeModal('editTaskModal');
+
+                    // Update task progress after task update
+                    updateTaskProgress();
+
                     location.reload();
                 } else {
                     alert('❌ Error: ' + data.message);
@@ -1535,6 +1563,11 @@ Created: ${task.createdDate}
                 if (data.success) {
                     alert('✅ Task status updated to: ' + newStatus);
                     closeModal('statusUpdateModal');
+
+                    // Update task progress after status change
+                    updateTaskProgress();
+
+                    // Reload the page to reflect the status change
                     location.reload();
                 } else {
                     alert('❌ Error: ' + data.message);
@@ -1562,6 +1595,10 @@ Created: ${task.createdDate}
                 console.log('Delete response:', data);
                 if (data.success) {
                     alert('✅ Task deleted successfully!');
+
+                    // Update task progress after deletion
+                    updateTaskProgress();
+
                     location.reload();
                 } else {
                     alert('❌ Error: ' + data.message);
@@ -1636,9 +1673,79 @@ Created: ${task.createdDate}
         if (typeof loadInitialData === 'function') {
             loadInitialData();
         }
+
+        // ADD THIS LINE: Update progress bars on page load
+        updateTaskProgress();
     });
 
+    function updateTaskProgress() {
+        console.log('Updating task progress...');
+
+        fetch('/factory/api/reports/task-progress')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(progressStats => {
+                console.log('Task progress loaded:', progressStats);
+
+                // Update progress bars if they exist on the current page
+                const completedProgress = document.getElementById('completedProgress');
+                const inProgressProgress = document.getElementById('inProgressProgress');
+                const pendingProgress = document.getElementById('pendingProgress');
+
+                if (completedProgress && inProgressProgress && pendingProgress) {
+                    // Update counts
+                    document.getElementById('completedCount').textContent = progressStats.completedTasks || 0;
+                    document.getElementById('inProgressCount').textContent = progressStats.inProgressTasks || 0;
+                    document.getElementById('pendingCount').textContent = progressStats.pendingTasks || 0;
+
+                    // Update progress bars
+                    const completedPercentage = progressStats.completedPercentage || 0;
+                    const inProgressPercentage = progressStats.inProgressPercentage || 0;
+                    const pendingPercentage = progressStats.pendingPercentage || 0;
+
+                    completedProgress.style.width = completedPercentage + '%';
+                    completedProgress.textContent = completedPercentage + '%';
+
+                    inProgressProgress.style.width = inProgressPercentage + '%';
+                    inProgressProgress.textContent = inProgressPercentage + '%';
+
+                    pendingProgress.style.width = pendingPercentage + '%';
+                    pendingProgress.textContent = pendingPercentage + '%';
+
+                    // Update summary
+                    const summary = document.getElementById('progressSummary');
+                    const totalTasks = progressStats.totalTasks || 0;
+                    if (totalTasks > 0) {
+                        summary.textContent = `Total ${totalTasks} tasks: ${progressStats.completedTasks} completed, ${progressStats.inProgressTasks} in progress, ${progressStats.pendingTasks} pending`;
+                    } else {
+                        summary.textContent = 'No tasks available';
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error loading task progress:', error);
+                // Fallback to showing error or default values
+                const completedProgress = document.getElementById('completedProgress');
+                const inProgressProgress = document.getElementById('inProgressProgress');
+                const pendingProgress = document.getElementById('pendingProgress');
+
+                if (completedProgress && inProgressProgress && pendingProgress) {
+                    completedProgress.style.width = '0%';
+                    completedProgress.textContent = 'Error';
+                    inProgressProgress.style.width = '0%';
+                    inProgressProgress.textContent = 'Error';
+                    pendingProgress.style.width = '0%';
+                    pendingProgress.textContent = 'Error';
+                }
+            });
+    }
+
     console.log('Factory Manager Dashboard JavaScript loaded successfully');
+
 </script>
 
 </body>

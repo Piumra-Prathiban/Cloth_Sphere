@@ -110,7 +110,7 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Attendan
 
     // Find attendance records by employee name and date range
     @Query(value = "SELECT a.* FROM attendance a " +
-            "JOIN employees e ON a.employee_id = e.employee_id " +
+            "JOIN employee e ON a.employee_id = e.id " +
             "WHERE LOWER(e.full_name) LIKE LOWER(CONCAT('%', :employeeName, '%')) " +
             "AND a.attendance_date BETWEEN :startDate AND :endDate " +
             "ORDER BY a.attendance_date DESC",

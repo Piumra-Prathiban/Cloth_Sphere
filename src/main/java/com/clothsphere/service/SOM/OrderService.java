@@ -2,7 +2,7 @@ package com.clothsphere.service.SOM;
 
 import com.clothsphere.model.SOM.Order;
 import com.clothsphere.repository.SOM.OrderRepository;
-import com.clothsphere.service.PM.ProductService;
+import com.clothsphere.service.CPM.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

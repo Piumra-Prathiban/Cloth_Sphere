@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Garment Availability Report - Cloth Sphere</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .report-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .report-header {
+            border-bottom: 2px solid #000;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .company-info h1 {
+            color: #000;
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        .company-info p {
+            color: #666;
+            font-size: 14px;
+        }
+        .report-title {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .report-title h2 {
+            color: #000;
+            font-size: 20px;
+            font-weight: 600;
+        }
+        .report-meta {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px;
+            border: 1px solid #ddd;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+            background: #f9f9f9;
+        }
+        .meta-item {
+            font-size: 14px;
+            color: #333;
+        }
+        .meta-item strong {
+            color: #000;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+            border: 1px solid #000;
+        }
+        .data-table thead {
+            background: #000;
+            color: white;
+        }
+        .data-table th {
+            padding: 12px 8px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 12px;
+            border: 1px solid #000;
+        }
+        .data-table td {
+            padding: 10px 8px;
+            border: 1px solid #ddd;
+            font-size: 12px;
+            color: #333;
+        }
+        .data-table tbody tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        .data-table tbody tr:hover {
+            background: #f0f0f0;
+        }
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .status-normal {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-reorder {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .status-low {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: 2px solid #000;
+            background: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+        .btn:hover {
+            background: #000;
+            color: white;
+        }
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            font-size: 16px;
+        }
+        @media print {
+            body { background: white; padding: 0; }
+            .actions { display: none; }
+            .report-container { box-shadow: none; padding: 20px; }
+            .data-table tbody tr:hover { background: inherit; }
+        }
+        @media (max-width: 768px) {
+            .report-container { padding: 20px; }
+            .data-table { font-size: 10px; }
+            .data-table th, .data-table td { padding: 6px 4px; }
+        }
+    </style>
+</head>
+<body>
+<div class="report-container">
+    <div class="report-header">
+        <div class="company-info">
+            <h1>Cloth Sphere</h1>
+            <p>Inventory Management System</p>
+        </div>
+        <div class="report-title">
+            <h2>Garment Availability Report</h2>
+        </div>
+    </div>
+
+    <div class="report-meta">
+        <div class="meta-item">
+            <strong>Report Period:</strong>
+            <span th:text="${startDate}">2024-01-01</span> to
+            <span th:text="${endDate}">2024-01-31</span>
+        </div>
+        <div class="meta-item">
+            <strong>Generated:</strong>
+            <span th:text="${generatedDate}">2024-01-31 10:30:00</span>
+        </div>
+        <div class="meta-item">
+            <strong>Total Records:</strong>
+            <span th:text="${totalGarments}">0</span>
+        </div>
+    </div>
+
+    <table class="data-table">
+        <thead>
+        <tr>
+            <th>Garment ID</th>
+            <th>Type</th>
+            <th>Size</th>
+            <th>Fabric Type</th>
+            <th>Color</th>
+            <th>Stock (pcs)</th>
+            <th>Threshold</th>
+            <th>Reorder</th>
+            <th>Status</th>
+            <th>Last Updated</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:if="${data == null || data.isEmpty()}">
+            <td colspan="10" class="no-data">
+                <i class="fas fa-inbox"></i><br>
+                No garment data available for the selected date range
+            </td>
+        </tr>
+        <tr th:each="item : ${data}">
+            <td th:text="${item.garment_id}">GAR001</td>
+            <td th:text="${item.type}">T-Shirt</td>
+            <td th:text="${item.size}">M</td>
+            <td th:text="${item.fabricType}">Cotton</td>
+            <td th:text="${item.color}">Blue</td>
+            <td th:text="${item.current_stock}">0</td>
+            <td th:text="${item.threshold}">50</td>
+            <td th:text="${item.reorder_level}">100</td>
+            <td>
+                <span th:class="${'status-badge ' + (item.status == 'Low Stock' ? 'status-low' : (item.status == 'Reorder' ? 'status-reorder' : 'status-normal'))}"
+                      th:text="${item.status}">Normal</span>
+            </td>
+            <td th:text="${item.last_updated}">N/A</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <div class="actions">
+        <button class="btn" onclick="window.print()">
+            <i class="fas fa-print"></i> Print Report
+        </button>
+        <button class="btn" onclick="window.close()">
+            <i class="fas fa-times"></i> Close
+        </button>
+    </div>
+</div>
+</body>
+</html>

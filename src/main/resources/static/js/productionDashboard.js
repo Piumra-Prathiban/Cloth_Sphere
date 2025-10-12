@@ -44,6 +44,72 @@ function loadTabData(tabName) {
     }
 }
 
+function updateTaskProgress() {
+    console.log('Updating task progress...');
+
+    fetch('/factory/api/reports/task-progress')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(progressStats => {
+            console.log('Task progress loaded:', progressStats);
+
+            // Update progress bars if they exist on the current page
+            const completedProgress = document.getElementById('completedProgress');
+            const inProgressProgress = document.getElementById('inProgressProgress');
+            const pendingProgress = document.getElementById('pendingProgress');
+
+            if (completedProgress && inProgressProgress && pendingProgress) {
+                // Update counts
+                document.getElementById('completedCount').textContent = progressStats.completedTasks || 0;
+                document.getElementById('inProgressCount').textContent = progressStats.inProgressTasks || 0;
+                document.getElementById('pendingCount').textContent = progressStats.pendingTasks || 0;
+
+                // Update progress bars
+                const completedPercentage = progressStats.completedPercentage || 0;
+                const inProgressPercentage = progressStats.inProgressPercentage || 0;
+                const pendingPercentage = progressStats.pendingPercentage || 0;
+
+                completedProgress.style.width = completedPercentage + '%';
+                completedProgress.textContent = completedPercentage + '%';
+
+                inProgressProgress.style.width = inProgressPercentage + '%';
+                inProgressProgress.textContent = inProgressPercentage + '%';
+
+                pendingProgress.style.width = pendingPercentage + '%';
+                pendingProgress.textContent = pendingPercentage + '%';
+
+                // Update summary
+                const summary = document.getElementById('progressSummary');
+                const totalTasks = progressStats.totalTasks || 0;
+                if (totalTasks > 0) {
+                    summary.textContent = `Total ${totalTasks} tasks: ${progressStats.completedTasks} completed, ${progressStats.inProgressTasks} in progress, ${progressStats.pendingTasks} pending`;
+                } else {
+                    summary.textContent = 'No tasks available';
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error loading task progress:', error);
+            // Fallback to showing error or default values
+            const completedProgress = document.getElementById('completedProgress');
+            const inProgressProgress = document.getElementById('inProgressProgress');
+            const pendingProgress = document.getElementById('pendingProgress');
+
+            if (completedProgress && inProgressProgress && pendingProgress) {
+                completedProgress.style.width = '0%';
+                completedProgress.textContent = 'Error';
+                inProgressProgress.style.width = '0%';
+                inProgressProgress.textContent = 'Error';
+                pendingProgress.style.width = '0%';
+                pendingProgress.textContent = 'Error';
+            }
+        });
+}
+
 // Load Production Orders
 function loadOrders() {
     fetch('/production/api/orders')
@@ -509,6 +575,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Load initial data for the active tab
     loadOrders();
+
+    // Update task progress
+    updateTaskProgress();
 
     // Test modal availability
     const modals = ['addOrderModal', 'addScheduleModal', 'addWorkstationModal', 'addAssignmentModal'];

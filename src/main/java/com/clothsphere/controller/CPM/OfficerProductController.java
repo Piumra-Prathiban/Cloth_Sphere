@@ -1,6 +1,6 @@
 package com.clothsphere.controller.CPM;
 
-import com.clothsphere.model.PM.Product;
+import com.clothsphere.model.CPM.Product;
 import com.clothsphere.model.SystemUser;
 import com.clothsphere.service.CPM.ProductManagementService;
 import jakarta.servlet.http.HttpSession;
