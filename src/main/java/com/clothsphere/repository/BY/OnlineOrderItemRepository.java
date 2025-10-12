@@ -1,6 +1,6 @@
-package com.clothsphere.repository.SOM;
+package com.clothsphere.repository.BY;
 
-import com.clothsphere.model.SOM.OnlineOrderItem;
+import com.clothsphere.model.BY.OnlineOrderItem;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

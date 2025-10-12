@@ -1,9 +1,9 @@
-package com.clothsphere.controller;
+package com.clothsphere.controller.BY;
 
-import com.clothsphere.model.SOM.OnlineBuyerLogin;
-import com.clothsphere.model.SOM.Wishlist;
-import com.clothsphere.service.SOM.WishlistService;
-import com.clothsphere.service.SOM.CartService;
+import com.clothsphere.model.BY.OnlineBuyerLogin;
+import com.clothsphere.model.BY.Wishlist;
+import com.clothsphere.service.BY.WishlistService;
+import com.clothsphere.service.BY.CartService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

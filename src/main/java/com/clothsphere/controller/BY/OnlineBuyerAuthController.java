@@ -1,9 +1,9 @@
-package com.clothsphere.controller;
+package com.clothsphere.controller.BY;
 
 import com.clothsphere.model.CPM.Product;
-import com.clothsphere.model.SOM.OnlineBuyerLogin;
+import com.clothsphere.model.BY.OnlineBuyerLogin;
 import com.clothsphere.service.CPM.ProductService;
-import com.clothsphere.service.SOM.OnlineBuyerLoginService;
+import com.clothsphere.service.BY.OnlineBuyerLoginService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;

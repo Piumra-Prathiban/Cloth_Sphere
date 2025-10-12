@@ -1,7 +1,7 @@
-package com.clothsphere.service.SOM;
+package com.clothsphere.service.BY;
 
-import com.clothsphere.model.SOM.OnlineBuyerLogin;
-import com.clothsphere.repository.SOM.OnlineBuyerLoginRepository;
+import com.clothsphere.model.BY.OnlineBuyerLogin;
+import com.clothsphere.repository.BY.OnlineBuyerLoginRepository;
 import com.clothsphere.util.PasswordEncoder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

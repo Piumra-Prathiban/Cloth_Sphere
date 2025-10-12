@@ -1,4 +1,4 @@
-package com.clothsphere.model.SOM;
+package com.clothsphere.model.BY;
 
 import com.clothsphere.model.CPM.Product;
 import jakarta.persistence.*;

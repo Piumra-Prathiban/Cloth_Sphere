@@ -1,4 +1,4 @@
-package com.clothsphere.model.SOM;
+package com.clothsphere.model.BY;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;

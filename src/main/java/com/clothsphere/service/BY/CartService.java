@@ -1,9 +1,9 @@
-package com.clothsphere.service.SOM;
+package com.clothsphere.service.BY;
 
 import com.clothsphere.model.CPM.Product;
-import com.clothsphere.model.SOM.Cart;
+import com.clothsphere.model.BY.Cart;
 import com.clothsphere.repository.CPM.ProductRepository;
-import com.clothsphere.repository.SOM.CartRepository;
+import com.clothsphere.repository.BY.CartRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

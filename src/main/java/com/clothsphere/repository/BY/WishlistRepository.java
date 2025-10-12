@@ -1,6 +1,6 @@
-package com.clothsphere.repository.SOM;
+package com.clothsphere.repository.BY;
 
-import com.clothsphere.model.SOM.Wishlist;
+import com.clothsphere.model.BY.Wishlist;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;

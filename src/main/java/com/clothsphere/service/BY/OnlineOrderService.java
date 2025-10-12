@@ -1,12 +1,12 @@
-package com.clothsphere.service.SOM;
+package com.clothsphere.service.BY;
 
 import com.clothsphere.model.CPM.Product;
-import com.clothsphere.model.SOM.Cart;
-import com.clothsphere.model.SOM.OnlineOrder;
-import com.clothsphere.model.SOM.OnlineOrderItem;
+import com.clothsphere.model.BY.Cart;
+import com.clothsphere.model.BY.OnlineOrder;
+import com.clothsphere.model.BY.OnlineOrderItem;
 import com.clothsphere.repository.CPM.ProductRepository;
-import com.clothsphere.repository.SOM.OnlineOrderRepository;
-import com.clothsphere.repository.SOM.OnlineOrderItemRepository;
+import com.clothsphere.repository.BY.OnlineOrderRepository;
+import com.clothsphere.repository.BY.OnlineOrderItemRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
