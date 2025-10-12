@@ -94,6 +94,221 @@
             color: #2c3e50;
         }
 
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        /* Alert Notification Bell */
+        .alert-bell {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .alert-bell i {
+            font-size: 24px;
+            color: #2c3e50;
+            transition: color 0.3s;
+        }
+
+        .alert-bell:hover i {
+            color: #3498db;
+        }
+
+        .alert-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #e74c3c;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* Alert Dropdown Panel */
+        .alert-dropdown {
+            position: absolute;
+            top: 60px;
+            right: 80px;
+            width: 400px;
+            max-height: 500px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: none;
+            z-index: 1000;
+            overflow: hidden;
+        }
+
+        .alert-dropdown.show {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .alert-dropdown-header {
+            padding: 15px 20px;
+            background: #2c3e50;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .alert-dropdown-header h3 {
+            font-size: 16px;
+            margin: 0;
+        }
+
+        .mark-all-read {
+            background: transparent;
+            border: none;
+            color: #3498db;
+            cursor: pointer;
+            font-size: 13px;
+            text-decoration: underline;
+        }
+
+        .mark-all-read:hover {
+            color: #5dade2;
+        }
+
+        .alert-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .alert-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid #ecf0f1;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .alert-item:hover {
+            background: #f8f9fa;
+        }
+
+        .alert-item.unread {
+            background: #ebf5fb;
+        }
+
+        .alert-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .alert-severity {
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .alert-severity.critical {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .alert-severity.high {
+            background: #f39c12;
+            color: white;
+        }
+
+        .alert-severity.medium {
+            background: #3498db;
+            color: white;
+        }
+
+        .alert-severity.low {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .alert-time {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+
+        .alert-message {
+            color: #2c3e50;
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 8px;
+        }
+
+        .alert-order-info {
+            display: flex;
+            gap: 15px;
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+
+        .alert-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .alert-actions button {
+            padding: 5px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+
+        .alert-dismiss-btn {
+            background: #ecf0f1;
+            color: #2c3e50;
+        }
+
+        .alert-dismiss-btn:hover {
+            background: #bdc3c7;
+        }
+
+        .alert-view-btn {
+            background: #3498db;
+            color: white;
+        }
+
+        .alert-view-btn:hover {
+            background: #2980b9;
+        }
+
+        .alert-empty {
+            padding: 40px 20px;
+            text-align: center;
+            color: #95a5a6;
+        }
+
+        .alert-empty i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
         .logout-btn {
             background: #e74c3c;
             color: white;
@@ -507,9 +722,30 @@
 <div class="main">
     <div class="dashboard-header">
         <h1>Welcome, <span th:text="${user != null ? user.userName : 'Factory Manager'}">Factory Manager</span></h1>
-        <button class="logout-btn" onclick="window.location.href='/systemUserLogin'">
-            <i class="fas fa-sign-out-alt"></i> Logout
-        </button>
+        <div class="header-right">
+            <!-- Alert Notification Bell -->
+            <div class="alert-bell" onclick="toggleAlertDropdown()">
+                <i class="fas fa-bell"></i>
+                <span class="alert-badge" id="alertBadge" style="display: none;">0</span>
+            </div>
+            <button class="logout-btn" onclick="window.location.href='/systemUserLogin'">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
+    </div>
+
+    <!-- Alert Dropdown Panel -->
+    <div class="alert-dropdown" id="alertDropdown">
+        <div class="alert-dropdown-header">
+            <h3><i class="fas fa-bell"></i> Production Alerts</h3>
+            <button class="mark-all-read" onclick="markAllAlertsAsRead()">Mark all as read</button>
+        </div>
+        <div class="alert-list" id="alertList">
+            <div class="alert-empty">
+                <i class="fas fa-check-circle"></i>
+                <p>No new alerts</p>
+            </div>
+        </div>
     </div>
 
     <!-- Overview Section -->
@@ -1747,6 +1983,9 @@ Created: ${task.createdDate}
     console.log('Factory Manager Dashboard JavaScript loaded successfully');
 
 </script>
+
+<!-- Alert Notification JavaScript -->
+<script src="/js/alerts.js"></script>
 
 </body>
 </html>
