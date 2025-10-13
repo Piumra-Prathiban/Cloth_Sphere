@@ -1,8 +1,8 @@
 package com.clothsphere.controller.HR;
 
-import com.clothsphere.model.HR.TaskAssignment;
+import com.clothsphere.model.FM.TaskAssignment;
 import com.clothsphere.model.SystemUser;
-import com.clothsphere.service.HR.TaskAssignmentService;
+import com.clothsphere.service.FM.TaskAssignmentService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/employee")

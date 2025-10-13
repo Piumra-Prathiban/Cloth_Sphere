@@ -1,7 +1,7 @@
-package com.clothsphere.repository.HR;
+package com.clothsphere.repository.FM;
 
 import com.clothsphere.model.HR.Department;
-import com.clothsphere.model.HR.ProductionTask;
+import com.clothsphere.model.FM.ProductionTask;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;

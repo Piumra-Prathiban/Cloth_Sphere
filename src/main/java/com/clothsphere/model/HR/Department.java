@@ -1,5 +1,6 @@
 package com.clothsphere.model.HR;
 
+import com.clothsphere.model.FM.ProductionTask;
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonIgnore; // Prevent infinite recursion during JSON serialization
 import java.util.ArrayList;

@@ -1,8 +1,8 @@
-package com.clothsphere.service.HR;
+package com.clothsphere.service.FM;
 
 import com.clothsphere.model.HR.Department;
-import com.clothsphere.model.HR.ProductionTask;
-import com.clothsphere.repository.HR.ProductionTaskRepository;
+import com.clothsphere.model.FM.ProductionTask;
+import com.clothsphere.repository.FM.ProductionTaskRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

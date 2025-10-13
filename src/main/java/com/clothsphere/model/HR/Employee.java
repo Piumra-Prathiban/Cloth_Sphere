@@ -1,5 +1,6 @@
 package com.clothsphere.model.HR;
 
+import com.clothsphere.model.FM.TaskAssignment;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;

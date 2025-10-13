@@ -1,5 +1,7 @@
-package com.clothsphere.model.HR;
+package com.clothsphere.model.FM;
 
+import com.clothsphere.model.HR.Department;
+import com.clothsphere.model.HR.Employee;
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.LocalDate;

@@ -1,10 +1,10 @@
-package com.clothsphere.controller.HR;
+package com.clothsphere.controller.FM;
 
 import com.clothsphere.model.HR.Department;
-import com.clothsphere.model.HR.ProductionTask;
+import com.clothsphere.model.FM.ProductionTask;
 import com.clothsphere.model.SystemUser;
 import com.clothsphere.service.HR.DepartmentService;
-import com.clothsphere.service.HR.productionTaskService;
+import com.clothsphere.service.FM.productionTaskService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

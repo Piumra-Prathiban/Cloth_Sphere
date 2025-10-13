@@ -1,10 +1,10 @@
-package com.clothsphere.service.HR;
+package com.clothsphere.service.FM;
 
-import com.clothsphere.model.HR.Department;
 import com.clothsphere.model.HR.Employee;
-import com.clothsphere.model.HR.ProductionTask;
-import com.clothsphere.model.HR.TaskAssignment;
-import com.clothsphere.repository.HR.TaskAssignmentRepository;
+import com.clothsphere.model.FM.ProductionTask;
+import com.clothsphere.model.FM.TaskAssignment;
+import com.clothsphere.repository.FM.TaskAssignmentRepository;
+import com.clothsphere.service.HR.EmployeeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -14,7 +14,6 @@ import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 public class TaskAssignmentService {
