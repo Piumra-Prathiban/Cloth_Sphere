@@ -2,6 +2,8 @@ package com.clothsphere.repository.CPM;
 
 import com.clothsphere.model.CPM.BuyerMessage;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -9,30 +11,30 @@ import java.util.List;
 @Repository
 public interface BuyerMessageRepository extends JpaRepository<BuyerMessage, String> {
 
-    // Find messages by buyer ID
-    List<BuyerMessage> findByBuyerId(String buyerId);
+    @Query("SELECT bm FROM BuyerMessage bm WHERE bm.buyerId = :buyerId")
+    List<BuyerMessage> findByBuyerId(@Param("buyerId") String buyerId);
 
-    // Find messages by status
-    List<BuyerMessage> findByStatus(String status);
+    @Query("SELECT bm FROM BuyerMessage bm WHERE bm.status = :status")
+    List<BuyerMessage> findByStatus(@Param("status") String status);
 
-    // Find messages by message type
-    List<BuyerMessage> findByMessageType(String messageType);
+    @Query("SELECT bm FROM BuyerMessage bm WHERE bm.messageType = :messageType")
+    List<BuyerMessage> findByMessageType(@Param("messageType") String messageType);
 
-    // Find messages by priority
-    List<BuyerMessage> findByPriority(String priority);
+    @Query("SELECT bm FROM BuyerMessage bm WHERE bm.priority = :priority")
+    List<BuyerMessage> findByPriority(@Param("priority") String priority);
 
-    // Find messages by status and buyer ID
-    List<BuyerMessage> findByStatusAndBuyerId(String status, String buyerId);
+    @Query("SELECT bm FROM BuyerMessage bm WHERE bm.status = :status AND bm.buyerId = :buyerId")
+    List<BuyerMessage> findByStatusAndBuyerId(@Param("status") String status, @Param("buyerId") String buyerId);
 
-    // Count messages by status
-    long countByStatus(String status);
+    @Query("SELECT COUNT(bm) FROM BuyerMessage bm WHERE bm.status = :status")
+    long countByStatus(@Param("status") String status);
 
-    // Find all messages ordered by creation date (newest first)
+    @Query("SELECT bm FROM BuyerMessage bm ORDER BY bm.createdAt DESC")
     List<BuyerMessage> findAllByOrderByCreatedAtDesc();
 
-    // Find messages by status ordered by creation date
-    List<BuyerMessage> findByStatusOrderByCreatedAtDesc(String status);
+    @Query("SELECT bm FROM BuyerMessage bm WHERE bm.status = :status ORDER BY bm.createdAt DESC")
+    List<BuyerMessage> findByStatusOrderByCreatedAtDesc(@Param("status") String status);
 
-    // Find messages by buyer ID ordered by creation date
-    List<BuyerMessage> findByBuyerIdOrderByCreatedAtDesc(String buyerId);
+    @Query("SELECT bm FROM BuyerMessage bm WHERE bm.buyerId = :buyerId ORDER BY bm.createdAt DESC")
+    List<BuyerMessage> findByBuyerIdOrderByCreatedAtDesc(@Param("buyerId") String buyerId);
 }
