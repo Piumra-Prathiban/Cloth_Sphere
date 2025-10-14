@@ -3,6 +3,7 @@ package com.clothsphere.controller.CPM;
 import com.clothsphere.model.SystemUser;
 import com.clothsphere.service.CPM.BuyerMessageService;
 import com.clothsphere.service.CPM.ProductManagementService;
+import com.clothsphere.Singleton.LoginLogger;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -22,8 +23,12 @@ public class ProductOfficerAuthController {
     @Autowired
     private ProductManagementService productService;
 
+    // Get the singleton instance of LoginLogger
+    private final LoginLogger logger = LoginLogger.getInstance();
+
     /**
      * Officer Dashboard - Main landing page after login
+     * This is accessed after successful login from LoginController
      */
     @GetMapping("/dashboard")
     public String showOfficerDashboard(HttpSession session, Model model) {
@@ -32,13 +37,17 @@ public class ProductOfficerAuthController {
 
         if (user == null) {
             System.out.println("No user in session, redirecting to login");
-            return "redirect:/login";
+            logger.logFailedLogin("unknown", "ProductOfficerAuthController",
+                    "Session expired or no user in session");
+            return "redirect:/systemUserLogin";
         }
 
         // Verify role
         if (!"Customer & Product Management Officer".equals(user.getRole())) {
             System.out.println("User does not have officer role, redirecting to login");
-            return "redirect:/login";
+            logger.logFailedLogin(user.getUserName(), "ProductOfficerAuthController",
+                    "Invalid role for officer dashboard access");
+            return "redirect:/systemUserLogin";
         }
 
         // Get statistics for dashboard
@@ -52,6 +61,39 @@ public class ProductOfficerAuthController {
         model.addAttribute("totalProducts", totalProducts);
         model.addAttribute("activeProducts", activeProducts);
 
+        // Log dashboard access
+        System.out.println("Product Officer " + user.getUserName() +
+                " accessed dashboard successfully");
+
         return "officerDashboard";
+    }
+
+    /**
+     * View Product Officer's login history
+     */
+    @GetMapping("/myLoginHistory")
+    public String viewMyLoginHistory(HttpSession session, Model model) {
+        SystemUser user = (SystemUser) session.getAttribute("loggedInUser");
+
+        if (user == null) {
+            return "redirect:/systemUserLogin";
+        }
+
+        // Verify role
+        if (!"Customer & Product Management Officer".equals(user.getRole())) {
+            return "redirect:/systemUserLogin";
+        }
+
+        // Get user's login statistics from singleton
+        LoginLogger.LoginStatistics stats = logger.getUserStatistics(user.getUserName());
+
+        // Get user's specific logs
+        var userLogs = logger.getLogsByUsername(user.getUserName());
+
+        model.addAttribute("loginLogs", userLogs);
+        model.addAttribute("statistics", stats);
+        model.addAttribute("currentUser", user);
+
+        return "officerLoginHistory"; // Create this view if needed
     }
 }

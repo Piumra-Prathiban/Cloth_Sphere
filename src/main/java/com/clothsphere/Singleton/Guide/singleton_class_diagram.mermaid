@@ -1,0 +1,90 @@
+classDiagram
+    class LoginLogger {
+        -static LoginLogger instance
+        -List~LoginLogEntry~ logEntries
+        -static DateTimeFormatter formatter
+        -LoginLogger()
+        +static getInstance() LoginLogger
+        +logSuccessfulLogin(username, role, controller)
+        +logFailedLogin(username, controller, reason)
+        +logFirstTimeLogin(username, controller)
+        +logLogout(username, role)
+        +getAllLogs() List~LoginLogEntry~
+        +getLogsByUsername(username) List~LoginLogEntry~
+        +getLogsByRole(role) List~LoginLogEntry~
+        +getLogsByStatus(status) List~LoginLogEntry~
+        +getUserStatistics(username) LoginStatistics
+        +getTotalLogCount() int
+        +clearLogs()
+        +printAllLogs()
+    }
+
+    class LoginLogEntry {
+        -String username
+        -String role
+        -String controller
+        -String status
+        -LocalDateTime timestamp
+        -String message
+        +getUsername() String
+        +getRole() String
+        +getController() String
+        +getStatus() String
+        +getTimestamp() LocalDateTime
+        +getMessage() String
+        +toString() String
+    }
+
+    class LoginStatistics {
+        -String username
+        -int successfulLogins
+        -int failedLogins
+        -int logouts
+        +getUsername() String
+        +getSuccessfulLogins() int
+        +getFailedLogins() int
+        +getLogouts() int
+        +getTotalAttempts() int
+        +toString() String
+    }
+
+    class LoginController {
+        -SystemUserService systemUserService
+        -EmployeeRepository employeeRepository
+        -LoginLogger logger
+        +processSystemUserLogin() String
+        +logout() String
+        +updatePassword() String
+        +viewLoginLogs() String
+    }
+
+    class ProfileController {
+        -ProfileIMService profileService
+        -LoginLogger logger
+        +profilePage() String
+        +updateProfile() String
+        +updatePassword() String
+        +viewMyLoginHistory() String
+    }
+
+    class ProductOfficerAuthController {
+        -BuyerMessageService messageService
+        -ProductManagementService productService
+        -LoginLogger logger
+        +showOfficerDashboard() String
+        +viewMyLoginHistory() String
+    }
+
+    LoginLogger "1" *-- "*" LoginLogEntry : contains
+    LoginLogger ..> LoginStatistics : creates
+    LoginController --> LoginLogger : uses getInstance()
+    ProfileController --> LoginLogger : uses getInstance()
+    ProductOfficerAuthController --> LoginLogger : uses getInstance()
+
+    note for LoginLogger "Singleton Pattern:\n- Private constructor\n- Static instance\n- Thread-safe getInstance()\n- Centralized log storage"
+    
+    note for LoginController "Handles login for:\n- HR Manager\n- Factory Manager\n- Sales Executive\n- Customer Officer\n- Employees"
+    
+    note for ProfileController "Handles profile for:\n- Inventory Manager"
+    
+    note for ProductOfficerAuthController "Handles dashboard for:\n- Product Officer"

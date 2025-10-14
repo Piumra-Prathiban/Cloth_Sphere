@@ -4,6 +4,7 @@ import com.clothsphere.model.HR.Employee;
 import com.clothsphere.model.SystemUser;
 import com.clothsphere.repository.HR.EmployeeRepository;
 import com.clothsphere.service.SystemUserService;
+import com.clothsphere.Singleton.LoginLogger;
 import com.clothsphere.util.PasswordEncoder;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +20,9 @@ public class LoginController {
 
     @Autowired
     private EmployeeRepository employeeRepository;
+
+    // Get the singleton instance of LoginLogger
+    private final LoginLogger logger = LoginLogger.getInstance();
 
     // ========================= Landing page =========================
 
@@ -56,6 +60,8 @@ public class LoginController {
 
         if (user == null) {
             System.out.println("User not found: " + username);
+            // Log failed login attempt
+            logger.logFailedLogin(username, "LoginController", "User not found");
             return "redirect:/systemUserLogin?error=true";
         }
 
@@ -81,9 +87,13 @@ public class LoginController {
                     session.setAttribute("currentUser", user);
                     session.setAttribute("employeeId", actualEmployeeId);
                     session.setAttribute("username", username);
-                    session.setAttribute("userEmail", user.getEmail()); // ADD THIS
+                    session.setAttribute("userEmail", user.getEmail());
                     session.setAttribute("firstLogin", true);
                     session.setAttribute("requirePasswordChange", true);
+
+                    // Log first-time login
+                    logger.logFirstTimeLogin(username, "LoginController");
+
                     return "redirect:/employeeDashboard?firstLogin=true";
                 } else {
                     if (PasswordEncoder.matches(password, user.getPassword())) {
@@ -91,17 +101,24 @@ public class LoginController {
                         session.setAttribute("currentUser", user);
                         session.setAttribute("employeeId", actualEmployeeId);
                         session.setAttribute("username", username);
-                        session.setAttribute("userEmail", user.getEmail()); // ADD THIS
+                        session.setAttribute("userEmail", user.getEmail());
                         session.setAttribute("firstLogin", true);
                         session.setAttribute("requirePasswordChange", true);
+
+                        // Log first-time login
+                        logger.logFirstTimeLogin(username, "LoginController");
+
                         return "redirect:/employeeDashboard?firstLogin=true";
                     } else {
+                        // Log failed login
+                        logger.logFailedLogin(username, "LoginController", "Incorrect password");
                         return "redirect:/systemUserLogin?error=true";
                     }
                 }
             } else {
                 // Returning employee
                 if (password == null || password.trim().isEmpty()) {
+                    logger.logFailedLogin(username, "LoginController", "Password required");
                     return "redirect:/systemUserLogin?error=true";
                 }
 
@@ -113,16 +130,22 @@ public class LoginController {
                     session.setAttribute("currentUser", user);
                     session.setAttribute("employeeId", actualEmployeeId);
                     session.setAttribute("username", username);
-                    session.setAttribute("userEmail", user.getEmail()); // ADD THIS
+                    session.setAttribute("userEmail", user.getEmail());
+
+                    // Log successful login
+                    logger.logSuccessfulLogin(username, userRole, "LoginController");
+
                     return "redirect:/employeeDashboard";
                 } else {
+                    logger.logFailedLogin(username, "LoginController", "Incorrect password");
                     return "redirect:/systemUserLogin?error=true";
                 }
             }
         }
 
-        // Normal login for other roles
+        // Normal login for other roles (HR Manager, Factory Manager, etc.)
         if (password == null || password.trim().isEmpty()) {
+            logger.logFailedLogin(username, "LoginController", "Password required");
             return "redirect:/systemUserLogin?error=true";
         }
 
@@ -139,12 +162,16 @@ public class LoginController {
 
             String lowerRole = userRole.toLowerCase().trim();
 
+            // Log successful login before redirecting
+            logger.logSuccessfulLogin(username, userRole, "LoginController");
+
             switch (lowerRole) {
                 case "hr-manager":
                     return "redirect:/hrDashboard";
                 case "factory-manager":
                     return "redirect:/factory/dashboard";
                 case "inventory-manager":
+                    // Inventory Manager uses ProfileController, but logged here
                     return "redirect:/inventoryDashboard";
                 case "customer-officer":
                     return "redirect:/customerDashboard";
@@ -154,11 +181,13 @@ public class LoginController {
                     session.setAttribute("employeeId", actualEmployeeId);
                     return "redirect:/employeeDashboard";
                 case "customer & product management officer":
+                    // Product Officer uses ProductOfficerAuthController, but logged here
                     return "redirect:/officer/dashboard";
                 default:
                     return "redirect:/dashboard";
             }
         } else {
+            logger.logFailedLogin(username, "LoginController", "Incorrect password");
             return "redirect:/systemUserLogin?error=true";
         }
     }
@@ -198,6 +227,9 @@ public class LoginController {
             SystemUser updatedUser = systemUserService.findByUserName(currentUser.getUserName());
             session.setAttribute("currentUser", updatedUser);
             session.setAttribute("updateMessage", "success:Password updated successfully");
+
+            // Log password change event
+            System.out.println("Password changed for user: " + currentUser.getUserName());
         } else {
             session.setAttribute("updateMessage", "error:Failed to update password");
         }
@@ -224,11 +256,20 @@ public class LoginController {
     public String showCustomerDashboard(HttpSession session, Model model) {
         return loadDashboard("customerDashboard", session, model);
     }
-// ========================= Logout =========================
+
+    // ========================= Logout =========================
 
     @GetMapping("/logout")
     public String logout(HttpSession session) {
         System.out.println("=== USER LOGOUT ===");
+
+        // Get user info before invalidating session
+        SystemUser currentUser = (SystemUser) session.getAttribute("currentUser");
+
+        if (currentUser != null) {
+            // Log logout event
+            logger.logLogout(currentUser.getUserName(), currentUser.getRole());
+        }
 
         // Invalidate the session
         if (session != null) {
@@ -242,5 +283,34 @@ public class LoginController {
     @PostMapping("/logout")
     public String logoutPost(HttpSession session) {
         return logout(session);
+    }
+
+    // ========================= View Login Logs (Optional) =========================
+
+    /**
+     * Optional endpoint to view all login logs
+     * Only accessible by Factory Manager or HR Manager
+     */
+    @GetMapping("/admin/loginLogs")
+    public String viewLoginLogs(HttpSession session, Model model) {
+        SystemUser currentUser = (SystemUser) session.getAttribute("currentUser");
+
+        if (currentUser == null) {
+            return "redirect:/systemUserLogin";
+        }
+
+        // Only allow Factory Manager and HR Manager to view logs
+        String role = currentUser.getRole().toLowerCase().trim();
+        if (!role.equals("factory-manager") && !role.equals("hr-manager")) {
+            return "redirect:/dashboard";
+        }
+
+        // Get all logs from singleton
+        model.addAttribute("allLogs", logger.getAllLogs());
+        model.addAttribute("totalLogs", logger.getTotalLogCount());
+        model.addAttribute("successLogs", logger.getLogsByStatus("SUCCESS").size());
+        model.addAttribute("failedLogs", logger.getLogsByStatus("FAILED").size());
+
+        return "loginLogsView"; // Create this view if needed
     }
 }

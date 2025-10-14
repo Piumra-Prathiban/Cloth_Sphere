@@ -3,6 +3,7 @@ package com.clothsphere.controller.IM;
 import com.clothsphere.model.SystemUser;
 import com.clothsphere.model.SystemUserId;
 import com.clothsphere.service.IM.ProfileIMService;
+import com.clothsphere.Singleton.LoginLogger;
 import com.clothsphere.util.PasswordEncoder;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,9 @@ public class ProfileController {
 
     @Autowired
     private ProfileIMService profileService;
+
+    // Get the singleton instance of LoginLogger
+    private final LoginLogger logger = LoginLogger.getInstance();
 
     // Show profile page - FETCH FROM DATABASE
     @GetMapping("/profile")
@@ -112,7 +116,7 @@ public class ProfileController {
         return "redirect:/user/profile";
     }
 
-    // ✅ Fixed password update method
+    // Password update method with Singleton logging
     @PostMapping("/updatePassword")
     public String updatePassword(@RequestParam String currentPassword,
                                  @RequestParam String newPassword,
@@ -131,9 +135,14 @@ public class ProfileController {
                     currentUser.getRole()
             );
 
-            // ✅ FIXED: Use PasswordEncoder to verify current password
+            // Use PasswordEncoder to verify current password
             if (!PasswordEncoder.matches(currentPassword, dbUser.getPassword())) {
                 session.setAttribute("updateMessage", "error:Current password is incorrect");
+
+                // Log failed password change attempt
+                System.out.println("Failed password change attempt for user: " +
+                        currentUser.getUserName() + " (Inventory Manager)");
+
                 return "redirect:/user/profile";
             }
 
@@ -160,6 +169,10 @@ public class ProfileController {
 
             session.setAttribute("updateMessage", "success:Password changed successfully!");
 
+            // Log successful password change
+            System.out.println("Password changed successfully for user: " +
+                    currentUser.getUserName() + " (Inventory Manager) via ProfileController");
+
         } catch (Exception e) {
             System.err.println("ERROR: " + e.getMessage());
             e.printStackTrace();
@@ -175,5 +188,31 @@ public class ProfileController {
     public String clearMessage(HttpSession session) {
         session.removeAttribute("updateMessage");
         return "OK";
+    }
+
+    // ========================= View User's Own Login Logs =========================
+
+    /**
+     * Allow Inventory Manager to view their own login history
+     */
+    @GetMapping("/myLoginHistory")
+    public String viewMyLoginHistory(HttpSession session, Model model) {
+        SystemUser currentUser = (SystemUser) session.getAttribute("currentUser");
+
+        if (currentUser == null) {
+            return "redirect:/systemUserLogin";
+        }
+
+        // Get user's login statistics from singleton
+        LoginLogger.LoginStatistics stats = logger.getUserStatistics(currentUser.getUserName());
+
+        // Get user's specific logs
+        var userLogs = logger.getLogsByUsername(currentUser.getUserName());
+
+        model.addAttribute("loginLogs", userLogs);
+        model.addAttribute("statistics", stats);
+        model.addAttribute("currentUser", currentUser);
+
+        return "userLoginHistory"; // Create this view if needed
     }
 }
