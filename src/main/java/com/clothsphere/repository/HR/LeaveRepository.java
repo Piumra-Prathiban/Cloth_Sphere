@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 @Repository
@@ -48,9 +49,45 @@ public interface LeaveRepository extends JpaRepository<Leave, String> {
     @Query("SELECT l FROM Leave l WHERE l.employee.id = :employeeId ORDER BY l.requestDate DESC")
     List<Leave> findByEmployeeId(@Param("employeeId") String employeeId);
 
+    // NEW METHODS FOR LEAVE TYPE SUPPORT
+
+    // Find leaves by employee and leave type for a specific date
+    @Query("SELECT l FROM Leave l WHERE l.employee = :employee AND l.leaveType = :leaveType AND l.startDate = :date")
+    List<Leave> findByEmployeeAndLeaveTypeAndDate(@Param("employee") Employee employee,
+                                                  @Param("leaveType") String leaveType,
+                                                  @Param("date") LocalDate date);
+
+    // Find leaves by employee and leave type within date range
+    @Query("SELECT l FROM Leave l WHERE l.employee = :employee AND l.leaveType = :leaveType AND " +
+            "l.startDate BETWEEN :startDate AND :endDate")
+    List<Leave> findByEmployeeAndLeaveTypeAndDateRange(@Param("employee") Employee employee,
+                                                       @Param("leaveType") String leaveType,
+                                                       @Param("startDate") LocalDate startDate,
+                                                       @Param("endDate") LocalDate endDate);
+
+    // Updated INSERT query to include leave type and times
+    @Modifying
+    @Query(value = "INSERT INTO leave_requests (leave_id, reason, start_date, end_date, start_time, end_time, " +
+            "status, leave_type, total_hours, request_date, employee_id, comments) " +
+            "VALUES (:leaveId, :reason, :startDate, :endDate, :startTime, :endTime, :status, :leaveType, " +
+            ":totalHours, :requestDate, :employeeId, :comments)",
+            nativeQuery = true)
+    int insertLeaveWithType(@Param("leaveId") String leaveId,
+                            @Param("reason") String reason,
+                            @Param("startDate") LocalDate startDate,
+                            @Param("endDate") LocalDate endDate,
+                            @Param("startTime") LocalTime startTime,
+                            @Param("endTime") LocalTime endTime,
+                            @Param("status") String status,
+                            @Param("leaveType") String leaveType,
+                            @Param("totalHours") Integer totalHours,
+                            @Param("requestDate") LocalDateTime requestDate,
+                            @Param("employeeId") String employeeId,
+                            @Param("comments") String comments);
+
     // MANUAL QUERY METHODS
 
-    // Updated manual INSERT query to include leave_id
+    // Original INSERT query (for backward compatibility)
     @Modifying
     @Query(value = "INSERT INTO leave_requests (leave_id, reason, start_date, end_date, status, request_date, employee_id, comments) " +
             "VALUES (:leaveId, :reason, :startDate, :endDate, :status, :requestDate, :employeeId, :comments)",
@@ -68,7 +105,6 @@ public interface LeaveRepository extends JpaRepository<Leave, String> {
     @Query(value = "SELECT COALESCE(MAX(CAST(SUBSTRING(leave_id, 4, LEN(leave_id)) AS INT)), 0) + 1 FROM leave_requests WHERE leave_id LIKE 'lev%'",
             nativeQuery = true)
     Long getNextLeaveIdNumber();
-
 
     // Manual UPDATE query for status and comments
     @Modifying
@@ -105,9 +141,13 @@ public interface LeaveRepository extends JpaRepository<Leave, String> {
     long countByEmployeeIdAndStatus(@Param("employeeId") String employeeId,
                                     @Param("status") String status);
 
+
+
     // Manual query to update action date
     @Modifying
     @Query("UPDATE Leave l SET l.actionDate = :actionDate WHERE l.leaveId = :leaveId")
     int updateActionDate(@Param("leaveId") String  leaveId,
                          @Param("actionDate") LocalDateTime actionDate);
+
+
 }

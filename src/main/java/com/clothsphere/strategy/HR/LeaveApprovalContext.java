@@ -1,43 +1,40 @@
 package com.clothsphere.strategy.HR;
+
 import com.clothsphere.model.HR.Leave;
 import com.clothsphere.model.HR.Employee;
 
 /**
- * Context class that manages strategy selection
- * This is the main class that decides which strategy to use
+ * Context class that manages strategy selection based on leave type
  */
 public class LeaveApprovalContext {
     private LeaveApprovalStrategy strategy;
 
     /**
-     * Automatically selects the appropriate strategy based on leave details
-     * @param leave The leave request
+     * Automatically selects the appropriate strategy based on leave type
      */
-    public void setStrategy(Leave leave) {
-        int days = leave.getTotalDays();
-        String reason = leave.getReason().toLowerCase();
-
-        // Priority 1: Check if it's an emergency
-        if (isEmergencyLeave(reason)) {
-            this.strategy = new EmergencyLeaveStrategy();
-            System.out.println("Selected Strategy: EmergencyLeaveStrategy");
-        }
-        // Priority 2: Select based on duration
-        else if (days <= 3) {
-            this.strategy = new ShortLeaveStrategy();
-            System.out.println("Selected Strategy: ShortLeaveStrategy (" + days + " days)");
-        } else if (days <= 7) {
-            this.strategy = new MediumLeaveStrategy();
-            System.out.println("Selected Strategy: MediumLeaveStrategy (" + days + " days)");
-        } else {
-            this.strategy = new LongLeaveStrategy();
-            System.out.println("Selected Strategy: LongLeaveStrategy (" + days + " days)");
+    public void setStrategy(String leaveType) {
+        switch (leaveType) {
+            case "SHORT_LEAVE":
+                this.strategy = new ShortLeaveStrategy();
+                System.out.println("Selected Strategy: ShortLeaveStrategy (2 hours)");
+                break;
+            case "MEDIUM_LEAVE":
+                this.strategy = new MediumLeaveStrategy();
+                System.out.println("Selected Strategy: MediumLeaveStrategy (1 day)");
+                break;
+            case "LONG_LEAVE":
+                this.strategy = new LongLeaveStrategy();
+                System.out.println("Selected Strategy: LongLeaveStrategy (3 days)");
+                break;
+            default:
+                // Default to short leave for backward compatibility
+                this.strategy = new ShortLeaveStrategy();
+                System.out.println("Selected Strategy: Default ShortLeaveStrategy");
         }
     }
 
     /**
      * Manually set a specific strategy (optional)
-     * @param strategy The strategy to use
      */
     public void setStrategy(LeaveApprovalStrategy strategy) {
         this.strategy = strategy;
@@ -46,9 +43,6 @@ public class LeaveApprovalContext {
 
     /**
      * Evaluates if the leave request can be auto-approved
-     * @param leave The leave request
-     * @param employee The employee
-     * @return true if can be auto-approved
      */
     public boolean evaluateLeaveRequest(Leave leave, Employee employee) {
         if (strategy == null) {
@@ -59,8 +53,6 @@ public class LeaveApprovalContext {
 
     /**
      * Gets the approval message from the current strategy
-     * @param leave The leave request
-     * @return The approval message
      */
     public String getApprovalMessage(Leave leave) {
         if (strategy == null) {
@@ -71,7 +63,6 @@ public class LeaveApprovalContext {
 
     /**
      * Gets the maximum allowed days from the current strategy
-     * @return Maximum days
      */
     public int getMaxAllowedDays() {
         if (strategy == null) {
@@ -81,28 +72,52 @@ public class LeaveApprovalContext {
     }
 
     /**
+     * Gets the maximum allowed hours from the current strategy
+     */
+    public int getMaxAllowedHours() {
+        if (strategy == null) {
+            throw new IllegalStateException("Strategy not set. Call setStrategy() first.");
+        }
+        return strategy.getMaxAllowedHours();
+    }
+
+    /**
+     * Gets the maximum per day from the current strategy
+     */
+    public int getMaxPerDay() {
+        if (strategy == null) {
+            throw new IllegalStateException("Strategy not set. Call setStrategy() first.");
+        }
+        return strategy.getMaxPerDay();
+    }
+
+    /**
+     * Gets the maximum per month from the current strategy
+     */
+    public int getMaxPerMonth() {
+        if (strategy == null) {
+            throw new IllegalStateException("Strategy not set. Call setStrategy() first.");
+        }
+        return strategy.getMaxPerMonth();
+    }
+
+    /**
+     * Gets the leave type from the current strategy
+     */
+    public String getLeaveType() {
+        if (strategy == null) {
+            throw new IllegalStateException("Strategy not set. Call setStrategy() first.");
+        }
+        return strategy.getLeaveType();
+    }
+
+    /**
      * Gets the name of the current strategy
-     * @return Strategy name
      */
     public String getStrategyName() {
         if (strategy == null) {
             return "No Strategy Set";
         }
         return strategy.getClass().getSimpleName();
-    }
-
-    /**
-     * Helper method to check if leave is emergency
-     * @param reason The leave reason
-     * @return true if emergency
-     */
-    private boolean isEmergencyLeave(String reason) {
-        return reason.contains("emergency") ||
-                reason.contains("medical") ||
-                reason.contains("hospital") ||
-                reason.contains("death") ||
-                reason.contains("accident") ||
-                reason.contains("urgent") ||
-                reason.contains("critical");
     }
 }

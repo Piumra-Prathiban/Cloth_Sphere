@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 
 @Service
@@ -22,10 +23,10 @@ public class LeaveService {
     private EmployeeService employeeService;
 
     // ========================================
-    // NEW METHOD WITH STRATEGY PATTERN
+    // NEW METHOD WITH STRATEGY PATTERN FOR DIFFERENT LEAVE TYPES
     // ========================================
     @Transactional
-    public Leave requestLeave(Leave leave, String employeeId) {
+    public Leave requestLeave(Leave leave, String employeeId, String leaveType) {
         Employee employee = employeeService.getEmployeeById(employeeId);
         if (employee == null) {
             throw new RuntimeException("Employee not found");
@@ -33,12 +34,13 @@ public class LeaveService {
 
         System.out.println("=== APPLYING STRATEGY PATTERN ===");
         System.out.println("Employee: " + employee.getFullName() + " (" + employeeId + ")");
+        System.out.println("Leave Type: " + leaveType);
         System.out.println("Leave Duration: " + leave.getTotalDays() + " days");
         System.out.println("Leave Reason: " + leave.getReason());
 
-        // Validate dates
-        if (leave.getStartDate().isAfter(leave.getEndDate())) {
-            throw new RuntimeException("Start date cannot be after end date");
+        // Validate dates based on leave type
+        if (!validateLeaveDates(leave, leaveType)) {
+            throw new RuntimeException("Invalid dates for leave type: " + leaveType);
         }
 
         if (leave.getStartDate().isBefore(LocalDate.now())) {
@@ -53,11 +55,16 @@ public class LeaveService {
             throw new RuntimeException("You already have a leave request for the selected dates");
         }
 
+        // Check leave limits based on type
+        if (!checkLeaveLimits(employee, leaveType)) {
+            throw new RuntimeException("Leave limit exceeded for type: " + leaveType);
+        }
+
         // ========================================
         // APPLY STRATEGY PATTERN
         // ========================================
         LeaveApprovalContext approvalContext = new LeaveApprovalContext();
-        approvalContext.setStrategy(leave);
+        approvalContext.setStrategy(leaveType);
 
         boolean canAutoApprove = approvalContext.evaluateLeaveRequest(leave, employee);
         String approvalMessage = approvalContext.getApprovalMessage(leave);
@@ -80,17 +87,25 @@ public class LeaveService {
             System.out.println("⏳ Leave set to PENDING");
         }
 
+        // Set leave type and calculate hours
+        leave.setLeaveType(leaveType);
+        leave.setTotalHours(leave.calculateTotalHours());
+
         // Generate leave ID
         Long nextIdNumber = leaveRepository.getNextLeaveIdNumber();
         String leaveId = "lev" + nextIdNumber;
 
         // Save leave request
-        int result = leaveRepository.insertLeave(
+        int result = leaveRepository.insertLeaveWithType(
                 leaveId,
                 leave.getReason(),
                 leave.getStartDate(),
                 leave.getEndDate(),
+                leave.getStartTime(),
+                leave.getEndTime(),
                 status,
+                leaveType,
+                leave.getTotalHours(),
                 LocalDateTime.now(),
                 employeeId,
                 comments
@@ -103,7 +118,7 @@ public class LeaveService {
             leave.setComments(comments);
             leave.setRequestDate(LocalDateTime.now());
 
-            System.out.println("✓ Leave saved - ID: " + leaveId + ", Status: " + status);
+            System.out.println("✓ Leave saved - ID: " + leaveId + ", Type: " + leaveType + ", Status: " + status);
             System.out.println("=================================");
 
             return leave;
@@ -112,8 +127,108 @@ public class LeaveService {
         }
     }
 
+    private boolean validateLeaveDates(Leave leave, String leaveType) {
+        switch (leaveType) {
+            case "SHORT_LEAVE":
+                return leave.getStartDate().equals(leave.getEndDate()) &&
+                        leave.getStartTime() != null && leave.getEndTime() != null &&
+                        leave.getStartTime().isBefore(leave.getEndTime());
+
+            case "MEDIUM_LEAVE":
+                return leave.getStartDate().equals(leave.getEndDate()) &&
+                        !leave.getStartDate().isBefore(LocalDate.now());
+
+            case "LONG_LEAVE":
+                return !leave.getStartDate().isBefore(LocalDate.now()) &&
+                        !leave.getEndDate().isBefore(leave.getStartDate()) &&
+                        leave.getTotalDays() == 3;
+
+            default:
+                return false;
+        }
+    }
+
+    private boolean checkLeaveLimits(Employee employee, String leaveType) {
+        LocalDate startOfMonth = LocalDate.now().withDayOfMonth(1);
+        LocalDate endOfMonth = LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth());
+
+        List<Leave> monthlyLeaves = leaveRepository.findByEmployeeAndLeaveTypeAndDateRange(
+                employee, leaveType, startOfMonth, endOfMonth);
+
+        // Count only approved and pending leaves
+        long count = monthlyLeaves.stream()
+                .filter(leave -> "APPROVED".equals(leave.getStatus()) || "PENDING".equals(leave.getStatus()))
+                .count();
+
+        LeaveApprovalContext context = new LeaveApprovalContext();
+        context.setStrategy(leaveType);
+
+        return count < context.getMaxPerMonth();
+    }
+
     // ========================================
-    // OTHER METHODS
+    // GET LEAVE BALANCE METHOD
+    // ========================================
+    public Map<String, Object> getLeaveBalance(String employeeId) {
+        Employee employee = employeeService.getEmployeeById(employeeId);
+        if (employee == null) {
+            throw new RuntimeException("Employee not found");
+        }
+
+        Map<String, Object> balance = new HashMap<>();
+        LocalDate today = LocalDate.now();
+        LocalDate startOfMonth = today.withDayOfMonth(1);
+        LocalDate endOfMonth = today.withDayOfMonth(today.lengthOfMonth());
+
+        // Short Leave Balance
+        List<Leave> todayShortLeaves = leaveRepository.findByEmployeeAndLeaveTypeAndDate(
+                employee, "SHORT_LEAVE", today);
+        List<Leave> monthlyShortLeaves = leaveRepository.findByEmployeeAndLeaveTypeAndDateRange(
+                employee, "SHORT_LEAVE", startOfMonth, endOfMonth);
+
+        LeaveApprovalContext shortContext = new LeaveApprovalContext();
+        shortContext.setStrategy("SHORT_LEAVE");
+
+        Map<String, Object> shortLeaveBalance = new HashMap<>();
+        shortLeaveBalance.put("usedToday", todayShortLeaves.size());
+        shortLeaveBalance.put("maxPerDay", shortContext.getMaxPerDay());
+        shortLeaveBalance.put("remainingToday", shortContext.getMaxPerDay() - todayShortLeaves.size());
+        shortLeaveBalance.put("usedThisMonth", monthlyShortLeaves.size());
+        shortLeaveBalance.put("maxPerMonth", shortContext.getMaxPerMonth());
+        shortLeaveBalance.put("remainingThisMonth", shortContext.getMaxPerMonth() - monthlyShortLeaves.size());
+        balance.put("shortLeave", shortLeaveBalance);
+
+        // Medium Leave Balance
+        List<Leave> monthlyMediumLeaves = leaveRepository.findByEmployeeAndLeaveTypeAndDateRange(
+                employee, "MEDIUM_LEAVE", startOfMonth, endOfMonth);
+
+        LeaveApprovalContext mediumContext = new LeaveApprovalContext();
+        mediumContext.setStrategy("MEDIUM_LEAVE");
+
+        Map<String, Object> mediumLeaveBalance = new HashMap<>();
+        mediumLeaveBalance.put("usedThisMonth", monthlyMediumLeaves.size());
+        mediumLeaveBalance.put("maxPerMonth", mediumContext.getMaxPerMonth());
+        mediumLeaveBalance.put("remainingThisMonth", mediumContext.getMaxPerMonth() - monthlyMediumLeaves.size());
+        balance.put("mediumLeave", mediumLeaveBalance);
+
+        // Long Leave Balance
+        List<Leave> monthlyLongLeaves = leaveRepository.findByEmployeeAndLeaveTypeAndDateRange(
+                employee, "LONG_LEAVE", startOfMonth, endOfMonth);
+
+        LeaveApprovalContext longContext = new LeaveApprovalContext();
+        longContext.setStrategy("LONG_LEAVE");
+
+        Map<String, Object> longLeaveBalance = new HashMap<>();
+        longLeaveBalance.put("usedThisMonth", monthlyLongLeaves.size());
+        longLeaveBalance.put("maxPerMonth", longContext.getMaxPerMonth());
+        longLeaveBalance.put("remainingThisMonth", longContext.getMaxPerMonth() - monthlyLongLeaves.size());
+        balance.put("longLeave", longLeaveBalance);
+
+        return balance;
+    }
+
+    // ========================================
+    // OTHER METHODS (keep existing functionality)
     // ========================================
 
     public List<Leave> getLeavesByEmployee(String employeeId) {

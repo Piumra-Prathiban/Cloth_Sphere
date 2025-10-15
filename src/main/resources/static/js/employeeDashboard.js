@@ -799,6 +799,7 @@
      }
  };
 
+
  // ========================= LEAVE MANAGEMENT =========================
  let currentLeaves = [];
 
@@ -842,6 +843,15 @@
              if (loadingElement) loadingElement.style.display = 'none';
          });
  }
+ // Update leave statistics
+ function updateLeaveStatistics(statistics) {
+     if (!statistics) return;
+
+     document.getElementById('total-leaves').textContent = statistics.totalRequests || 0;
+     document.getElementById('pending-leaves').textContent = statistics.pending || 0;
+     document.getElementById('approved-leaves').textContent = statistics.approved || 0;
+     document.getElementById('rejected-leaves').textContent = statistics.rejected || 0;
+ }
 
  // Display leaves in table
  function displayLeaves(leaves) {
@@ -859,20 +869,38 @@
      if (noLeavesMessage) noLeavesMessage.style.display = 'none';
 
      const leavesHtml = leaves.map(leave => {
-         const startDate = new Date(leave.startDate);
-         const endDate = new Date(leave.endDate);
-         const duration = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-
          const isPending = leave.status === 'PENDING';
          const isApproved = leave.status === 'APPROVED';
+         const leaveTypeLabel = getLeaveTypeLabel(leave.leaveType);
+
+         let dateDisplay = formatDate(leave.startDate);
+         let durationDisplay = '';
+
+         if (leave.leaveType === 'SHORT_LEAVE') {
+             if (leave.startTime) {
+                 dateDisplay += ' ' + formatTime(leave.startTime);
+             }
+             durationDisplay = (leave.totalHours || 2) + ' hour(s)';
+         } else if (leave.leaveType === 'MEDIUM_LEAVE') {
+             durationDisplay = '1 day';
+         } else if (leave.leaveType === 'LONG_LEAVE') {
+             if (leave.startDate !== leave.endDate) {
+                 dateDisplay = formatDate(leave.startDate) + ' to ' + formatDate(leave.endDate);
+             }
+             durationDisplay = '3 days';
+         }
 
          return `
             <tr>
                 <td>${leave.leaveId || 'N/A'}</td>
-                <td>${escapeHtml(leave.reason)}</td>
-                <td>${formatDate(leave.startDate)}</td>
-                <td>${formatDate(leave.endDate)}</td>
-                <td>${duration} day(s)</td>
+                <td>
+                    <span class="leave-type-badge leave-type-${leave.leaveType.toLowerCase()}">
+                        ${leaveTypeLabel}
+                    </span>
+                </td>
+                <td title="${leave.reason || 'N/A'}">${truncateText(leave.reason || 'N/A', 30)}</td>
+                <td>${dateDisplay}</td>
+                <td>${durationDisplay}</td>
                 <td>${formatDateTime(leave.requestDate)}</td>
                 <td>
                     <span class="status-badge status-${leave.status.toLowerCase()}">
@@ -898,43 +926,164 @@
      tableBody.innerHTML = leavesHtml;
  }
 
- // Update leave statistics
- function updateLeaveStatistics(stats) {
-     if (!stats) return;
+ // Update leave form based on selected type
+ function updateLeaveForm() {
+     const leaveType = document.getElementById('leave-type').value;
 
-     document.getElementById('total-leaves').textContent = stats.totalRequests;
-     document.getElementById('pending-leaves').textContent = stats.pending;
-     document.getElementById('approved-leaves').textContent = stats.approved;
-     document.getElementById('rejected-leaves').textContent = stats.rejected;
+     // Hide all fields
+     document.getElementById('short-leave-fields').style.display = 'none';
+     document.getElementById('medium-leave-fields').style.display = 'none';
+     document.getElementById('long-leave-fields').style.display = 'none';
+     document.getElementById('leave-duration').style.display = 'none';
+
+     // Show relevant fields
+     switch(leaveType) {
+         case 'SHORT_LEAVE':
+             document.getElementById('short-leave-fields').style.display = 'block';
+             updateShortLeaveDuration();
+             break;
+         case 'MEDIUM_LEAVE':
+             document.getElementById('medium-leave-fields').style.display = 'block';
+             document.getElementById('leave-duration').style.display = 'block';
+             document.getElementById('duration-display').textContent = '1 day (8 hours)';
+             break;
+         case 'LONG_LEAVE':
+             document.getElementById('long-leave-fields').style.display = 'block';
+             document.getElementById('leave-duration').style.display = 'block';
+             document.getElementById('duration-display').textContent = '3 days (24 hours)';
+             break;
+     }
  }
 
- // Submit leave request
+ // Update short leave duration display
+ function updateShortLeaveDuration() {
+     const duration = document.getElementById('short-leave-duration').value;
+     document.getElementById('leave-duration').style.display = 'block';
+     document.getElementById('duration-display').textContent = duration + ' hour(s)';
+ }
+
+ // Reset leave form
+ function resetLeaveForm() {
+     document.getElementById('leave-type').value = '';
+     document.getElementById('leave-duration').style.display = 'none';
+     document.getElementById('short-leave-fields').style.display = 'none';
+     document.getElementById('medium-leave-fields').style.display = 'none';
+     document.getElementById('long-leave-fields').style.display = 'none';
+     document.getElementById('reason').value = '';
+ }
+
+ // Load leave balance statistics
+ function loadLeaveBalance() {
+     fetch('/leave/balance', {
+         method: 'GET',
+         credentials: 'include'
+     })
+         .then(response => response.json())
+         .then(data => {
+             if (data.success) {
+                 updateLeaveBalanceUI(data.balance);
+             }
+         })
+         .catch(error => {
+             console.error('Error loading leave balance:', error);
+         });
+ }
+
+ // Update leave balance UI
+ function updateLeaveBalanceUI(balance) {
+     if (balance.shortLeave) {
+         const short = balance.shortLeave;
+         document.getElementById('short-leave-balance').textContent =
+             `${short.remainingToday}/${short.maxPerDay} today`;
+         document.getElementById('short-leave-monthly').textContent =
+             `${short.usedThisMonth}/${short.maxPerMonth} this month`;
+     }
+
+     if (balance.mediumLeave) {
+         const medium = balance.mediumLeave;
+         document.getElementById('medium-leave-balance').textContent =
+             `${medium.remainingThisMonth}/${medium.maxPerMonth} this month`;
+     }
+
+     if (balance.longLeave) {
+         const long = balance.longLeave;
+         document.getElementById('long-leave-balance').textContent =
+             `${long.remainingThisMonth}/${long.maxPerMonth} this month`;
+     }
+ }
+
+ // Enhanced submit leave request
  function submitLeaveRequest(event) {
-     event.preventDefault(); // Prevent default form submission
+     event.preventDefault();
 
+     const leaveType = document.getElementById('leave-type').value;
      const reason = document.getElementById('reason').value;
-     const startDate = document.getElementById('start-date').value;
-     const endDate = document.getElementById('end-date').value;
 
-     if (!reason || !startDate || !endDate) {
+     if (!leaveType || !reason) {
          showMessage('Please fill in all required fields', 'error');
          return;
      }
 
-     if (new Date(startDate) > new Date(endDate)) {
-         showMessage('End date cannot be before start date', 'error');
-         return;
+     let formData = new URLSearchParams();
+     formData.append('leaveType', leaveType);
+     formData.append('reason', reason);
+
+     // Add type-specific data
+     switch(leaveType) {
+         case 'SHORT_LEAVE':
+             const shortLeaveDate = document.getElementById('short-leave-date').value;
+             const shortLeaveTime = document.getElementById('short-leave-time').value;
+             const shortLeaveDuration = document.getElementById('short-leave-duration').value;
+
+             if (!shortLeaveDate || !shortLeaveTime) {
+                 showMessage('Please fill in all short leave fields', 'error');
+                 return;
+             }
+
+             formData.append('leaveDate', shortLeaveDate);
+             formData.append('leaveTime', shortLeaveTime);
+             formData.append('duration', shortLeaveDuration);
+             break;
+
+         case 'MEDIUM_LEAVE':
+             const mediumLeaveDate = document.getElementById('medium-leave-date').value;
+             if (!mediumLeaveDate) {
+                 showMessage('Please select a date for 1-day leave', 'error');
+                 return;
+             }
+             formData.append('leaveDate', mediumLeaveDate);
+             break;
+
+         case 'LONG_LEAVE':
+             const startDate = document.getElementById('start-date').value;
+             const endDate = document.getElementById('end-date').value;
+
+             if (!startDate || !endDate) {
+                 showMessage('Please select start and end dates for 3-day leave', 'error');
+                 return;
+             }
+
+             if (new Date(startDate) > new Date(endDate)) {
+                 showMessage('End date cannot be before start date', 'error');
+                 return;
+             }
+
+             const daysDiff = Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)) + 1;
+             if (daysDiff !== 3) {
+                 showMessage('3-day leave must be exactly 3 days', 'error');
+                 return;
+             }
+
+             formData.append('startDate', startDate);
+             formData.append('endDate', endDate);
+             break;
      }
 
+     // Submit the request
      const submitBtn = event.target.querySelector('button[type="submit"]');
      const originalText = submitBtn.innerHTML;
      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
      submitBtn.disabled = true;
-
-     const formData = new URLSearchParams();
-     formData.append('reason', reason);
-     formData.append('startDate', startDate);
-     formData.append('endDate', endDate);
 
      fetch('/leave/request', {
          method: 'POST',
@@ -946,19 +1095,17 @@
          .then(response => response.json())
          .then(data => {
              if (data.success) {
-                 showMessage('Leave request submitted successfully!', 'success');
-                 document.getElementById('leave-request-form').reset();
-                 document.getElementById('leave-duration').style.display = 'none';
-
-                 // Reload leaves without changing section
+                 showMessage(data.message, 'success');
+                 resetLeaveForm();
                  loadEmployeeLeaves();
+                 loadLeaveBalance(); // Refresh balance
              } else {
                  throw new Error(data.message);
              }
          })
          .catch(error => {
              console.error('Error submitting leave request:', error);
-             showMessage('Error submitting leave request: ' + error.message, 'error');
+             showMessage('Error: ' + error.message, 'error');
          })
          .finally(() => {
              submitBtn.innerHTML = originalText;
@@ -966,138 +1113,10 @@
          });
  }
 
- // Cancel leave request
- function cancelLeaveRequest(leaveId) {
-     if (!confirm('Are you sure you want to cancel this leave request?')) {
-         return;
-     }
-
-     fetch(`/leave/cancel/${leaveId}`, {
-         method: 'DELETE',
-         credentials: 'include'
-     })
-         .then(response => response.json())
-         .then(data => {
-             if (data.success) {
-                 showMessage('Leave request cancelled successfully!', 'success');
-                 loadEmployeeLeaves();
-             } else {
-                 throw new Error(data.message);
-             }
-         })
-         .catch(error => {
-             console.error('Error cancelling leave request:', error);
-             showMessage('Error cancelling leave request: ' + error.message, 'error');
-         });
- }
-
- // View leave details
- function viewLeaveDetails(leaveId) {
-     const leave = currentLeaves.find(l => l.leaveId === leaveId);
-     if (!leave) return;
-
-     const startDate = new Date(leave.startDate);
-     const endDate = new Date(leave.endDate);
-     const duration = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-
-     const detailsHtml = `
-        <div class="status-modal" id="leave-details-modal">
-            <div class="status-modal-content" style="max-width: 600px;">
-                <div class="status-modal-header">
-                    <h4>Leave Request Details</h4>
-                    <button type="button" class="btn-close" onclick="closeLeaveDetails()">×</button>
-                </div>
-                <div class="status-modal-body">
-                    <div class="profile-info">
-                        <div class="info-group">
-                            <label>Leave ID</label>
-                            <div class="value">${leave.leaveId}</div>
-                        </div>
-                        <div class="info-group">
-                            <label>Reason</label>
-                            <div class="value">${escapeHtml(leave.reason)}</div>
-                        </div>
-                        <div class="info-group">
-                            <label>Start Date</label>
-                            <div class="value">${formatDate(leave.startDate)}</div>
-                        </div>
-                        <div class="info-group">
-                            <label>End Date</label>
-                            <div class="value">${formatDate(leave.endDate)}</div>
-                        </div>
-                        <div class="info-group">
-                            <label>Duration</label>
-                            <div class="value">${duration} day(s)</div>
-                        </div>
-                        <div class="info-group">
-                            <label>Request Date</label>
-                            <div class="value">${formatDateTime(leave.requestDate)}</div>
-                        </div>
-                        <div class="info-group">
-                            <label>Status</label>
-                            <div class="value">
-                                <span class="status-badge status-${leave.status.toLowerCase()}">
-                                    ${getLeaveStatusLabel(leave.status)}
-                                </span>
-                            </div>
-                        </div>
-                        ${leave.actionDate ? `
-                        <div class="info-group">
-                            <label>Action Date</label>
-                            <div class="value">${formatDateTime(leave.actionDate)}</div>
-                        </div>
-                        ` : ''}
-                        ${leave.comments ? `
-                        <div class="info-group">
-                            <label>Manager Comments</label>
-                            <div class="value">${escapeHtml(leave.comments)}</div>
-                        </div>
-                        ` : ''}
-                    </div>
-                </div>
-                <div class="status-modal-footer">
-                    <button class="btn btn-secondary" onclick="closeLeaveDetails()">Close</button>
-                </div>
-            </div>
-        </div>
-    `;
-
-     document.body.insertAdjacentHTML('beforeend', detailsHtml);
-     document.body.classList.add('modal-open');
- }
-
- // Close leave details modal
- function closeLeaveDetails() {
-     const modal = document.getElementById('leave-details-modal');
-     if (modal) modal.remove();
-     document.body.classList.remove('modal-open');
- }
-
- // Calculate leave duration
- function calculateLeaveDuration() {
-     const startDate = document.getElementById('start-date').value;
-     const endDate = document.getElementById('end-date').value;
-     const durationElement = document.getElementById('leave-duration');
-
-     if (startDate && endDate) {
-         const start = new Date(startDate);
-         const end = new Date(endDate);
-
-         if (start <= end) {
-             const duration = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
-             document.getElementById('duration-days').textContent = duration;
-             durationElement.style.display = 'block';
-         } else {
-             durationElement.style.display = 'none';
-         }
-     } else {
-         durationElement.style.display = 'none';
-     }
- }
-
- // Filter leaves
+ // Filter leaves by status and type
  function filterLeaves() {
      const statusFilter = document.getElementById('leave-status-filter').value;
+     const typeFilter = document.getElementById('leave-type-filter').value;
 
      let filteredLeaves = currentLeaves;
 
@@ -1105,7 +1124,30 @@
          filteredLeaves = filteredLeaves.filter(leave => leave.status === statusFilter);
      }
 
+     if (typeFilter !== 'all') {
+         filteredLeaves = filteredLeaves.filter(leave => leave.leaveType === typeFilter);
+     }
+
      displayLeaves(filteredLeaves);
+ }
+
+ // Helper function to get leave type label
+ function getLeaveTypeLabel(leaveType) {
+     const labels = {
+         'SHORT_LEAVE': '2-Hour Leave',
+         'MEDIUM_LEAVE': '1-Day Leave',
+         'LONG_LEAVE': '3-Day Leave'
+     };
+     return labels[leaveType] || leaveType;
+ }
+
+ // Initialize leave section with balance
+ function initializeLeaveSection() {
+     if (!isFirstLogin) {
+         loadEmployeeLeaves();
+         initializeLeaveForm();
+         loadLeaveBalance(); // Load balance statistics
+     }
  }
 
  // Initialize leave form
@@ -1115,88 +1157,20 @@
          leaveForm.addEventListener('submit', submitLeaveRequest);
      }
 
-     const startDateInput = document.getElementById('start-date');
-     const endDateInput = document.getElementById('end-date');
-     if (startDateInput && endDateInput) {
-         startDateInput.addEventListener('change', calculateLeaveDuration);
-         endDateInput.addEventListener('change', calculateLeaveDuration);
-     }
- }
-
- // Leave status label helper
- function getLeaveStatusLabel(status) {
-     const statusLabels = {
-         'PENDING': 'Pending',
-         'APPROVED': 'Approved',
-         'REJECTED': 'Rejected'
-     };
-     return statusLabels[status] || status;
- }
-
- // Initialize leave section when shown
- function initializeLeaveSection() {
-     if (!isFirstLogin) {
-         loadEmployeeLeaves();
-         initializeLeaveForm();
-     }
- }
-
- // Utility function to escape HTML (prevent XSS)
- function escapeHtml(unsafe) {
-     if (!unsafe) return '';
-     return unsafe
-         .toString()
-         .replace(/&/g, "&amp;")
-         .replace(/</g, "&lt;")
-         .replace(/>/g, "&gt;")
-         .replace(/"/g, "&quot;")
-         .replace(/'/g, "&#039;");
- }
-
- // Date formatting utility
- function formatDate(dateString) {
-     if (!dateString) return 'N/A';
-     const date = new Date(dateString);
-     return date.toLocaleDateString('en-US', {
-         year: 'numeric',
-         month: 'short',
-         day: 'numeric'
+     // Set minimum date to today for all date inputs
+     const today = new Date().toISOString().split('T')[0];
+     document.querySelectorAll('input[type="date"]').forEach(input => {
+         input.min = today;
      });
+
+     // Set default time to current time for short leaves
+     const now = new Date();
+     const currentTime = now.getHours().toString().padStart(2, '0') + ':' +
+         now.getMinutes().toString().padStart(2, '0');
+     document.getElementById('short-leave-time').value = currentTime;
  }
 
- // DateTime formatting utility
- function formatDateTime(dateTimeString) {
-     if (!dateTimeString) return 'N/A';
-     const date = new Date(dateTimeString);
-     return date.toLocaleString('en-US', {
-         year: 'numeric',
-         month: 'short',
-         day: 'numeric',
-         hour: '2-digit',
-         minute: '2-digit'
-     });
- }
 
- // Message display utility
- function showMessage(message, type) {
-     const toast = document.createElement('div');
-     toast.className = `alert alert-${type === 'error' ? 'error' : 'success'}`;
-     toast.style.position = 'fixed';
-     toast.style.top = '20px';
-     toast.style.right = '20px';
-     toast.style.zIndex = '1001';
-     toast.style.minWidth = '300px';
-     toast.innerHTML = `
-        <i class="fas ${type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle'}"></i>
-        ${message}
-    `;
-
-     document.body.appendChild(toast);
-
-     setTimeout(() => {
-         toast.remove();
-     }, 5000);
- }
  // ========================= ATTENDANCE MANAGEMENT =========================
 
  // Initialize attendance section when shown
@@ -1456,9 +1430,9 @@
 
      if (noAttendanceMessage) noAttendanceMessage.style.display = 'none';
 
-     const recordsHtml = records.map(record => {
+     tableBody.innerHTML = records.map(record => {
          const date = new Date(record.attendanceDate);
-         const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+         const dayName = date.toLocaleDateString('en-US', {weekday: 'long'});
 
          return `
             <tr>
@@ -1476,8 +1450,6 @@
             </tr>
         `;
      }).join('');
-
-     tableBody.innerHTML = recordsHtml;
  }
 
  // Reset attendance filter
@@ -1530,6 +1502,161 @@
          initializeAttendanceSection();
      }
  };
+
+ // Get leave status label
+ function getLeaveStatusLabel(status) {
+     const statusLabels = {
+         'PENDING': 'Pending',
+         'APPROVED': 'Approved',
+         'REJECTED': 'Rejected'
+     };
+     return statusLabels[status] || status;
+ }
+
+ // Format date time
+ function formatDateTime(dateTimeString) {
+     if (!dateTimeString) return 'N/A';
+     const date = new Date(dateTimeString);
+     return date.toLocaleDateString('en-US', {
+         year: 'numeric',
+         month: 'short',
+         day: 'numeric',
+         hour: '2-digit',
+         minute: '2-digit'
+     });
+ }
+
+ // Truncate text
+ function truncateText(text, maxLength) {
+     if (!text) return '';
+     return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+ }
+
+ // Cancel leave request
+ function cancelLeaveRequest(leaveId) {
+     if (!confirm('Are you sure you want to cancel this leave request?')) {
+         return;
+     }
+
+     fetch(`/leave/cancel/${leaveId}`, {
+         method: 'DELETE',
+         credentials: 'include'
+     })
+         .then(response => response.json())
+         .then(data => {
+             if (data.success) {
+                 showMessage('Leave request cancelled successfully', 'success');
+                 loadEmployeeLeaves();
+                 loadLeaveBalance();
+             } else {
+                 throw new Error(data.message);
+             }
+         })
+         .catch(error => {
+             console.error('Error cancelling leave:', error);
+             showMessage('Error cancelling leave: ' + error.message, 'error');
+         });
+ }
+
+ // View leave details
+ function viewLeaveDetails(leaveId) {
+     const leave = currentLeaves.find(l => l.leaveId === leaveId);
+     if (!leave) return;
+
+     const detailsHtml = `
+        <div class="status-modal" id="leave-details-modal">
+            <div class="status-modal-content" style="max-width: 600px;">
+                <div class="status-modal-header">
+                    <h4>Leave Request Details</h4>
+                    <button type="button" class="btn-close" onclick="closeLeaveDetails()">×</button>
+                </div>
+                <div class="status-modal-body">
+                    <div class="profile-info">
+                        <div class="info-group">
+                            <label>Leave ID</label>
+                            <div class="value">${leave.leaveId || 'N/A'}</div>
+                        </div>
+                        <div class="info-group">
+                            <label>Leave Type</label>
+                            <div class="value">
+                                <span class="leave-type-badge leave-type-${leave.leaveType.toLowerCase()}">
+                                    ${getLeaveTypeLabel(leave.leaveType)}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="info-group">
+                            <label>Reason</label>
+                            <div class="value">${escapeHtml(leave.reason || 'N/A')}</div>
+                        </div>
+                        <div class="info-group">
+                            <label>Period</label>
+                            <div class="value">
+                                ${formatDate(leave.startDate)} 
+                                ${leave.leaveType === 'LONG_LEAVE' && leave.startDate !== leave.endDate ?
+         ' to ' + formatDate(leave.endDate) : ''}
+                                ${leave.startTime ? ' at ' + formatTime(leave.startTime) : ''}
+                            </div>
+                        </div>
+                        <div class="info-group">
+                            <label>Duration</label>
+                            <div class="value">
+                                ${leave.totalHours ? leave.totalHours + ' hours' :
+         leave.leaveType === 'MEDIUM_LEAVE' ? '1 day (8 hours)' :
+             leave.leaveType === 'LONG_LEAVE' ? '3 days (24 hours)' : 'N/A'}
+                            </div>
+                        </div>
+                        <div class="info-group">
+                            <label>Request Date</label>
+                            <div class="value">${formatDateTime(leave.requestDate)}</div>
+                        </div>
+                        <div class="info-group">
+                            <label>Status</label>
+                            <div class="value">
+                                <span class="status-badge status-${leave.status.toLowerCase()}">
+                                    ${getLeaveStatusLabel(leave.status)}
+                                </span>
+                            </div>
+                        </div>
+                        ${leave.comments ? `
+                        <div class="info-group">
+                            <label>Comments</label>
+                            <div class="value">${escapeHtml(leave.comments)}</div>
+                        </div>
+                        ` : ''}
+                        ${leave.actionDate ? `
+                        <div class="info-group">
+                            <label>Action Date</label>
+                            <div class="value">${formatDateTime(leave.actionDate)}</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+                <div class="status-modal-footer">
+                    <button class="btn btn-secondary" onclick="closeLeaveDetails()">Close</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+     // Remove existing modal if any
+     const existingModal = document.getElementById('leave-details-modal');
+     if (existingModal) existingModal.remove();
+
+     document.body.insertAdjacentHTML('beforeend', detailsHtml);
+     document.body.classList.add('modal-open');
+
+     // Add click outside to close
+     const modal = document.getElementById('leave-details-modal');
+     modal.addEventListener('click', function(e) {
+         if (e.target === modal) closeLeaveDetails();
+     });
+ }
+
+ function closeLeaveDetails() {
+     const modal = document.getElementById('leave-details-modal');
+     if (modal) modal.remove();
+     document.body.classList.remove('modal-open');
+ }
 
  // ========================= PAYROLL MANAGEMENT =========================
  let currentPayrollData = null;

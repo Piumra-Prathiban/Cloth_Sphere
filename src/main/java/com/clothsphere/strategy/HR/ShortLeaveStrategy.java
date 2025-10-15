@@ -4,32 +4,57 @@ import com.clothsphere.model.HR.Leave;
 import com.clothsphere.model.HR.Employee;
 
 /**
- * Strategy for Short Leave Requests (1-2 days)
- * These leaves can be auto-approved if conditions are met
+ * Strategy for Short Leave Requests (2 hours)
+ * These leaves can be taken multiple times per day
  */
 public class ShortLeaveStrategy implements LeaveApprovalStrategy {
 
     @Override
     public boolean canApproveAutomatically(Leave leave, Employee employee) {
-        int leaveDays = leave.getTotalDays();
-
-        // Auto-approve if leave is between 1-3 days
-        // Additional conditions can be added:
-        // - Check employee's attendance record
-        // - Check remaining leave balance
-        // - Check department workload
-
-        return leaveDays >= 1 && leaveDays <= 2;
+        // Auto-approve 2-hour leaves if within daily limit
+        return isWithinDailyLimit(employee) && isWithinMonthlyLimit(employee);
     }
 
     @Override
     public String getApprovalMessage(Leave leave) {
-        return "Short leave request (1-3 days) - Approved automatically. " +
-                "Please ensure work handover is complete.";
+        return "2-hour short leave - Approved automatically. " +
+                "You can take up to 3 short leaves per day, maximum 2 hours each.";
     }
 
     @Override
     public int getMaxAllowedDays() {
+        return 0; // Not applicable for hourly leaves
+    }
+
+    @Override
+    public int getMaxAllowedHours() {
         return 2;
+    }
+
+    @Override
+    public int getMaxPerDay() {
+        return 3;
+    }
+
+    @Override
+    public int getMaxPerMonth() {
+        return 3; // Maximum 20 short leaves per month
+    }
+
+    @Override
+    public String getLeaveType() {
+        return "SHORT_LEAVE";
+    }
+
+    private boolean isWithinDailyLimit(Employee employee) {
+        // Implementation would check database for today's short leave count
+        // For now, return true (will be implemented in service layer)
+        return true;
+    }
+
+    private boolean isWithinMonthlyLimit(Employee employee) {
+        // Implementation would check database for monthly short leave count
+        // For now, return true (will be implemented in service layer)
+        return true;
     }
 }

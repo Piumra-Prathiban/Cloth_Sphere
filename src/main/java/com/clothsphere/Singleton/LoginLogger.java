@@ -65,6 +65,7 @@ public class LoginLogger {
         logEntries.add(entry);
 
         System.out.println("=== LOGIN SUCCESS LOGGED ===");
+        System.out.println("/* /* /* S I N G L E T O N /* /* /*");
         System.out.println("User: " + username);
         System.out.println("Role: " + role);
         System.out.println("Controller: " + controller);

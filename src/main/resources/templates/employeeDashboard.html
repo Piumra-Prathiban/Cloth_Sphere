@@ -348,30 +348,98 @@
           </div>
         </div>
 
+        <!-- Leave Type Balance -->
+        <div class="leave-type-stats-grid">
+          <div class="leave-type-stat-card" style="background: #e3f2fd;">
+            <div class="leave-type-stat-header">
+              <i class="fas fa-clock"></i>
+              <h5>Short Leaves (2 hours)</h5>
+            </div>
+            <div class="leave-type-stat-number" id="short-leave-balance">3/3 today</div>
+            <div class="leave-type-stat-label" id="short-leave-monthly">0/20 this month</div>
+          </div>
+          <div class="leave-type-stat-card" style="background: #fff3e0;">
+            <div class="leave-type-stat-header">
+              <i class="fas fa-calendar-day"></i>
+              <h5>1-Day Leaves</h5>
+            </div>
+            <div class="leave-type-stat-number" id="medium-leave-balance">0/2 this month</div>
+            <div class="leave-type-stat-label">Requires HR approval</div>
+          </div>
+          <div class="leave-type-stat-card" style="background: #e8f5e8;">
+            <div class="leave-type-stat-header">
+              <i class="fas fa-calendar-week"></i>
+              <h5>3-Day Leaves</h5>
+            </div>
+            <div class="leave-type-stat-number" id="long-leave-balance">0/1 this month</div>
+            <div class="leave-type-stat-label">Requires HR approval</div>
+          </div>
+        </div>
+
         <!-- Leave Request Form -->
         <div class="leave-form-section">
           <h4>New Leave Request</h4>
           <form id="leave-request-form">
+            <!-- Leave Type Selection -->
+            <div class="form-group">
+              <label for="leave-type">Leave Type *</label>
+              <select id="leave-type" class="form-control" required onchange="updateLeaveForm()">
+                <option value="">Select Leave Type</option>
+                <option value="SHORT_LEAVE">Short Leave (2 hours max)</option>
+                <option value="MEDIUM_LEAVE">1-Day Leave</option>
+                <option value="LONG_LEAVE">3-Day Leave</option>
+              </select>
+            </div>
+
             <div class="form-group">
               <label for="reason">Reason for Leave *</label>
               <textarea id="reason" class="form-control" placeholder="Enter reason for leave" required rows="3"></textarea>
             </div>
 
-            <div class="form-row">
-              <div class="form-group">
-                <label for="start-date">Start Date *</label>
-                <input type="date" id="start-date" class="form-control" required onchange="calculateLeaveDuration()">
+            <!-- Dynamic form based on leave type -->
+            <div id="short-leave-fields" style="display: none;">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="short-leave-date">Date *</label>
+                  <input type="date" id="short-leave-date" class="form-control">
+                </div>
+                <div class="form-group">
+                  <label for="short-leave-time">Start Time *</label>
+                  <input type="time" id="short-leave-time" class="form-control">
+                </div>
+                <div class="form-group">
+                  <label for="short-leave-duration">Duration *</label>
+                  <select id="short-leave-duration" class="form-control" onchange="updateShortLeaveDuration()">
+                    <option value="1">1 hour</option>
+                    <option value="2" selected>2 hours</option>
+                  </select>
+                </div>
               </div>
+            </div>
 
+            <div id="medium-leave-fields" style="display: none;">
               <div class="form-group">
-                <label for="end-date">End Date *</label>
-                <input type="date" id="end-date" class="form-control" required onchange="calculateLeaveDuration()">
+                <label for="medium-leave-date">Date *</label>
+                <input type="date" id="medium-leave-date" class="form-control">
+              </div>
+            </div>
+
+            <div id="long-leave-fields" style="display: none;">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="start-date">Start Date *</label>
+                  <input type="date" id="start-date" class="form-control" onchange="calculateLeaveDuration()">
+                </div>
+                <div class="form-group">
+                  <label for="end-date">End Date *</label>
+                  <input type="date" id="end-date" class="form-control" onchange="calculateLeaveDuration()">
+                </div>
               </div>
             </div>
 
             <div class="form-group">
               <div id="leave-duration" style="padding: 10px; background: #e8f5e8; border: 1px solid #28a745; border-radius: 4px; display: none;">
-                <strong>Duration:</strong> <span id="duration-days">0</span> day(s)
+                <strong>Duration:</strong> <span id="duration-display">0</span>
               </div>
             </div>
 
@@ -379,7 +447,7 @@
               <button type="submit" class="btn btn-success">
                 <i class="fas fa-paper-plane"></i> Submit Request
               </button>
-              <button type="reset" class="btn btn-secondary" onclick="document.getElementById('leave-duration').style.display = 'none'">
+              <button type="reset" class="btn btn-secondary" onclick="resetLeaveForm()">
                 <i class="fas fa-times"></i> Clear
               </button>
             </div>
@@ -400,6 +468,14 @@
                 <option value="REJECTED">Rejected</option>
               </select>
             </div>
+            <div class="filter-group">
+              <select id="leave-type-filter" class="form-control" onchange="filterLeaves()">
+                <option value="all">All Types</option>
+                <option value="SHORT_LEAVE">Short Leaves</option>
+                <option value="MEDIUM_LEAVE">1-Day Leaves</option>
+                <option value="LONG_LEAVE">3-Day Leaves</option>
+              </select>
+            </div>
           </div>
 
           <!-- Leave Table -->
@@ -408,9 +484,9 @@
               <thead>
               <tr>
                 <th>Leave ID</th>
+                <th>Type</th>
                 <th>Reason</th>
-                <th>Start Date</th>
-                <th>End Date</th>
+                <th>Date/Period</th>
                 <th>Duration</th>
                 <th>Request Date</th>
                 <th>Status</th>
@@ -438,6 +514,8 @@
       </div>
     </div>
   </div>
+
+
   <!-- Tasks Section -->
   <div id="tasks" class="content-section">
     <div class="card">

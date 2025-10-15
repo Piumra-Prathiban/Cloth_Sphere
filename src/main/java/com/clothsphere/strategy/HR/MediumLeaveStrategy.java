@@ -4,26 +4,45 @@ import com.clothsphere.model.HR.Leave;
 import com.clothsphere.model.HR.Employee;
 
 /**
- * Strategy for Medium Leave Requests (4-7 days)
- * These leaves always require HR Manager approval
+ * Strategy for Medium Leave Requests (1 day)
+ * These leaves require HR approval with monthly limits
  */
 public class MediumLeaveStrategy implements LeaveApprovalStrategy {
 
     @Override
     public boolean canApproveAutomatically(Leave leave, Employee employee) {
-        // Medium duration leaves always require HR approval
-        // Cannot be auto-approved due to potential impact on operations
+        // 1-day leaves always require HR approval
         return false;
     }
 
     @Override
     public String getApprovalMessage(Leave leave) {
-        return "Medium leave request (4-7 days) - Requires HR Manager approval. " +
-                "Please provide detailed reason and ensure proper planning.";
+        return "1-day leave request - Requires HR approval. " +
+                "Maximum 2 one-day leaves per month allowed.";
     }
 
     @Override
     public int getMaxAllowedDays() {
-        return 7;
+        return 1;
+    }
+
+    @Override
+    public int getMaxAllowedHours() {
+        return 8; // 8 hours for 1 day
+    }
+
+    @Override
+    public int getMaxPerDay() {
+        return 1;
+    }
+
+    @Override
+    public int getMaxPerMonth() {
+        return 2; // Maximum 2 one-day leaves per month
+    }
+
+    @Override
+    public String getLeaveType() {
+        return "MEDIUM_LEAVE";
     }
 }
