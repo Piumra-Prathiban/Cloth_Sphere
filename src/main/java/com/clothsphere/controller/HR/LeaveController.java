@@ -133,7 +133,7 @@ public class LeaveController {
 
             // Different messages based on auto-approval
             if ("APPROVED".equals(savedLeave.getStatus())) {
-                response.put("message", "🎉 " + getLeaveTypeLabel(leaveType) + " AUTO-APPROVED! " +
+                response.put("message", getLeaveTypeLabel(leaveType) + " AUTO-APPROVED! " +
                         savedLeave.getComments());
             } else {
                 response.put("message", getLeaveTypeLabel(leaveType) + " request submitted successfully. " +
