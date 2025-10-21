@@ -545,9 +545,9 @@ public class HREController {
             }
 
             // Validate new password strength
-            if (newPassword.length() < 6) {
+            if (newPassword.length() < 8) {
                 response.put("success", false);
-                response.put("message", "New password must be at least 6 characters long");
+                response.put("message", "New password must be at least 8 characters long");
                 return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
             }
 

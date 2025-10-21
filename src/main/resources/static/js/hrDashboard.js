@@ -268,12 +268,45 @@ document.getElementById('employeeForm').addEventListener('submit', async functio
     const departmentSelect = document.getElementById('department');
     const selectedDepartment = departmentSelect.value;
 
+    // Validate phone number
+    const phoneNumber = formData.get('phoneNumber');
+    if (phoneNumber && (!/^\d{10}$/.test(phoneNumber))) {
+        showAlert('Phone number must be exactly 10 digits', 'error');
+        return;
+    }
+
+    // Validate date of birth - must be at least 18 years old
+    const dateOfBirth = formData.get('dateOfBirth');
+    if (dateOfBirth) {
+        const selectedDate = new Date(dateOfBirth);
+        const today = new Date();
+        const age = today.getFullYear() - selectedDate.getFullYear();
+        const monthDiff = today.getMonth() - selectedDate.getMonth();
+        const dayDiff = today.getDate() - selectedDate.getDate();
+
+        // Calculate exact age
+        let actualAge = age;
+        if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
+            actualAge--;
+        }
+
+        if (actualAge < 18) {
+            showAlert('Employee must be at least 18 years old', 'error');
+            return;
+        }
+
+        if (selectedDate >= today) {
+            showAlert('Date of Birth cannot be today or a future date', 'error');
+            return;
+        }
+    }
+
     const employeeData = {
         fullName: formData.get('fullName'),
         address: formData.get('address'),
-        phoneNumber: formData.get('phoneNumber'),
+        phoneNumber: phoneNumber,
         email: formData.get('email'),
-        dateOfBirth: formData.get('dateOfBirth'),
+        dateOfBirth: dateOfBirth,
         qualification1: formData.get('qualification1'),
         qualification2: formData.get('qualification2'),
         qualification3: formData.get('qualification3'),
@@ -515,9 +548,9 @@ document.getElementById('passwordForm').addEventListener('submit', function(e) {
         alert('New password and confirmation do not match!');
         return false;
     }
-    if (newPassword.length < 6) {
+    if (newPassword.length < 8) {
         e.preventDefault();
-        alert('Password must be at least 6 characters long!');
+        alert('Password must be at least 8 characters long!');
         return false;
     }
     return true;

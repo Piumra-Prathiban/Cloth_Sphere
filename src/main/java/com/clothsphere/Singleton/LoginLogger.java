@@ -36,8 +36,6 @@ public class LoginLogger {
     /**
      * Thread-safe getInstance method using double-checked locking
      * This ensures only one instance exists throughout the application
-     *
-     * @return The single instance of LoginLogger
      */
     public static synchronized LoginLogger getInstance() {
         if (instance == null) {
@@ -48,10 +46,6 @@ public class LoginLogger {
 
     /**
      * Log a successful login attempt
-     *
-     * @param username The username of the logged-in user
-     * @param role The role of the user
-     * @param controller The controller handling the login
      */
     public void logSuccessfulLogin(String username, String role, String controller) {
         LoginLogEntry entry = new LoginLogEntry(
@@ -75,10 +69,6 @@ public class LoginLogger {
 
     /**
      * Log a failed login attempt
-     *
-     * @param username The attempted username
-     * @param controller The controller handling the login
-     * @param reason The reason for failure
      */
     public void logFailedLogin(String username, String controller, String reason) {
         LoginLogEntry entry = new LoginLogEntry(
@@ -100,9 +90,6 @@ public class LoginLogger {
 
     /**
      * Log a logout event
-     *
-     * @param username The username of the user logging out
-     * @param role The role of the user
      */
     public void logLogout(String username, String role) {
         LoginLogEntry entry = new LoginLogEntry(
