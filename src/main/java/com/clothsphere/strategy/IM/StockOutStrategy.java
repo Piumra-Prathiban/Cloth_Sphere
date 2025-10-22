@@ -11,7 +11,8 @@ public class StockOutStrategy implements StockStrategy {
         }
         double newStock = fabric.getCurrentStock() - amount;
         fabric.setCurrentStock(newStock);
+        System.out.println("Fabric : ");
         System.out.println("Stock OUT removed: " + amount + ". Current Stock: " + newStock);
     }
-}
-
+        // If amount is 0 or negative, do nothing (no message)
+    }

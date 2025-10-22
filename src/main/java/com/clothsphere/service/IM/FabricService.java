@@ -7,6 +7,8 @@ import com.clothsphere.repository.IM.FabricMovementRepository;
 import com.clothsphere.strategy.IM.StockContext;
 import com.clothsphere.strategy.IM.StockInStrategy;
 import com.clothsphere.strategy.IM.StockOutStrategy;
+import com.clothsphere.service.IM.FabricStock;
+import com.clothsphere.observer.Fabric.LowStockAlert;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,8 +28,14 @@ public class FabricService {
     private FabricMovementRepository fabricMovementRepository;
 
     private final StockContext stockContext = new StockContext();
+    private final FabricStock fabricStock = new FabricStock();
 
     // -------------------- FABRIC METHODS --------------------
+
+    public FabricService() {
+        // Set low stock threshold to 50 meters (you can change this)
+        fabricStock.addObserver(new LowStockAlert(10.0));
+    }
     public List<Fabric> getAllFabrics() {
         return fabricRepository.findAll();
     }
@@ -223,19 +231,27 @@ public class FabricService {
         movement.setApprovalStatus("PENDING");
 
         // Update stock using strategy only for approved quantities
-        if (approved > 0) {
+        if (true) {  // Change this from (approved > 0) to just true
             if ("IN".equalsIgnoreCase(status)) {
                 stockContext.setStrategy(new StockInStrategy());
-                stockContext.executeStrategy(fabric, approved);
+                stockContext.executeStrategy(fabric, quantity);  // Use quantity instead of approved
             } else if ("OUT".equalsIgnoreCase(status)) {
                 stockContext.setStrategy(new StockOutStrategy());
-                stockContext.executeStrategy(fabric, approved);
+                stockContext.executeStrategy(fabric, quantity);  // Use quantity instead of approved
             }
             fabricRepository.updateFabric(fabric);
+            fabricStock.checkStock(fabric.getFabricId(), fabric.getCurrentStock());
         }
 
         fabricMovementRepository.addMovement(movement);
         return movement;
+    }
+
+    public void checkAllFabricsStock() {
+        List<Fabric> allFabrics = getAllFabrics();
+        for (Fabric fabric : allFabrics) {
+            fabricStock.checkStock(fabric.getFabricId(), fabric.getCurrentStock());
+        }
     }
 
     private String generateId(String prefix, String lastId) {
