@@ -63,6 +63,68 @@ function showSection(sectionId, event) {
     }
 }
 
+//update the setupPhoneInputRestriction() function
+function setupPhoneInputRestriction() {
+    const phoneInput = document.getElementById('customerPhone');
+    const phoneStatus = document.getElementById('phoneStatus');
+
+    if (!phoneInput) return;
+
+    phoneInput.addEventListener('input', function(event) {
+        // Remove any non-digit and non-plus characters
+        let value = this.value.replace(/[^0-9+]/g, '');
+
+        // Only allow + at the beginning
+        if (value.indexOf('+') > 0) {
+            value = value.replace(/\+/g, '');
+            if (!value.startsWith('+')) {
+                value = '+' + value;
+            }
+        }
+
+        // Limit to EXACTLY 10 digits (strict)
+        if (value.length > 10) {
+            value = value.substring(0, 10);
+        }
+
+        this.value = value;
+
+        // Get digits only for validation
+        const digitsOnly = value.replace(/\D/g, '');
+
+        // Update status message and styling
+        if (value.length === 0) {
+            phoneInput.classList.remove('valid', 'warning', 'invalid');
+            phoneStatus.innerHTML = '';
+        } else if (digitsOnly.length < 10) {
+            phoneInput.classList.remove('valid', 'invalid');
+            phoneInput.classList.add('warning');
+            phoneStatus.className = 'phone-status warning';
+            phoneStatus.innerHTML = `<span class="status-indicator warning"></span> ${digitsOnly.length}/10 digits`;
+        } else if (digitsOnly.length === 10) {
+            phoneInput.classList.remove('warning', 'invalid');
+            phoneInput.classList.add('valid');
+            phoneStatus.className = 'phone-status valid';
+            phoneStatus.innerHTML = `<span class="status-indicator valid"></span> Valid format`;
+        }
+    });
+
+    // On blur (when user leaves the field), validate final input
+    phoneInput.addEventListener('blur', function() {
+        const phoneRegex = /^[0-9]{10}$/;
+        if (this.value && !phoneRegex.test(this.value)) {
+            this.classList.remove('valid', 'warning');
+            this.classList.add('invalid');
+            phoneStatus.className = 'phone-status invalid';
+            phoneStatus.innerHTML = `<span class="status-indicator invalid"></span> Must be exactly 10 digits`;
+        } else if (this.value) {
+            this.classList.remove('warning', 'invalid');
+            this.classList.add('valid');
+            phoneStatus.className = 'phone-status valid';
+            phoneStatus.innerHTML = `<span class="status-indicator valid"></span> Valid format`;
+        }
+    });
+}
 // Update the DOMContentLoaded function
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Sales Dashboard initialized');
@@ -101,6 +163,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Add real-time search listeners
     setupRealTimeSearch();
+
+    //Add phone input restriction
+    setupPhoneInputRestriction();
 
     console.log('Dashboard initialization complete');
 });
@@ -1581,6 +1646,17 @@ async function createCustomer() {
             return;
         }
 
+        // Phone validation - EXACTLY 10 digits
+        const phoneRegex = /^[0-9]{10}$/;
+        if (!phoneRegex.test(customerData.phone)) {
+            showAlert('Phone number must be exactly 10 digits', 'error');
+            document.getElementById('customerPhone').style.borderColor = '#f44336';
+            return;
+        }
+
+        // Clear error styling on valid phone
+        document.getElementById('customerPhone').style.borderColor = '';
+
         const response = await fetch('/api/buyers', {
             method: 'POST',
             headers: {
@@ -1591,11 +1667,21 @@ async function createCustomer() {
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to create customer');
+            // Check if it's a phone validation error from backend
+            if (errorData.details && errorData.details.phone) {
+                showAlert(errorData.details.phone, 'error');
+                document.getElementById('customerPhone').style.borderColor = '#f44336';
+            } else {
+                throw new Error(errorData.error || 'Failed to create customer');
+            }
+            return;
         }
 
         const createdCustomer = await response.json();
         showAlert('Customer created successfully! Buyer ID: ' + createdCustomer.buyerId, 'success');
+
+        // Clear error styling
+        document.getElementById('customerPhone').style.borderColor = '';
 
         // Refresh customer dropdown
         await loadBuyersForSelection();
@@ -1612,7 +1698,6 @@ async function createCustomer() {
         showAlert('Error creating customer: ' + error.message, 'error');
     }
 }
-
 async function loadBuyersForSelection() {
     try {
         const response = await fetch('/api/buyers');

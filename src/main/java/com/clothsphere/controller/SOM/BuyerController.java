@@ -2,6 +2,7 @@ package com.clothsphere.controller.SOM;
 
 import com.clothsphere.model.SOM.Buyer;
 import com.clothsphere.service.SOM.BuyerService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,9 +21,10 @@ public class BuyerController {
     @Autowired
     private BuyerService buyerService;
 
+
     // Create new buyer
     @PostMapping
-    public ResponseEntity<?> createBuyer(@RequestBody Buyer buyer) {
+    public ResponseEntity<?> createBuyer(@Valid @RequestBody Buyer buyer) {
         try {
             Buyer createdBuyer = buyerService.createBuyer(buyer);
             return new ResponseEntity<>(createdBuyer, HttpStatus.CREATED);
@@ -32,6 +34,7 @@ public class BuyerController {
             return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         }
     }
+
 
     // Get all buyers
     @GetMapping
@@ -57,7 +60,7 @@ public class BuyerController {
     @PutMapping("/{buyerId}/{email}")
     public ResponseEntity<?> updateBuyer(@PathVariable String buyerId,
                                          @PathVariable String email,
-                                         @RequestBody Buyer buyerDetails) {
+                                         @Valid @RequestBody Buyer buyerDetails) {
         try {
             Buyer updatedBuyer = buyerService.updateBuyer(buyerId, email, buyerDetails);
             return new ResponseEntity<>(updatedBuyer, HttpStatus.OK);
@@ -67,6 +70,7 @@ public class BuyerController {
             return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
         }
     }
+
 
     // Delete buyer
     @DeleteMapping("/{buyerId}/{email}")
